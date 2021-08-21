@@ -24,7 +24,6 @@ roi_to_apply = 0;
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
 generate_erps = 1;
 weight_erps = 1; % weights based on quartiles
-weighting_factor = 0.50; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
 type_of_analysis = 'time_domain';
@@ -235,7 +234,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 5000;
+        cfg.numrandomization = 500;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
@@ -274,10 +273,10 @@ for i = 1:numel(experiment_types)
         if generate_erps == 1
             generate_peak_erps(master_dir, main_path, experiment_type, ...
                 stat, pos_peak_level_stats, 'positive', desired_design_mtx, 1, ...
-                save_path, weight_erps, weighting_factor);
+                save_path, weight_erps);
             generate_peak_erps(master_dir, main_path, experiment_type, ...
                 stat, neg_peak_level_stats, 'negative', desired_design_mtx, 1, ...
-                save_path, weight_erps, weighting_factor);
+                save_path, weight_erps);
         end
         
         %% get cluster level percentage through time
@@ -388,7 +387,7 @@ end
 %% generate ERPs
 function generate_peak_erps(master_dir, main_path, experiment_type, ...
     stat, peak_information, effect_type, regression_type, desired_cluster, ...
-    save_dir, weight_erps, weighting_factor)
+    save_dir, weight_erps)
     
     df = stat.df;
     time = stat.time;
@@ -430,7 +429,7 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
     
     generate_plots(master_dir, main_path, experiment_type, start_of_effect,...
         end_of_effect, peak_electrode, peak_time, peak_t_value, df, ...
-        regression_type, pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor)
+        regression_type, pvalue, cluster_size, save_dir, effect_type, weight_erps)
     
     close;
 end
@@ -1167,7 +1166,7 @@ end
 %% generate erp plots
 function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     end_peak, peak_electrode, peak_effect, t_value, df, regression_type, ...
-    pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor);
+    pvalue, cluster_size, save_dir, effect_type, weight_erps)
 
     
     plotting_window = [-100, 300];
@@ -1213,15 +1212,15 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         
         type_of_effect = 'habituation';
         [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            regression_type, 1, type_of_effect, weight_erps);
         ci1_h = bootstrap_erps(data1_h, e_idx);
         ci1_l = bootstrap_erps(data1_l, e_idx);
         [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 2, type_of_effect, weight_erps, weighting_factor);
+            regression_type, 2, type_of_effect, weight_erps);
         ci2_h = bootstrap_erps(data2_h, e_idx);
         ci2_l = bootstrap_erps(data2_l, e_idx);
         [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 3, type_of_effect, weight_erps, weighting_factor);
+            regression_type, 3, type_of_effect, weight_erps);
         ci3_h = bootstrap_erps(data3_h, e_idx);
         ci3_l = bootstrap_erps(data3_l, e_idx);
 
@@ -1245,15 +1244,15 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
         
         [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            regression_type, 1, type_of_effect, weight_erps);
         ci1_h = bootstrap_erps(data1_h,e_idx);
         ci1_l = bootstrap_erps(data1_l,e_idx);
         [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            regression_type, 1, type_of_effect, weight_erps);
         ci2_h = bootstrap_erps(data2_h,e_idx);
         ci2_l = bootstrap_erps(data2_l,e_idx);
         [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 1,  type_of_effect, weight_erps, weighting_factor);
+            regression_type, 1,  type_of_effect, weight_erps);
         ci3_h = bootstrap_erps(data3_h,e_idx);
         ci3_l = bootstrap_erps(data3_l,e_idx);
         
@@ -1809,7 +1808,7 @@ end
 %% calculate partitions splits
 function [data_high, data_low, high_ids, low_ids] ...
     = get_partitions_medium_split(data, participant_order, regression_type, ...
-    partition, type_of_effect, weight_erps, weighting_factor)
+    partition, type_of_effect, weight_erps)
 
     function [split_data, p_order] = get_participants(data, all_ids, current_ids)
         cnt = 1;
@@ -1827,7 +1826,8 @@ function [data_high, data_low, high_ids, low_ids] ...
         end      
     end
 
-    function data = weight_erps_based_on_score(data, ranks, type, order, weighting_factor)
+    function data = weight_erps_based_on_score(data, ranks, type, order)
+        weighting_factor = 0.50; % 25 percent higher than usual
         upper_weighting = 1 + weighting_factor;
         lower_weighting = 1 - weighting_factor;
         
@@ -1908,8 +1908,8 @@ function [data_high, data_low, high_ids, low_ids] ...
     [data_low, low_order] = get_participants(data, participant_order, low_ids); 
     
     if weight_erps == 1
-       [data_high] = weight_erps_based_on_score(data_high, high, 'high', high_order, weighting_factor);
-       [data_low] = weight_erps_based_on_score(data_low, low, 'low', low_order, weighting_factor);
+       [data_high] = weight_erps_based_on_score(data_high, high, 'high', high_order);
+       [data_low] = weight_erps_based_on_score(data_low, low, 'low', low_order);
     end
 end
 
@@ -2187,17 +2187,15 @@ function itcs = calculate_itc(partition, path, n_participants, configuration)
 end
 
 %% calculate the arithmetic mean based on weightings
-function avg_mtx = calculate_aritmetic_mean(data)
+function data = calculate_aritmetic_mean(data)
     
     n = size(data,2);
     total_weight = 0;
-    matricies = [];
+    aver
     for i=1:n
-        matricies(:,:,i) = data{i}.series;
-        total_weight = total_weight + data{i}.weighting;
+        
     end
 
-    sum_mtx = sum(matricies,3);
-    avg_mtx = sum_mtx/total_weight;
-    
+
+    disp('hello');
 end

@@ -12,7 +12,7 @@ to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3; 4,5; 6,7;
+    2,3; 6,7; 4,5; 
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -36,7 +36,8 @@ for k=to_preprocess
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);
             full_description = strcat(analysis_type, '_', description{1});
-            full_description = strcat(type_of_analysis, full_description);
+            full_description = strcat(type_of_analysis, {'_'}, full_description);
+            full_description = full_description{1};
             
             %% works out where to load the data
             participant_main_path = strcat(main_path, int2str(participant));    
