@@ -23,10 +23,10 @@ roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
 generate_erps = 1;
-weight_erps = 1; % weights based on quartiles
+weight_erps = 0; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -1806,8 +1806,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     exportgraphics(gcf,save_dir,'Resolution',500);
 end
 %% calculate partitions splits
-function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(data, ...
-    participant_order, regression_type, partition, type_of_effect, weight_erps)
+function [data_high, data_low, high_ids, low_ids] ...
+    = get_partitions_medium_split(data, participant_order, regression_type, ...
+    partition, type_of_effect, weight_erps)
 
     function [split_data, p_order] = get_participants(data, all_ids, current_ids)
         cnt = 1;
@@ -1825,8 +1826,11 @@ function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(
         end      
     end
 
-    function data = weight_erps_based_on_score(data, ranks, type, order)
-        weighting_factor = 1.25; % 25 percent higher than usual
+    function [data, sum_of_weights] = weight_erps_based_on_score(data, ranks, type, order)
+        weighting_factor = 0.50; % 25 percent higher than usual
+        upper_weighting = 1 + weighting_factor;
+        lower_weighting = 1 - weighting_factor;
+        sum_of_weights = 0;
         
         n = size(ranks, 1);
         quartile = floor(n/2);
@@ -1836,17 +1840,25 @@ function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(
            ids_in_quartile = ranks(quartile:end,2);
         end
         
-        in_quartile = size(ids_in_quartile,2);
+        in_quartile = size(order,2);
         for i=1:in_quartile
             participant_order = order{i};
             participant = data{i};
             
             if ismember(participant_order,ids_in_quartile)
-               participant.avg = participant.avg * weighting_factor;
-               participant.thin = participant.thin * weighting_factor;
-               participant.med = participant.med * weighting_factor;
-               participant.thick = participant.thick * weighting_factor;
+               participant.avg = participant.avg * upper_weighting;
+               participant.thin = participant.thin * upper_weighting;
+               participant.med = participant.med * upper_weighting;
+               participant.thick = participant.thick * upper_weighting;
                data{i} = participant;
+               sum_of_weights = sum_of_weights + upper_weighting;
+            else
+               participant.avg = participant.avg * lower_weighting;
+               participant.thin = participant.thin * lower_weighting;
+               participant.med = participant.med * lower_weighting;
+               participant.thick = participant.thick * lower_weighting;
+               data{i} = participant; 
+               sum_of_weights = sum_of_weights + lower_weighting;
             end
         end      
     end
@@ -1897,8 +1909,8 @@ function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(
     [data_low, low_order] = get_participants(data, participant_order, low_ids); 
     
     if weight_erps == 1
-        data_high = weight_erps_based_on_score(data_high, high, 'high', high_order);
-        data_low = weight_erps_based_on_score(data_low, low, 'low', low_order);
+       [data_high,~] = weight_erps_based_on_score(data_high, high, 'high', high_order);
+       [data_low,~] = weight_erps_based_on_score(data_low, low, 'low', low_order);
     end
 end
 
@@ -2037,62 +2049,65 @@ end
 
 %% applies the wavelett decomposition to the data
 function to_frequency_data(data, save_dir, partition, participant_order)
-    cfg = [];
-    cfg.channel = 'eeg';
-    cfg.method = 'wavelet';
-    cfg.width = 5;
-    cfg.output = 'fourier';
-    cfg.pad = 'nextpow2';
-    cfg.foi = 5:60;
-    cfg.toi = -0.2:0.002:1.2;
-    cfg.keeptrials = 'yes';
+    cfg              = [];
+    cfg.output       = 'pow';
+    cfg.channel      = 'MEG';
+    cfg.method       = 'mtmconvol';
+    cfg.taper        = 'hanning';
+    cfg.foi =   5:80;
+    cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
+    cfg.toi          = -0.5:0.002:0.5;
+    cfg.channel      = 'all';
+    
+%     cfg = [];
+%     cfg.channel = 'eeg';
+%     cfg.method = 'wavelet';
+%     cfg.width = 5;
+%     cfg.output = 'fourier';
+%     cfg.pad = 'nextpow2';
+%     cfg.foi = 5:60;
+%     cfg.toi = -0.2:0.002:1.2;
+%     cfg.keeptrials = 'yes';
     
     for i=1:numel(data)
         participant = data{i};
         participant_number = participant_order{i};
-        
+
         med.label = participant.label;
         med.elec = participant.elec;
         med.trial = participant.med;
         med.time = update_with_time_info(med.trial, participant.time);
         med.dimord = 'chan_time';
-        
+
         thick.label = participant.label;
         thick.elec = participant.elec;
         thick.trial = participant.thick;
         thick.time = update_with_time_info(thick.trial, participant.time);
         thick.dimord = 'chan_time';
-        
+
         thin.label = participant.label;
         thin.elec = participant.elec;
         thin.trial = participant.thin;
         thin.time = update_with_time_info(thin.trial, participant.time);
         thin.dimord = 'chan_time';
-        
+
         TFRwave_med = ft_freqanalysis(cfg, med);
         TFRwave_med.info = 'medium';
-        TFRwave_med.time = TFRwave_med.time(200:651);
-        TFRwave_med.fourierspctrm = TFRwave_med.fourierspctrm(:,:,:,200:651);
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'freq_med.mat');
+        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_med.mat');
         save(path, 'TFRwave_med', '-v7.3')
         clear TFRwave_med;
-        
+
         TFRwave_thick = ft_freqanalysis(cfg, thick);
         TFRwave_thick.info = 'thick';
-        TFRwave_thick.time = TFRwave_thick.time(200:651);
-        TFRwave_thick.fourierspctrm = TFRwave_thick.fourierspctrm(:,:,:,200:651);
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'freq_thick.mat');
+        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_thick.mat');
         save(path, 'TFRwave_thick', '-v7.3')
         clear TFRwave_thick;
-        
+
         TFRwave_thin = ft_freqanalysis(cfg, thin);
         TFRwave_thin.info = 'thin';
-        TFRwave_thin.time = TFRwave_thin.time(200:651);
-        TFRwave_thin.fourierspctrm = TFRwave_thin.fourierspctrm(:,:,:,200:651);
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'freq_thin.mat');
+        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_thin.mat');
         save(path, 'TFRwave_thin', '-v7.3')
         clear TFRwave_thin;
-           
     end
 end
 
