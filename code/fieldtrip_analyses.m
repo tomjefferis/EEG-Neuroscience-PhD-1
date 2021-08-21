@@ -23,10 +23,10 @@ roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
 generate_erps = 1;
-bootstrap_ci_erps = 1;
+weight_erps = 1; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'frequency_domain';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -234,7 +234,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 1;
+        cfg.numrandomization = 1000;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
@@ -273,10 +273,10 @@ for i = 1:numel(experiment_types)
         if generate_erps == 1
             generate_peak_erps(master_dir, main_path, experiment_type, ...
                 stat, pos_peak_level_stats, 'positive', desired_design_mtx, 1, ...
-                save_path, bootstrap_ci_erps);
+                save_path, weight_erps);
             generate_peak_erps(master_dir, main_path, experiment_type, ...
                 stat, neg_peak_level_stats, 'negative', desired_design_mtx, 1, ...
-                save_path, bootstrap_ci_erps);
+                save_path, weight_erps);
         end
         
         %% get cluster level percentage through time
@@ -387,7 +387,7 @@ end
 %% generate ERPs
 function generate_peak_erps(master_dir, main_path, experiment_type, ...
     stat, peak_information, effect_type, regression_type, desired_cluster, ...
-    save_dir, bootstrap_ci_erps)
+    save_dir, weight_erps)
     
     df = stat.df;
     time = stat.time;
@@ -429,7 +429,7 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
     
     generate_plots(master_dir, main_path, experiment_type, start_of_effect,...
         end_of_effect, peak_electrode, peak_time, peak_t_value, df, ...
-        regression_type, pvalue, cluster_size, save_dir, effect_type, bootstrap_ci_erps)
+        regression_type, pvalue, cluster_size, save_dir, effect_type, weight_erps)
     
     close;
 end
@@ -1166,7 +1166,7 @@ end
 %% generate erp plots
 function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     end_peak, peak_electrode, peak_effect, t_value, df, regression_type, ...
-    pvalue, cluster_size, save_dir, effect_type, bootstrap_ci_erps)
+    pvalue, cluster_size, save_dir, effect_type, weight_erps)
 
     
     plotting_window = [-100, 300];
@@ -1207,20 +1207,20 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
             data_file, partition2);
         [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
             data_file, partition3);
-
+        
         data = [data1,data2,data3];
         
         type_of_effect = 'habituation';
         [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect);
+            regression_type, 1, type_of_effect, weight_erps);
         ci1_h = bootstrap_erps(data1_h, e_idx);
         ci1_l = bootstrap_erps(data1_l, e_idx);
         [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 2, type_of_effect);
+            regression_type, 2, type_of_effect, weight_erps);
         ci2_h = bootstrap_erps(data2_h, e_idx);
         ci2_l = bootstrap_erps(data2_l, e_idx);
         [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 3, type_of_effect);
+            regression_type, 3, type_of_effect, weight_erps);
         ci3_h = bootstrap_erps(data3_h, e_idx);
         ci3_l = bootstrap_erps(data3_l, e_idx);
 
@@ -1244,15 +1244,15 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
         
         [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect);
+            regression_type, 1, type_of_effect, weight_erps);
         ci1_h = bootstrap_erps(data1_h,e_idx);
         ci1_l = bootstrap_erps(data1_l,e_idx);
         [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 1, type_of_effect);
+            regression_type, 1, type_of_effect, weight_erps);
         ci2_h = bootstrap_erps(data2_h,e_idx);
         ci2_l = bootstrap_erps(data2_l,e_idx);
         [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 1,  type_of_effect);
+            regression_type, 1,  type_of_effect, weight_erps);
         ci3_h = bootstrap_erps(data3_h,e_idx);
         ci3_l = bootstrap_erps(data3_l,e_idx);
         
@@ -1572,7 +1572,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('High Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1614,7 +1614,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('Low Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1656,7 +1656,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('High Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1698,7 +1698,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('Low Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1740,7 +1740,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('High Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1783,7 +1783,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('Low Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1806,20 +1806,50 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     exportgraphics(gcf,save_dir,'Resolution',500);
 end
 %% calculate partitions splits
-function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(data, participant_order, regression_type, partition, type_of_effect)
-    function split_data = get_participants(data, all_ids, current_ids)
+function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(data, ...
+    participant_order, regression_type, partition, type_of_effect, weight_erps)
+
+    function [split_data, p_order] = get_participants(data, all_ids, current_ids)
         cnt = 1;
         split_data = {};
+        p_order = {};
         for i=1:numel(data)
             participant = data{i};
             id = all_ids(i);
 
             if ismember(id{1}, current_ids)
                 split_data{cnt} = participant;
+                p_order{cnt} = id{1};
                 cnt = cnt+1;
             end     
         end      
-    end    
+    end
+
+    function data = weight_erps_based_on_score(data, ranks, type, order)
+        weighting_factor = 1.25; % 25 percent higher than usual
+        
+        n = size(ranks, 1);
+        quartile = floor(n/2);
+        if strcmp(type, 'high')
+           ids_in_quartile = ranks(1:quartile,2);
+        else
+           ids_in_quartile = ranks(quartile:end,2);
+        end
+        
+        in_quartile = size(ids_in_quartile,2);
+        for i=1:in_quartile
+            participant_order = order{i};
+            participant = data{i};
+            
+            if ismember(participant_order,ids_in_quartile)
+               participant.avg = participant.avg * weighting_factor;
+               participant.thin = participant.thin * weighting_factor;
+               participant.med = participant.med * weighting_factor;
+               participant.thick = participant.thick * weighting_factor;
+               data{i} = participant;
+            end
+        end      
+    end
 
     scores = return_scores(regression_type, type_of_effect);
 
@@ -1863,8 +1893,13 @@ function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(
         low = sorted(n+1:end,:);
         low_ids = low(:,2);
     end
-    data_high = get_participants(data, participant_order, high_ids);
-    data_low = get_participants(data, participant_order, low_ids);
+    [data_high, high_order] = get_participants(data, participant_order, high_ids);
+    [data_low, low_order] = get_participants(data, participant_order, low_ids); 
+    
+    if weight_erps == 1
+        data_high = weight_erps_based_on_score(data_high, high, 'high', high_order);
+        data_low = weight_erps_based_on_score(data_low, low, 'low', low_order);
+    end
 end
 
 %% related to bootstrapping the erps
@@ -2128,102 +2163,5 @@ function itcs = calculate_itc(partition, path, n_participants, configuration)
     elseif strcmp(configuration, 'load')
         disp('Loading a preprocessed ITC file...')
         load(directory)
-    end
-end
-
-%% create ITC plots
-function create_itc_plots(itcs, partition, design, save_path, elec, ids, group_type)
-
-    new_struct = {};
-    new_pids = {};
-    [rows, ~] = size(itcs);
-    cnt = 1;
-    for k=1:rows
-       if isstruct(itcs{k,1})
-           if ismember(k, ids)
-               new_struct{cnt, 1} = itcs{k,1};
-               new_struct{cnt, 2} = itcs{k,2};
-               new_struct{cnt, 3} = itcs{k,3};
-               new_pids{cnt} = k;
-               cnt = cnt + 1;
-           end
-       end
-    end
-
-    n_participants = size(new_struct);
-    for j = 1:3
-        stimulus = {'medium','thin','thick'};
-        for i = 1:n_participants
-            itc = new_struct{i,j};
-            if numel(itc) > 0
-                fig=figure(j);
-                subplot(4,5,i)
-                imagesc(itc.time, itc.freq, squeeze(itc.itpc(1,:,:)));
-                axis xy
-                subtitle(strcat('P', int2str(new_pids{i})));
-                zlim([0 1]);
-            end
-        end 
-        han=axes(fig,'visible','off'); 
-        han.Title.Visible='on';
-        han.XLabel.Visible='on';
-        han.YLabel.Visible='on';
-        ylabel(han,'Frequency (Hz)'); 
-        xlabel(han,'Time (s)');
-
-        new_title = strcat('ITPC for ', {' '}, stimulus{j}, ...
-            ' stimulus: Partition ', {' '}, int2str(partition),...
-            ' Regressor:', {' '}, design, {' '}, 'Group:', group_type);
-        title(han,new_title, 'FontSize', 18);
-        titleHandle = get( gca ,'Title' );
-        pos  = get( titleHandle , 'position' );
-        pos1 = pos + [0 0.05 0]; 
-        set( titleHandle , 'position' , pos1 );
-        set(gcf,'Position',[49 110 2096 1197])
-        s = stimulus{j};
-        to_save = strcat(save_path, '\trial_level_itc_partition_', int2str(partition)...
-            ,'_',design, '_', s, '.png');
-        exportgraphics(gcf,to_save,'Resolution',500);
-        close;
-    
-%     new_struct = {};
-%     [rows, ~] = size(itcs);
-%     cnt = 1;
-%     for k=1:rows
-%        if isstruct(itcs{k,1})
-%            new_struct{cnt, 1} = itcs{k,1};
-%            new_struct{cnt, 2} = itcs{k,2};
-%            new_struct{cnt, 3} = itcs{k,3};
-%        end
-%     end
-    
-%     % calculate the grand avg plots
-%     cfg = [];
-%     cfg.parameter = 'itpc';
-%     grand_avg_thin = ft_freqgrandaverage(cfg, new_struct{:,2});
-%     grand_avg_thin.elec = elec;
-%     grand_avg_med = ft_freqgrandaverage(cfg, new_struct{:,1});
-%     grand_avg_med.elec = elec;
-%     grand_avg_thick = ft_freqgrandaverage(cfg, new_struct{:,3});
-%     grand_avg_thick.elec = elec;
-%     
-%     cfg = [];
-%     cfg.layout = grand_avg_thin.elec;
-%     cfg.colorbar = 'yes';
-%     cfg.colormap = 'jet';
-%     cfg.showlabels = 'yes';
-%     cfg.parameter = 'itpc';
-%     %cfg.zlim = [0.06 0.650]; %for multiplot
-%     cfg.zlim = [0.110 0.450]; %for topoplot
-%     figure(1)
-%     ft_multiplotTFR(cfg, grand_avg_thin);
-%     ft_topoplotTFR(cfg, grand_avg_thin);
-%     figure(2)
-%     %ft_multiplotTFR(cfg, grand_avg_med);
-%     ft_topoplotTFR(cfg, grand_avg_med);
-%     figure(3)
-%     %ft_multiplotTFR(cfg, grand_avg_thick);
-%     ft_topoplotTFR(cfg, grand_avg_thick);
-        
     end
 end
