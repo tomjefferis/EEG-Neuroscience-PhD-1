@@ -93,7 +93,6 @@ for k=to_preprocess
                 cfg.bpfilter = 'yes';
                 cfg.bpfilttype = 'fir';
                 cfg.bpfreq = filter_freq;
-                cfg.bpfiltord = 1;
                 
                 data = ft_preprocessing(cfg, raw);
 
@@ -528,8 +527,8 @@ function reject_participant = reject_particiapnt_based_on_bad_trials(postprocess
     end
    
     % lost a condition due to postprocessing
-    original_size = size(original_conditions,2);
-    pp_size = size(pp_original_conditions,2);
+    original_size = numel(original_conditions);
+    pp_size = numel(pp_original_conditions);
     if original_size ~= pp_size
        reject_participant = 1;
        return;
