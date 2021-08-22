@@ -11,7 +11,7 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions_vs_onsets'};   
-desired_design_mtxs = {'headache', 'visual_stress', 'discomfort'};
+desired_design_mtxs = {'headache'};
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -328,28 +328,37 @@ for i = 1:numel(experiment_types)
             design_matrix = design_matrix - mean(design_matrix);
             
             
-            first_partition_size = size([design_p1_23, design_p1_45, design_p1_67],2);
-            plot(design_matrix(1:first_partition_size));
+            
+            plot(design_matrix(1:size([design_p1_23, design_p1_45, design_p1_67],2));
             hold;
-            second_partition_size = size([design_p2_23, design_p2_45, design_p2_67],2);
-            plot(design_matrix(first_partition_size+1:(second_partition_size*2)));
-            third_partition_size = size([design_p3_23, design_p3_45, design_p3_67],2);
-            plot(design_matrix((second_partition_size*2)+1:third_partition_size*3));
+            
+            disp('hello');
+            
+            plot(design_matrix(1:n_participants), 'color', 'r', 'LineWidth', 1);
+            hold on;
+            plot(design_matrix(n_participants+1:n_participants*2), 'color', 'g', 'LineWidth', 1);
+            plot(design_matrix((n_participants*2)+1:n_participants*3), 'color', 'b', 'LineWidth', 1);
             xlabel('Participants');
-            ylabel('3-way Interaction');
-            legend({'P1 (Onsets 2:3, 4:5, 6:7)', 'P2 (Onsets 2:3, 4:5, 6:7)', 'P3 (Onsets 2:3, 4:5, 6:7)'},'Location','northwest')
+            ylabel('Interaction');
+            if strcmp(experiment_type, 'habituation')
+                legend({'P1', 'P2', 'P3'},'Location','northwest')
+            else
+                legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','northwest')
+            end
             set(gcf,'Position',[100 100 1000 1000])
             save_dir = strcat(save_path, '\', 'design_matrix.png');
             exportgraphics(gcf,save_dir,'Resolution',500);
-            close; 
-               
+            close;   
+            
             data = [
                 p1_23, p2_23, p3_23, ...
                 p1_45, p2_45, p3_45, ...
                 p1_67, p2_67, p3_67
             ];
-               
+            
+            
         end
+        
         %% setup FT analysis
         % we have to switch to SPM8 to use some of the functions in FT
         addpath 'C:\External_Software\spm8';
@@ -371,7 +380,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 25000;
+        cfg.numrandomization = 5000;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
