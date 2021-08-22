@@ -23,15 +23,15 @@ roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
 generate_erps = 1;
-weight_erps = 1; % weights based on quartiles
-weighting_factor = 0.50; % weights based on quartiles
+weight_erps = 0; % weights based on quartiles
+weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
 type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
-    compute_waveletts = 0; % compute the waveletts per particpant else load
+    compute_frequency_data = 0; % compute the freq data per particpant else load
     run_mua = 0; % run a MUA in the frequnecy domain?
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
@@ -130,18 +130,25 @@ for i = 1:numel(experiment_types)
             elseif strcmp(type_of_analysis, 'frequency_domain')
                 data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
                 
-                [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                [data1, participant_order] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition1);
                 [data2, ~] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition2);
                 [data3, ~] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition3);
                 
-                to_frequency_data(data1, main_path, 1, participant_order_1)
-                to_frequency_data(data2, main_path, 2, participant_order_1)
-                to_frequency_data(data3, main_path, 3, participant_order_1)
+                if compute_frequency_data == 1
+                    analysis = 'preprocess';
+                else
+                    analysis = 'load';
+                end
+                
+                p1_freq = to_frequency_data(data1, main_path, 1, participant_order, analysis);
+                p2_freq = to_frequency_data(data2, main_path, 2, participant_order, analysis);
+                p3_freq = to_frequency_data(data3, main_path, 3, participant_order, analysis);
+                
+
         
-                error('complete');
             end
                 
         elseif strcmp(experiment_type, 'erps-23-45-67') 
@@ -1461,28 +1468,28 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        
        plot(time, ci1_h.dist_med_avg, 'color', 'r', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci1_h.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       plot(time, ci1_h.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_h.dist_med_high, fliplr(ci1_h.dist_med_low)];
-       h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci1_h.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %plot(time, ci1_h.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci1_h.dist_med_high, fliplr(ci1_h.dist_med_low)];
+       %h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci2_h.dist_med_avg, 'color', 'g', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci2_h.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       plot(time, ci2_h.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci2_h.dist_med_high, fliplr(ci2_h.dist_med_low)];
-       h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci2_h.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %plot(time, ci2_h.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci2_h.dist_med_high, fliplr(ci2_h.dist_med_low)];
+       %h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci3_h.dist_med_avg, 'color', 'b', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci3_h.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       plot(time, ci3_h.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci3_h.dist_med_high, fliplr(ci3_h.dist_med_low)];
-       h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci3_h.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %plot(time, ci3_h.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci3_h.dist_med_high, fliplr(ci3_h.dist_med_low)];
+       %h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        xlim(plotting_window);
        title('High Group: Medium Through the Partitions');
@@ -1507,28 +1514,28 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        end
        
        plot(time, ci1_l.dist_med_avg, 'color', 'r', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci1_l.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       plot(time, ci1_l.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_l.dist_med_high, fliplr(ci1_l.dist_med_low)];
-       h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci1_l.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %plot(time, ci1_l.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci1_l.dist_med_high, fliplr(ci1_l.dist_med_low)];
+       %h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci2_l.dist_med_avg, 'color', 'g', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci2_l.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       plot(time, ci2_l.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci2_l.dist_med_high, fliplr(ci2_l.dist_med_low)];
-       h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci2_l.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %plot(time, ci2_l.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci2_l.dist_med_high, fliplr(ci2_l.dist_med_low)];
+       %h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci3_l.dist_med_avg, 'color', 'b', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci3_l.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       plot(time, ci3_l.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci3_l.dist_med_high, fliplr(ci3_l.dist_med_low)];
-       h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci3_l.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %plot(time, ci3_l.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci3_l.dist_med_high, fliplr(ci3_l.dist_med_low)];
+       %h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        xlim(plotting_window);
        title('Low Group: Medium Through the Partitions');
@@ -2053,7 +2060,7 @@ function ft = cut_data_using_analysis_window(ft, analysis_window)
 end
 
 %% applies the wavelett decomposition to the data
-function to_frequency_data(data, save_dir, partition, participant_order)
+function dataset = to_frequency_data(data, save_dir, partition, participant_order, type)
     cfg              = [];
     cfg.output       = 'pow';
     cfg.channel      = 'MEG';
@@ -2074,45 +2081,58 @@ function to_frequency_data(data, save_dir, partition, participant_order)
 %     cfg.toi = -0.2:0.002:1.2;
 %     cfg.keeptrials = 'yes';
     
+    dataset = {};
     for i=1:numel(data)
         participant = data{i};
         participant_number = participant_order{i};
+        med_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_med.mat');
+        thick_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_thick.mat');
+        thin_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_thin.mat');
+        
+        if strcmp(type, 'preprocess')
+            med.label = participant.label;
+            med.elec = participant.elec;
+            med.trial = participant.med;
+            med.time = update_with_time_info(med.trial, participant.time);
+            med.dimord = 'chan_time';
 
-        med.label = participant.label;
-        med.elec = participant.elec;
-        med.trial = participant.med;
-        med.time = update_with_time_info(med.trial, participant.time);
-        med.dimord = 'chan_time';
+            thick.label = participant.label;
+            thick.elec = participant.elec;
+            thick.trial = participant.thick;
+            thick.time = update_with_time_info(thick.trial, participant.time);
+            thick.dimord = 'chan_time';
 
-        thick.label = participant.label;
-        thick.elec = participant.elec;
-        thick.trial = participant.thick;
-        thick.time = update_with_time_info(thick.trial, participant.time);
-        thick.dimord = 'chan_time';
+            thin.label = participant.label;
+            thin.elec = participant.elec;
+            thin.trial = participant.thin;
+            thin.time = update_with_time_info(thin.trial, participant.time);
+            thin.dimord = 'chan_time';
 
-        thin.label = participant.label;
-        thin.elec = participant.elec;
-        thin.trial = participant.thin;
-        thin.time = update_with_time_info(thin.trial, participant.time);
-        thin.dimord = 'chan_time';
+            TFRwave_med = ft_freqanalysis(cfg, med);
+            TFRwave_med.info = 'medium';
+            save(med_path, 'TFRwave_med', '-v7.3')
+            clear TFRwave_med;
+            
+            TFRwave_thick = ft_freqanalysis(cfg, thick);
+            TFRwave_thick.info = 'thick';
+            save(thick_path, 'TFRwave_thick', '-v7.3')
+            clear TFRwave_thick;
 
-        TFRwave_med = ft_freqanalysis(cfg, med);
-        TFRwave_med.info = 'medium';
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_med.mat');
-        save(path, 'TFRwave_med', '-v7.3')
-        clear TFRwave_med;
-
-        TFRwave_thick = ft_freqanalysis(cfg, thick);
-        TFRwave_thick.info = 'thick';
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_thick.mat');
-        save(path, 'TFRwave_thick', '-v7.3')
-        clear TFRwave_thick;
-
-        TFRwave_thin = ft_freqanalysis(cfg, thin);
-        TFRwave_thin.info = 'thin';
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'pow_thin.mat');
-        save(path, 'TFRwave_thin', '-v7.3')
-        clear TFRwave_thin;
+            TFRwave_thin = ft_freqanalysis(cfg, thin);
+            TFRwave_thin.info = 'thin';
+            save(thin_path, 'TFRwave_thin', '-v7.3')
+            clear TFRwave_thin;
+        elseif strcmp(type, 'load')
+            load(med_path);
+            load(thin_path);
+            load(thick_path);
+            
+            participant.thin = TFRwave_thin;
+            participant.thick = TFRwave_thick;
+            participant.med = TFRwave_med;
+            participant.participant_number = participant_number;
+            dataset{end} = participant;
+        end
     end
 end
 

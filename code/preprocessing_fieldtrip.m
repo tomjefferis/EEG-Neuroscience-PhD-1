@@ -12,7 +12,7 @@ to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3; 6,7; 4,5; 
+    2,3; 4,5; 6,7
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -93,10 +93,12 @@ for k=to_preprocess
                 cfg.bpfilter = 'yes';
                 cfg.bpfilttype = 'fir';
                 cfg.bpfreq = filter_freq;
+                cfg.bpfiltord = 1;
                 
                 data = ft_preprocessing(cfg, raw);
 
                 % Detect artefacts via thresholding -100:100 uV
+                
                 cfg = [];
                 cfg.continious = 'no';
                 cfg.artfctdef.threshold.min = -100;
@@ -519,8 +521,22 @@ function reject_participant = reject_particiapnt_based_on_bad_trials(postprocess
     pp_trial_info = postprocessed.sampleinfo(:,3);
     [pp_original_n_occurence, pp_original_conditions] = hist(pp_trial_info,unique(pp_trial_info));
 
-    [~, n_conditions] = size(pp_original_n_occurence);
+    % make sure we have a minimum number of trials
+    if ismember(1, pp_original_n_occurence) || ismember(0, pp_original_n_occurence)
+       reject_participant = 1;
+       return;
+    end
+   
+    % lost a condition due to postprocessing
+    original_size = size(original_conditions,2);
+    pp_size = size(pp_original_conditions,2);
+    if original_size ~= pp_size
+       reject_participant = 1;
+       return;
+    end
     
+    % make sure there are 20% trial per condition
+    [~, n_conditions] = size(pp_original_n_occurence);
     for i = 1:n_conditions
         original_condition = original_conditions(i);
         new_condition = pp_original_conditions(i);
