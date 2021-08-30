@@ -9,10 +9,10 @@ cd("D:\PhD");
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
 to_preprocess = {'partitions'};
-type_of_analysis = 'frequency_domain'; % or time-domain
+type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3,4,5,6,7,8
+    2,3; 4,5; 6,7
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -36,7 +36,8 @@ for k=to_preprocess
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);
             full_description = strcat(analysis_type, '_', description{1});
-            full_description = strcat(type_of_analysis, full_description);
+            full_description = strcat(type_of_analysis, {'_'}, full_description);
+            full_description = full_description{1};
             
             %% works out where to load the data
             participant_main_path = strcat(main_path, int2str(participant));    
@@ -96,6 +97,7 @@ for k=to_preprocess
                 data = ft_preprocessing(cfg, raw);
 
                 % Detect artefacts via thresholding -100:100 uV
+                
                 cfg = [];
                 cfg.continious = 'no';
                 cfg.artfctdef.threshold.min = -100;
@@ -518,8 +520,22 @@ function reject_participant = reject_particiapnt_based_on_bad_trials(postprocess
     pp_trial_info = postprocessed.sampleinfo(:,3);
     [pp_original_n_occurence, pp_original_conditions] = hist(pp_trial_info,unique(pp_trial_info));
 
-    [~, n_conditions] = size(pp_original_n_occurence);
+    % make sure we have a minimum number of trials
+    if ismember(1, pp_original_n_occurence) || ismember(0, pp_original_n_occurence)
+       reject_participant = 1;
+       return;
+    end
+   
+    % lost a condition due to postprocessing
+    original_size = numel(original_conditions);
+    pp_size = numel(pp_original_conditions);
+    if original_size ~= pp_size
+       reject_participant = 1;
+       return;
+    end
     
+    % make sure there are 20% trial per condition
+    [~, n_conditions] = size(pp_original_n_occurence);
     for i = 1:n_conditions
         original_condition = original_conditions(i);
         new_condition = pp_original_conditions(i);

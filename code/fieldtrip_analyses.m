@@ -10,7 +10,7 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
+experiment_types = {'partitions_vs_onsets'};   
 desired_design_mtxs = {'headache'};
 start_latency = 0.056;
 end_latency = 0.256;
@@ -22,15 +22,17 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
-generate_erps = 1;
-bootstrap_ci_erps = 1;
+generate_erps = 0;
+weight_erps = 0; % weights based on quartiles
+weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'frequency_domain';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
-    compute_waveletts = 0; % compute the waveletts per particpant else load
+    compute_frequency_data = 1; % compute the freq data per particpant else load
+    frequency_type = 'pow'; % compute inter trial coherence
     run_mua = 0; % run a MUA in the frequnecy domain?
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
@@ -42,12 +44,14 @@ for i = 1:numel(experiment_types)
         experiment_type = experiment_types{i};
         desired_design_mtx = desired_design_mtxs{j};
         %% create the results save path depending on the experiment
-        if contains(experiment_type, 'partitions')
+        if strcmp(experiment_type, 'partitions-2-8')
             save_path = strcat(results_dir, '\', 'partitions', '\', desired_design_mtx);
         elseif contains(experiment_type, 'erps-23-45-67')
             save_path = strcat(results_dir, '\', 'onsets', '\', desired_design_mtx);
         elseif contains(experiment_type,'onsets-2-8-explicit')
             save_path = strcat(results_dir, '\', 'mean_intercept', '\', desired_design_mtx);
+        elseif strcmp(experiment_type, 'partitions_vs_onsets')
+            save_path = strcat(results_dir, '\', 'partitions_vs_onsets', '\', desired_design_mtx);
         end
         
         %% Are we looking at onsets 2-8 or partitions
@@ -127,20 +131,59 @@ for i = 1:numel(experiment_types)
                 end
                 
             elseif strcmp(type_of_analysis, 'frequency_domain')
-                data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
+                if compute_frequency_data == 1
+                    analysis = 'preprocess';
+                    data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
+                else
+                    analysis = 'load';
+                    data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                end
                 
-                [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                electrode = 'A23';
+                
+                if strcmp(frequency_type, 'fourier')
+                    fnames = {'fourier_med.mat','fourier_thin.mat','fourier_thick.mat'};
+                elseif strcmp(frequency_type, 'pow')
+                    fnames = {'pow_med.mat','pow_thin.mat','pow_thick.mat'};
+                end
+                
+                [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition1);
-                [data2, ~] = load_postprocessed_data(main_path, n_participants, ...
+                [data2, participant_order2] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition2);
-                [data3, ~] = load_postprocessed_data(main_path, n_participants, ...
+                [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition3);
                 
-                to_frequency_data(data1, main_path, 1, participant_order_1)
-                to_frequency_data(data2, main_path, 2, participant_order_1)
-                to_frequency_data(data3, main_path, 3, participant_order_1)
-        
-                error('complete');
+                p1_freq = to_frequency_data(data1, main_path, 1, ...
+                    participant_order1, analysis,fnames,frequency_type, electrode);
+                p2_freq = to_frequency_data(data2, main_path, 2, ...
+                    participant_order2, analysis,fnames,frequency_type, electrode);
+                p3_freq = to_frequency_data(data3, main_path, 3, ...
+                    participant_order3, analysis,fnames,frequency_type, electrode);
+                
+                
+                if strcmp(desired_design_mtx, 'no-factor') && compute_frequency_data == 0
+                   compute_spectrogram(p1_freq,1,save_path, electrode, desired_design_mtx, 'all', frequency_type);
+                   compute_spectrogram(p2_freq,2,save_path, electrode, desired_design_mtx, 'all', frequency_type);
+                   compute_spectrogram(p3_freq,3,save_path, electrode, desired_design_mtx, 'all', frequency_type);
+                elseif ~strcmp(desired_design_mtx, 'no-factor') && compute_frequency_data == 0
+                    [p1_freq_h, p1_freq_l, ~, ~] = get_partitions_medium_split(p1_freq, participant_order1,...
+                        desired_design_mtx, 1, type_of_effect, 0, 0);
+                    compute_spectrogram(p1_freq_h,1,save_path, electrode, desired_design_mtx, 'high', frequency_type);
+                    compute_spectrogram(p1_freq_l,1,save_path, electrode, desired_design_mtx, 'low', frequency_type);
+                    
+                    [p2_freq_h, p2_freq_l, ~, ~] = get_partitions_medium_split(p2_freq, participant_order2,...
+                        desired_design_mtx, 1, type_of_effect, 0, 0);  
+                    compute_spectrogram(p2_freq_h,2,save_path, electrode, desired_design_mtx, 'high', frequency_type);
+                    compute_spectrogram(p2_freq_l,2,save_path, electrode, desired_design_mtx, 'low', frequency_type);
+                    
+                    [p3_freq_h, p3_freq_l, ~, ~] = get_partitions_medium_split(p3_freq, participant_order3,...
+                        desired_design_mtx, 1, type_of_effect, 0, 0);
+                    compute_spectrogram(p3_freq_h,3,save_path, electrode, desired_design_mtx, 'high', frequency_type);
+                    compute_spectrogram(p3_freq_l,3,save_path, electrode, desired_design_mtx, 'low', frequency_type);
+                    
+                end
+                continue;
             end
                 
         elseif strcmp(experiment_type, 'erps-23-45-67') 
@@ -211,8 +254,116 @@ for i = 1:numel(experiment_types)
                 end
                 data = create_hacked_roi(data, roi, weight_roi);
             end
-        end
+        elseif strcmp(experiment_type, 'partitions_vs_onsets')
+            onsets_2_3 = 'time_domain_partitions_partitioned_onsets_2_3_grand-average.mat';
+            onsets_4_5 = 'time_domain_partitions_partitioned_onsets_4_5_grand-average.mat';
+            onsets_6_7 = 'time_domain_partitions_partitioned_onsets_6_7_grand-average.mat';
+            type_of_effect = 'habituation';
+            regressor = 'ft_statfun_indepsamplesregrT';
+            
+            regression_type = desired_design_mtx;
+            n_participants = 39;
+            partition1.is_partition = 1; 
+            partition1.partition_number = 1;
+            partition2.is_partition = 1; 
+            partition2.partition_number = 2;
+            partition3.is_partition = 1; 
+            partition3.partition_number = 3;
+            
+            [p1_23, po_p1_23] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_2_3, partition1);
+            [p2_23, po_p2_23] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_2_3, partition2);
+            [p3_23, po_p3_23] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_2_3, partition3);
+                                    
+            partition = 1;
+            [design_p1_23, p1_23] = create_design_matrix_partitions(po_p1_23, p1_23, ...
+                    regression_type, partition, type_of_effect);
+            partition = 2;
+            [design_p2_23, p2_23] = create_design_matrix_partitions(po_p2_23, p2_23, ...
+                    regression_type, partition, type_of_effect);
+            partition = 3;
+            [design_p3_23, p3_23] = create_design_matrix_partitions(po_p3_23, p3_23, ...
+                    regression_type, partition, type_of_effect);
+                
+            design_p1_23 = design_p1_23 * 1;
+            design_p2_23 = design_p2_23 * 1;
+            design_p3_23 = design_p3_23 * 1;
+            
+            [p1_45, po_p1_45] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_4_5, partition1);
+            [p2_45, po_p2_45] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_4_5, partition2);
+            [p3_45, po_p3_45] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_4_5, partition3);
+            
+            partition = 1;
+            [design_p1_45, p1_45] = create_design_matrix_partitions(po_p1_45, p1_45, ...
+                    regression_type, partition, type_of_effect);
+            partition = 2;
+            [design_p2_45, p2_45] = create_design_matrix_partitions(po_p2_45, p2_45, ...
+                    regression_type, partition, type_of_effect);
+            partition = 3;
+            [design_p3_45, p3_45] = create_design_matrix_partitions(po_p3_45, p3_45, ...
+                    regression_type, partition, type_of_effect);
+                
+            design_p1_45 = design_p1_45 * 1.65;
+            design_p2_45 = design_p2_45 * 1.65;
+            design_p3_45 = design_p3_45 * 1.65;
+            
+            [p1_67, po_p1_67] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_2_3, partition1);
+            [p2_67, po_p2_67] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_2_3, partition2);
+            [p3_67, po_p3_67] = load_postprocessed_data(main_path, n_participants, ...
+                onsets_2_3, partition3);
+            
+            partition = 1;
+            [design_p1_67, p1_67] = create_design_matrix_partitions(po_p1_67, p1_67, ...
+                    regression_type, partition, type_of_effect);
+            partition = 2;
+            [design_p2_67, p2_67] = create_design_matrix_partitions(po_p2_67, p2_67, ...
+                    regression_type, partition, type_of_effect);
+            partition = 3;
+            [design_p3_67, p3_67] = create_design_matrix_partitions(po_p3_67, p3_67, ...
+                    regression_type, partition, type_of_effect);
+            
+            design_p1_67 = design_p1_67 * 2.72;
+            design_p2_67 = design_p2_67 * 2.72;
+            design_p3_67 = design_p3_67 * 2.72;
+            
+            design_matrix = [
+                design_p1_23, design_p1_45, design_p1_67, ...
+                design_p2_23, design_p2_45, design_p2_67, ...
+                design_p3_23, design_p3_45, design_p3_67, ...
+            ];
         
+            design_matrix = design_matrix - mean(design_matrix);
+            
+            
+            first_partition_size = size([design_p1_23, design_p1_45, design_p1_67],2);
+            plot(design_matrix(1:first_partition_size));
+            hold;
+            second_partition_size = size([design_p2_23, design_p2_45, design_p2_67],2);
+            plot(design_matrix(first_partition_size+1:(second_partition_size*2)));
+            third_partition_size = size([design_p3_23, design_p3_45, design_p3_67],2);
+            plot(design_matrix((second_partition_size*2)+1:third_partition_size*3));
+            xlabel('Participants');
+            ylabel('3-way Interaction');
+            legend({'P1 (Onsets 2:3, 4:5, 6:7)', 'P2 (Onsets 2:3, 4:5, 6:7)', 'P3 (Onsets 2:3, 4:5, 6:7)'},'Location','northwest')
+            set(gcf,'Position',[100 100 1000 1000])
+            save_dir = strcat(save_path, '\', 'design_matrix.png');
+            exportgraphics(gcf,save_dir,'Resolution',500);
+            close; 
+               
+            data = [
+                p1_23, p1_45, p1_67, ...
+                p2_23, p2_45, p2_67, ...
+                p3_23, p3_45, p3_67
+            ];
+               
+        end
         %% setup FT analysis
         % we have to switch to SPM8 to use some of the functions in FT
         addpath 'C:\External_Software\spm8';
@@ -234,7 +385,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 1;
+        cfg.numrandomization = 5000;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
@@ -273,10 +424,10 @@ for i = 1:numel(experiment_types)
         if generate_erps == 1
             generate_peak_erps(master_dir, main_path, experiment_type, ...
                 stat, pos_peak_level_stats, 'positive', desired_design_mtx, 1, ...
-                save_path, bootstrap_ci_erps);
+                save_path, weight_erps, weighting_factor);
             generate_peak_erps(master_dir, main_path, experiment_type, ...
                 stat, neg_peak_level_stats, 'negative', desired_design_mtx, 1, ...
-                save_path, bootstrap_ci_erps);
+                save_path, weight_erps, weighting_factor);
         end
         
         %% get cluster level percentage through time
@@ -378,7 +529,7 @@ function save_desgin_matrix(design_matrix, n_participants, save_path, experiment
     else
         legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','northwest')
     end
-        set(gcf,'Position',[100 100 1000 1000])
+    set(gcf,'Position',[100 100 1000 1000])
     save_dir = strcat(save_path, '\', 'design_matrix.png');
     exportgraphics(gcf,save_dir,'Resolution',500);
     close;   
@@ -387,7 +538,7 @@ end
 %% generate ERPs
 function generate_peak_erps(master_dir, main_path, experiment_type, ...
     stat, peak_information, effect_type, regression_type, desired_cluster, ...
-    save_dir, bootstrap_ci_erps)
+    save_dir, weight_erps, weighting_factor)
     
     df = stat.df;
     time = stat.time;
@@ -429,7 +580,7 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
     
     generate_plots(master_dir, main_path, experiment_type, start_of_effect,...
         end_of_effect, peak_electrode, peak_time, peak_t_value, df, ...
-        regression_type, pvalue, cluster_size, save_dir, effect_type, bootstrap_ci_erps)
+        regression_type, pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor)
     
     close;
 end
@@ -1166,7 +1317,7 @@ end
 %% generate erp plots
 function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     end_peak, peak_electrode, peak_effect, t_value, df, regression_type, ...
-    pvalue, cluster_size, save_dir, effect_type, bootstrap_ci_erps)
+    pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor);
 
     
     plotting_window = [-100, 300];
@@ -1207,20 +1358,20 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
             data_file, partition2);
         [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
             data_file, partition3);
-
+        
         data = [data1,data2,data3];
         
         type_of_effect = 'habituation';
         [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect);
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
         ci1_h = bootstrap_erps(data1_h, e_idx);
         ci1_l = bootstrap_erps(data1_l, e_idx);
         [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 2, type_of_effect);
+            regression_type, 2, type_of_effect, weight_erps, weighting_factor);
         ci2_h = bootstrap_erps(data2_h, e_idx);
         ci2_l = bootstrap_erps(data2_l, e_idx);
         [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 3, type_of_effect);
+            regression_type, 3, type_of_effect, weight_erps, weighting_factor);
         ci3_h = bootstrap_erps(data3_h, e_idx);
         ci3_l = bootstrap_erps(data3_l, e_idx);
 
@@ -1244,15 +1395,15 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
         
         [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect);
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
         ci1_h = bootstrap_erps(data1_h,e_idx);
         ci1_l = bootstrap_erps(data1_l,e_idx);
         [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 1, type_of_effect);
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
         ci2_h = bootstrap_erps(data2_h,e_idx);
         ci2_l = bootstrap_erps(data2_l,e_idx);
         [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 1,  type_of_effect);
+            regression_type, 1,  type_of_effect, weight_erps, weighting_factor);
         ci3_h = bootstrap_erps(data3_h,e_idx);
         ci3_l = bootstrap_erps(data3_l,e_idx);
         
@@ -1460,28 +1611,28 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        
        plot(time, ci1_h.dist_med_avg, 'color', 'r', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci1_h.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       plot(time, ci1_h.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_h.dist_med_high, fliplr(ci1_h.dist_med_low)];
-       h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci1_h.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %plot(time, ci1_h.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci1_h.dist_med_high, fliplr(ci1_h.dist_med_low)];
+       %h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci2_h.dist_med_avg, 'color', 'g', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci2_h.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       plot(time, ci2_h.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci2_h.dist_med_high, fliplr(ci2_h.dist_med_low)];
-       h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci2_h.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %plot(time, ci2_h.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci2_h.dist_med_high, fliplr(ci2_h.dist_med_low)];
+       %h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci3_h.dist_med_avg, 'color', 'b', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci3_h.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       plot(time, ci3_h.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci3_h.dist_med_high, fliplr(ci3_h.dist_med_low)];
-       h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci3_h.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %plot(time, ci3_h.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci3_h.dist_med_high, fliplr(ci3_h.dist_med_low)];
+       %h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        xlim(plotting_window);
        title('High Group: Medium Through the Partitions');
@@ -1506,28 +1657,28 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        end
        
        plot(time, ci1_l.dist_med_avg, 'color', 'r', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci1_l.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       plot(time, ci1_l.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_l.dist_med_high, fliplr(ci1_l.dist_med_low)];
-       h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci1_l.dist_med_high, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %plot(time, ci1_l.dist_med_low, 'LineWidth', 0.01, 'color', 'r','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci1_l.dist_med_high, fliplr(ci1_l.dist_med_low)];
+       %h = fill(x2, inBetween, 'r', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci2_l.dist_med_avg, 'color', 'g', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci2_l.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       plot(time, ci2_l.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci2_l.dist_med_high, fliplr(ci2_l.dist_med_low)];
-       h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci2_l.dist_med_high, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %plot(time, ci2_l.dist_med_low, 'LineWidth', 0.01, 'color', 'g','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci2_l.dist_med_high, fliplr(ci2_l.dist_med_low)];
+       %h = fill(x2, inBetween, 'g', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        plot(time, ci3_l.dist_med_avg, 'color', 'b', 'LineWidth', 1.35,'HandleVisibility','off');
-       plot(time, ci3_l.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       plot(time, ci3_l.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci3_l.dist_med_high, fliplr(ci3_l.dist_med_low)];
-       h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
-       set(h,'facealpha',.13)
+       %plot(time, ci3_l.dist_med_high, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %plot(time, ci3_l.dist_med_low, 'LineWidth', 0.01, 'color', 'b','HandleVisibility','off');
+       %x2 = [time, fliplr(time)];
+       %inBetween = [ci3_l.dist_med_high, fliplr(ci3_l.dist_med_low)];
+       %h = fill(x2, inBetween, 'b', 'HandleVisibility','off');
+       %set(h,'facealpha',.13)
        
        xlim(plotting_window);
        title('Low Group: Medium Through the Partitions');
@@ -1572,7 +1723,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('High Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1614,7 +1765,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('Low Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1656,7 +1807,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('High Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1698,7 +1849,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('Low Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1740,7 +1891,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('High Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1783,7 +1934,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.13)
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
+       title('Low Group');
        ylim([-6, 12])
        grid on;
        hold off;
@@ -1806,20 +1957,60 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     exportgraphics(gcf,save_dir,'Resolution',500);
 end
 %% calculate partitions splits
-function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(data, participant_order, regression_type, partition, type_of_effect)
-    function split_data = get_participants(data, all_ids, current_ids)
+function [data_high, data_low, high_ids, low_ids] ...
+    = get_partitions_medium_split(data, participant_order, regression_type, ...
+    partition, type_of_effect, weight_erps, weighting_factor)
+
+    function [split_data, p_order] = get_participants(data, all_ids, current_ids)
         cnt = 1;
         split_data = {};
+        p_order = {};
         for i=1:numel(data)
             participant = data{i};
             id = all_ids(i);
 
             if ismember(id{1}, current_ids)
                 split_data{cnt} = participant;
+                p_order{cnt} = id{1};
                 cnt = cnt+1;
             end     
         end      
-    end    
+    end
+
+    function data = weight_erps_based_on_score(data, ranks, type, order, weighting_factor)
+        upper_weighting = 1 + weighting_factor;
+        lower_weighting = 1 - weighting_factor;
+        
+        n = size(ranks, 1);
+        quartile = floor(n/2);
+        if strcmp(type, 'high')
+           ids_in_quartile = ranks(1:quartile,2);
+        else
+           ids_in_quartile = ranks(quartile:end,2);
+        end
+        
+        in_quartile = size(order,2);
+        for i=1:in_quartile
+            participant_order = order{i};
+            participant = data{i};
+            
+            if ismember(participant_order,ids_in_quartile)
+               participant.avg = participant.avg * upper_weighting;
+               participant.thin = participant.thin * upper_weighting;
+               participant.med = participant.med * upper_weighting;
+               participant.thick = participant.thick * upper_weighting;
+               participant.weighting = upper_weighting;
+               data{i} = participant;
+            else
+               participant.avg = participant.avg * lower_weighting;
+               participant.thin = participant.thin * lower_weighting;
+               participant.med = participant.med * lower_weighting;
+               participant.thick = participant.thick * lower_weighting;
+               participant.weighting = lower_weighting;
+               data{i} = participant;
+            end
+        end      
+    end
 
     scores = return_scores(regression_type, type_of_effect);
 
@@ -1863,14 +2054,19 @@ function [data_high, data_low, high_ids, low_ids] = get_partitions_medium_split(
         low = sorted(n+1:end,:);
         low_ids = low(:,2);
     end
-    data_high = get_participants(data, participant_order, high_ids);
-    data_low = get_participants(data, participant_order, low_ids);
+    [data_high, high_order] = get_participants(data, participant_order, high_ids);
+    [data_low, low_order] = get_participants(data, participant_order, low_ids); 
+    
+    if weight_erps == 1
+       [data_high] = weight_erps_based_on_score(data_high, high, 'high', high_order, weighting_factor);
+       [data_low] = weight_erps_based_on_score(data_low, low, 'low', low_order, weighting_factor);
+    end
 end
 
 %% related to bootstrapping the erps
 function ci = bootstrap_erps(data, e_idx)
     [~, n_participants] = size(data);
-    [all_med, all_thick, all_thin] = deal([], [], []);
+    [all_med, all_thick, all_thin] = deal({}, {}, {});
     
     % get all of the participant trials into one matrix of each type
     for participant=1:n_participants
@@ -1878,14 +2074,18 @@ function ci = bootstrap_erps(data, e_idx)
         fields = fieldnames(p);
         for k=1:numel(fields)
            time_series_name = fields{k}; 
-           series = p.(fields{k});
+           participant_level.series = p.(fields{k});
+           participant_level.weighting = p.weighting;
            
            if contains(time_series_name, 'med')
-                all_med = cat(3,all_med,series(e_idx,:));
+                participant_level.series = participant_level.series(e_idx,:);
+                all_med{end+1} = participant_level;
            elseif contains(time_series_name, 'thick')
-               all_thick = cat(3,all_thick,series(e_idx,:));
+                participant_level.series = participant_level.series(e_idx,:);
+                all_thick{end+1} = participant_level;
            elseif contains(time_series_name, 'thin')
-               all_thin = cat(3,all_thin,series(e_idx,:));
+                participant_level.series = participant_level.series(e_idx,:);
+                all_thin{end+1} = participant_level;
            end
            
         end
@@ -1893,19 +2093,21 @@ function ci = bootstrap_erps(data, e_idx)
     
     [~, n_participants] = size(data);
     
+    
     % start the bootstrapping process to create the plots with CIs
     n_iterations = 3000;
-    [dist_med, dist_thin, dist_thick, dist_pgi] = deal([], [], [], []);
+    [dist_med, dist_thin, dist_thick, dist_pgi] = deal([ ], [], [], []);
     for n =1:n_iterations
-        % sample 1000 trials with replacement
-        sampled_med = datasample(all_med,n_participants, 3);
-        sampled_thick = datasample(all_thick,n_participants, 3);
-        sampled_thin = datasample(all_thin,n_participants, 3);
+        % sample trials with replacement
+        sampled_med = datasample(all_med,n_participants);
+        sampled_thick = datasample(all_thick,n_participants);
+        sampled_thin = datasample(all_thin,n_participants);
         
-       % create a bootstrapped ERP
-        avg_med = mean(sampled_med, 3);
-        avg_thick = mean(sampled_thick, 3);
-        avg_thin = mean(sampled_thin, 3);
+        % weight the ERPs using the arithmetic mean amd create a
+        % bootstrapped ERP
+        avg_med = calculate_aritmetic_mean(sampled_med);
+        avg_thick = calculate_aritmetic_mean(sampled_thick);
+        avg_thin = calculate_aritmetic_mean(sampled_thin);
         avg_pgi = avg_med - (avg_thin + avg_thick)/2;
         
         % add to our distribution of ERPs
@@ -2001,63 +2203,92 @@ function ft = cut_data_using_analysis_window(ft, analysis_window)
 end
 
 %% applies the wavelett decomposition to the data
-function to_frequency_data(data, save_dir, partition, participant_order)
-    cfg = [];
-    cfg.channel = 'eeg';
-    cfg.method = 'wavelet';
-    cfg.width = 5;
-    cfg.output = 'fourier';
-    cfg.pad = 'nextpow2';
-    cfg.foi = 5:60;
-    cfg.toi = -0.2:0.002:1.2;
-    cfg.keeptrials = 'yes';
+function dataset = to_frequency_data(data, save_dir, partition, participant_order, type, fname, frequency_type, channel)
     
+     if strcmp(frequency_type, 'fourier')
+         cfg = [];
+         cfg.channel = 'eeg';
+         cfg.method = 'wavelet';
+         cfg.width = 5;
+         cfg.output = 'fourier';
+         cfg.pad = 'nextpow2';
+         cfg.foi = 5:60;
+         cfg.toi = -0.2:0.002:0.5;  
+     elseif strcmp(frequency_type, 'pow')
+        cfg              = [];
+        cfg.output       = 'pow';
+        cfg.method       = 'mtmconvol';
+        cfg.taper        = 'hanning';
+        cfg.foi =   1:60;
+        cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
+        cfg.toi          = -0.5:0.002:0.5;
+        cfg.channel      = 'all';
+     end
+
+    dataset = {};
     for i=1:numel(data)
         participant = data{i};
+        
+        disp(strcat('Loading/Processing Participant ', int2str(i)));
         participant_number = participant_order{i};
+        med_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{1});
+        thin_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{2});
+        thick_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{3});
         
-        med.label = participant.label;
-        med.elec = participant.elec;
-        med.trial = participant.med;
-        med.time = update_with_time_info(med.trial, participant.time);
-        med.dimord = 'chan_time';
-        
-        thick.label = participant.label;
-        thick.elec = participant.elec;
-        thick.trial = participant.thick;
-        thick.time = update_with_time_info(thick.trial, participant.time);
-        thick.dimord = 'chan_time';
-        
-        thin.label = participant.label;
-        thin.elec = participant.elec;
-        thin.trial = participant.thin;
-        thin.time = update_with_time_info(thin.trial, participant.time);
-        thin.dimord = 'chan_time';
-        
-        TFRwave_med = ft_freqanalysis(cfg, med);
-        TFRwave_med.info = 'medium';
-        TFRwave_med.time = TFRwave_med.time(200:651);
-        TFRwave_med.fourierspctrm = TFRwave_med.fourierspctrm(:,:,:,200:651);
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'freq_med.mat');
-        save(path, 'TFRwave_med', '-v7.3')
-        clear TFRwave_med;
-        
-        TFRwave_thick = ft_freqanalysis(cfg, thick);
-        TFRwave_thick.info = 'thick';
-        TFRwave_thick.time = TFRwave_thick.time(200:651);
-        TFRwave_thick.fourierspctrm = TFRwave_thick.fourierspctrm(:,:,:,200:651);
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'freq_thick.mat');
-        save(path, 'TFRwave_thick', '-v7.3')
-        clear TFRwave_thick;
-        
-        TFRwave_thin = ft_freqanalysis(cfg, thin);
-        TFRwave_thin.info = 'thin';
-        TFRwave_thin.time = TFRwave_thin.time(200:651);
-        TFRwave_thin.fourierspctrm = TFRwave_thin.fourierspctrm(:,:,:,200:651);
-        path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', 'freq_thin.mat');
-        save(path, 'TFRwave_thin', '-v7.3')
-        clear TFRwave_thin;
-           
+        if strcmp(type, 'preprocess')
+            med.label = participant.label;
+            med.elec = participant.elec;
+            med.trial = participant.med;
+            med.time = update_with_time_info(med.trial, participant.time);
+            med.dimord = 'chan_time';
+
+            thick.label = participant.label;
+            thick.elec = participant.elec;
+            thick.trial = participant.thick;
+            thick.time = update_with_time_info(thick.trial, participant.time);
+            thick.dimord = 'chan_time';
+
+            thin.label = participant.label;
+            thin.elec = participant.elec;
+            thin.trial = participant.thin;
+            thin.time = update_with_time_info(thin.trial, participant.time);
+            thin.dimord = 'chan_time';
+
+            TFRwave_med = ft_freqanalysis(cfg, med);
+            TFRwave_med.info = 'medium';
+            save(med_path, 'TFRwave_med', '-v7.3')
+            clear TFRwave_med;
+            
+            TFRwave_thick = ft_freqanalysis(cfg, thick);
+            TFRwave_thick.info = 'thick';
+            save(thick_path, 'TFRwave_thick', '-v7.3')
+            clear TFRwave_thick;
+
+            TFRwave_thin = ft_freqanalysis(cfg, thin);
+            TFRwave_thin.info = 'thin';
+            save(thin_path, 'TFRwave_thin', '-v7.3')
+            clear TFRwave_thin;
+        elseif strcmp(type, 'load')
+            load(med_path);            
+            load(thin_path);
+            load(thick_path);
+            
+            if strcmp(frequency_type, 'pow')
+                participant.thin = TFRwave_thin;
+                participant.thick = TFRwave_thick;
+                participant.med = TFRwave_med; 
+            elseif strcmp(frequency_type, 'fourier')
+                med = calculate_itc(TFRwave_med, channel);
+                thick = calculate_itc(TFRwave_thick, channel);
+                thin = calculate_itc(TFRwave_thin, channel);
+                participant.thin = thin;
+                participant.thick = thick;
+                participant.med = med; 
+            end
+            
+            participant.participant_number = participant_number;
+            dataset{end+1} = participant;
+        end
     end
 end
 
@@ -2071,159 +2302,147 @@ function trial_info = update_with_time_info(trial, time)
 end
 
 %% load the frequency data
-function itcs = calculate_itc(partition, path, n_participants, configuration)
-    directory = strcat('D:\PhD\fieldtrip\data_dumps\', 'itcs_p', int2str(partition), '.mat');
-
-    if strcmp(configuration, 'preprocess')
-        for participant=1:n_participants   
-            
-            disp(strcat('Loading participant...', int2str(participant), '... for ITC analysis'));
-            % load the FT data
-            participant_path = strcat(path, int2str(participant), '\');
-            med_fname = strcat('partition_', int2str(partition), '_', 'fourier_med.mat');
-            thick_fname = strcat('partition_', int2str(partition), '_', 'fourier_thick.mat');
-            thin_fname = strcat('partition_', int2str(partition), '_', 'fourier_thin.mat');
-
-            if isfile(strcat(participant_path, med_fname)) && isfile(strcat(participant_path, thick_fname)) ...
-                    && isfile(strcat(participant_path, thin_fname))
-                load(strcat(participant_path, med_fname));
-                load(strcat(participant_path, thick_fname));
-                load(strcat(participant_path, thin_fname));
-
-                data = {TFRwave_med, TFRwave_thin, TFRwave_thick};
-                clear TFRwave_med;
-                clear TFRwave_thin;
-                clear TFRwave_thick;
-
-                for i=1:3
-                    % calculate ITC
-                    itc = [];
-                    itc.label = data{1,i}.label;
-                    itc.freq = data{1,i}.freq;
-                    itc.time = data{1,i}.time;
-                    itc.dimord = 'chan_freq_time';
-
-                    F = data{1,i}.fourierspctrm;   % copy the Fourier spectrum
-                    %F(isnan(F)) = [];
-                    F = F(2:end,:,:,:);
-                    N = size(F,1);           % number of trials
-
-                    % compute inter-trial phase coherence (itpc)
-                    itc.itpc = F./abs(F);         % divide by amplitude
-                    itc.itpc = sum(itc.itpc,1);   % sum angles
-                    itc.itpc = abs(itc.itpc)/N;   % take the absolute value and normalize
-                    itc.itpc = squeeze(itc.itpc); % remove the first singleton dimension
-
-                    % compute inter-trial linear coherence (itlc)
-                    itc.itlc = sum(F) ./ (sqrt(N*sum(abs(F).^2)));
-                    itc.itlc = abs(itc.itlc);     % take the absolute value, i.e. ignore phase
-                    itc.itlc = squeeze(itc.itlc); % remove the first singleton dimension
-
-                    itcs{participant,i} = itc;     
-                end
-                clear data;
-            end
-        end
-        save(directory, 'itcs', '-v7.3')
-    elseif strcmp(configuration, 'load')
-        disp('Loading a preprocessed ITC file...')
-        load(directory)
-    end
+function inter_trial_coherence = calculate_itc(data, required_channel)
+    
+    itc           = [];
+    itc.label     = data.label;
+    itc.freq      = data.freq(:,3:end);
+    itc.time      = data.time;
+    itc.dimord    = 'chan_freq_time';
+    
+    channel_idx = find(contains(itc.label,required_channel));
+    
+    F = data.fourierspctrm;
+    N = size(F,1);           % number of trials
+    F = F(2:end,:,:,:);
+    
+    % compute inter-trial phase coherence (itpc)
+    itc.itpc      = F./abs(F);         % divide by amplitude
+    itc.itpc      = sum(itc.itpc,1);   % sum angles
+    itc.itpc      = abs(itc.itpc)/N;   % take the absolute value and normalize
+    itc.itpc      = squeeze(itc.itpc); % remove the first singleton dimension
+    inter_trial_coherence = itc.itpc(channel_idx, :, :); % get the nth channel
+    inter_trial_coherence = squeeze(inter_trial_coherence); % remove 1st dim
+    inter_trial_coherence = inter_trial_coherence(3,:); % remove nan frequencies
 end
 
-%% create ITC plots
-function create_itc_plots(itcs, partition, design, save_path, elec, ids, group_type)
-
-    new_struct = {};
-    new_pids = {};
-    [rows, ~] = size(itcs);
-    cnt = 1;
-    for k=1:rows
-       if isstruct(itcs{k,1})
-           if ismember(k, ids)
-               new_struct{cnt, 1} = itcs{k,1};
-               new_struct{cnt, 2} = itcs{k,2};
-               new_struct{cnt, 3} = itcs{k,3};
-               new_pids{cnt} = k;
-               cnt = cnt + 1;
-           end
-       end
+%% calculate the arithmetic mean based on weightings
+function avg_mtx = calculate_aritmetic_mean(data)
+    
+    n = size(data,2);
+    total_weight = 0;
+    matricies = [];
+    for i=1:n
+        matricies(:,:,i) = data{i}.series;
+        total_weight = total_weight + data{i}.weighting;
     end
 
-    n_participants = size(new_struct);
-    for j = 1:3
-        stimulus = {'medium','thin','thick'};
-        for i = 1:n_participants
-            itc = new_struct{i,j};
-            if numel(itc) > 0
-                fig=figure(j);
-                subplot(4,5,i)
-                imagesc(itc.time, itc.freq, squeeze(itc.itpc(1,:,:)));
-                axis xy
-                subtitle(strcat('P', int2str(new_pids{i})));
-                zlim([0 1]);
-            end
-        end 
-        han=axes(fig,'visible','off'); 
-        han.Title.Visible='on';
-        han.XLabel.Visible='on';
-        han.YLabel.Visible='on';
-        ylabel(han,'Frequency (Hz)'); 
-        xlabel(han,'Time (s)');
+    sum_mtx = sum(matricies,3);
+    avg_mtx = sum_mtx/total_weight;
+    
+end
 
-        new_title = strcat('ITPC for ', {' '}, stimulus{j}, ...
-            ' stimulus: Partition ', {' '}, int2str(partition),...
-            ' Regressor:', {' '}, design, {' '}, 'Group:', group_type);
-        title(han,new_title, 'FontSize', 18);
-        titleHandle = get( gca ,'Title' );
-        pos  = get( titleHandle , 'position' );
-        pos1 = pos + [0 0.05 0]; 
-        set( titleHandle , 'position' , pos1 );
-        set(gcf,'Position',[49 110 2096 1197])
-        s = stimulus{j};
-        to_save = strcat(save_path, '\trial_level_itc_partition_', int2str(partition)...
-            ,'_',design, '_', s, '.png');
-        exportgraphics(gcf,to_save,'Resolution',500);
-        close;
-    
-%     new_struct = {};
-%     [rows, ~] = size(itcs);
-%     cnt = 1;
-%     for k=1:rows
-%        if isstruct(itcs{k,1})
-%            new_struct{cnt, 1} = itcs{k,1};
-%            new_struct{cnt, 2} = itcs{k,2};
-%            new_struct{cnt, 3} = itcs{k,3};
-%        end
-%     end
-    
-%     % calculate the grand avg plots
-%     cfg = [];
-%     cfg.parameter = 'itpc';
-%     grand_avg_thin = ft_freqgrandaverage(cfg, new_struct{:,2});
-%     grand_avg_thin.elec = elec;
-%     grand_avg_med = ft_freqgrandaverage(cfg, new_struct{:,1});
-%     grand_avg_med.elec = elec;
-%     grand_avg_thick = ft_freqgrandaverage(cfg, new_struct{:,3});
-%     grand_avg_thick.elec = elec;
-%     
-%     cfg = [];
-%     cfg.layout = grand_avg_thin.elec;
-%     cfg.colorbar = 'yes';
-%     cfg.colormap = 'jet';
-%     cfg.showlabels = 'yes';
-%     cfg.parameter = 'itpc';
-%     %cfg.zlim = [0.06 0.650]; %for multiplot
-%     cfg.zlim = [0.110 0.450]; %for topoplot
-%     figure(1)
-%     ft_multiplotTFR(cfg, grand_avg_thin);
-%     ft_topoplotTFR(cfg, grand_avg_thin);
-%     figure(2)
-%     %ft_multiplotTFR(cfg, grand_avg_med);
-%     ft_topoplotTFR(cfg, grand_avg_med);
-%     figure(3)
-%     %ft_multiplotTFR(cfg, grand_avg_thick);
-%     ft_topoplotTFR(cfg, grand_avg_thick);
+%% compute spectrograms of the participant data
+ function compute_spectrogram(data, partition, save_path, channel, regressor, participants, frequency_type)
+
+    if strcmp(frequency_type, 'pow')
+
+        [thin, med, thick] = deal({}, {}, {});
+        n_participants = size(data,2);
         
+        for i=1:n_participants
+            participant = data{i};
+            thin{end+1} = participant.thin;
+            thick{end+1} = participant.thick;
+            med{end+1} = participant.med;
+        end
+
+        % save the freq plots
+        cfg = [];
+        thin_avg = ft_freqgrandaverage(cfg, thin{:});
+        thick_avg = ft_freqgrandaverage(cfg, thick{:});
+        med_avg = ft_freqgrandaverage(cfg, med{:});
+
+        cfg = [];
+        cfg.baseline = 'yes';
+        cfg.baseline     = [-0.5 0];
+        cfg.baselinetype = 'db';
+        cfg.maskstyle    = 'saturation';
+        cfg.xlim = [-0.200,0.500];
+        cfg.ylim = [0, 30];
+        cfg.zlim = [0, 2.8];
+        cfg.channel = channel;
+
+        % save medium
+        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+            'Medium,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
+            { ' '}, participants);
+        title = title{1};
+        cfg.title = title;
+        figure
+        ft_singleplotTFR(cfg, med_avg);
+        save_dir = strcat(save_path, '\spectrograms\', 'p', int2str(partition), '_', participants,'_medium_freq.png');
+        exportgraphics(gcf,save_dir,'Resolution',500);
+        close;
+
+        % save thin
+        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+            'Thin,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
+            { ' '}, participants);
+        title = title{1};
+        cfg.title = title;
+        figure
+        ft_singleplotTFR(cfg, thin_avg);
+        save_dir = strcat(save_path, '\spectrograms\', 'p', int2str(partition), '_', participants,'_thin_freq.png');
+        exportgraphics(gcf,save_dir,'Resolution',500);
+        close;
+
+        % save thick
+        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+            'Thick,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
+            { ' '}, participants);
+        title = title{1};
+        cfg.title = title;
+        figure
+        ft_singleplotTFR(cfg, thick_avg);
+        save_dir = strcat(save_path, '\spectrograms\', 'p', int2str(partition), '_', participants,'_thick_freq.png');
+        exportgraphics(gcf,save_dir,'Resolution',500);
+        close;
+        
+    elseif strcmp(frequency_type, 'fourier')
+
+        [thin, med, thick] = deal([], [], []);
+        n_participants = size(data,2);
+        
+        for i=1:n_participants
+            participant = data{i};
+            thin(end+1,:,:) = participant.thin;
+            thick(end+1,:,:) = participant.thick;
+            med(end+1,:,:) = participant.med;
+        end
+
+        disp('hello');
+
+        
+        % save medium
+        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+            'Medium,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
+            { ' '}, participants);
+        title = title{1};
+        save_dir = strcat(save_path, '\fourier\', 'p', int2str(partition), '_', participants,'_med_freq.png');
+        
+        % save thin
+        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+            'Thin,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
+            { ' '}, participants);
+        title = title{1};
+        save_dir = strcat(save_path, '\fourier\', 'p', int2str(partition), '_', participants,'_thin_freq.png');
+        
+        % save thick
+        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+            'Thick,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
+            { ' '}, participants)
+        title = title{1};
+        save_dir = strcat(save_path, '\fourier\', 'p', int2str(partition), '_', participants,'_thick_freq.png');
     end
-end
+ end
