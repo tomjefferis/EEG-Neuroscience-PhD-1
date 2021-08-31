@@ -2237,6 +2237,10 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
     for i=1:numel(data)
         participant = data{i};
         
+        if i > 2
+            continue;
+        end
+        
         disp(strcat('Loading/Processing Participant ', int2str(i)));
         participant_number = participant_order{i};
         med_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{1});
@@ -2438,49 +2442,44 @@ end
         avg_thick = squeeze(mean(thick,'omitnan'));
         avg_med = squeeze(mean(med,'omitnan'));
         
+        
         % save medium
         t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Medium,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
         t = t{1};
-        imagesc(time, frequencies, avg_med);
+        f = imagesc(time, frequencies, avg_med);
         axis xy;
-        set(get(gca, 'title'), 'string', t)
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_med_freq.png');
         xlabel('time -200 to 500ms');
         ylabel('Freq');
-        set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
         
         % save thin
-        t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+        title = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thin,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
-        t = t{1};
+        title = title{1};
         imagesc(time, frequencies, avg_thin);
         axis xy;
-        set(get(gca, 'title'), 'string', t)
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thin_freq.png');
         xlabel('time -200 to 500ms');
         ylabel('Freq');
-        set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
         
         
         % save thick
-        t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+        title = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thick,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
-        t = t{1};
+        title = title{1};
         imagesc(time, frequencies, avg_thick);
         axis xy;
-        set(get(gca, 'title'), 'string', t)
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thick_freq.png');
         xlabel('time -200 to 500ms');
         ylabel('Freq');
-        set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
     end
