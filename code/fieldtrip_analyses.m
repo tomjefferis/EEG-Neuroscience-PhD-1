@@ -11,7 +11,7 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'no-factor', 'headache', 'discomfort', 'visual_stress'};
+desired_design_mtxs = {'headache'};
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -22,12 +22,12 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
-generate_erps = 0;
-weight_erps = 0; % weights based on quartiles
+generate_erps = 1;
+weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'frequency_domain';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -1383,6 +1383,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         ci3_h = bootstrap_erps(data3_h, e_idx);
         ci3_l = bootstrap_erps(data3_l, e_idx);
 
+        
     elseif strcmp(experiment_type, 'erps-23-45-67') || strcmp(experiment_type, 'erps-23-45-67-no-factor') 
         type_of_effect = 'sensitization';
         data_file23 = 'mean_intercept_onsets_2_3_grand-average.mat';
@@ -1445,6 +1446,35 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     peak_effect = peak_effect*1000;
     t_value = round(t_value, 2);
     cluster_size = round(cluster_size, 0);
+    
+    woody_filt = 1;
+    if woody_filt == 1
+        t = time(1:257);
+        t = tiledlayout(1,2, 'TileSpacing','Compact');
+        nexttile
+        p1_pgi_h = woody_filtering(data1_h, e_idx);
+        p2_pgi_h = woody_filtering(data2_h, e_idx);
+        p3_pgi_h = woody_filtering(data3_h, e_idx);
+        
+        plot(p1_pgi_h, 'r');
+        hold;
+        plot(p2_pgi_h, 'g');
+        plot(p3_pgi_h, 'b');
+        legend({'P1', 'P2', 'P3'},'Location','northeast')
+        nexttile;
+        
+        p1_pgi_l = woody_filtering(data1_l, e_idx);
+        p2_pgi_l = woody_filtering(data2_l, e_idx);
+        p3_pgi_l = woody_filtering(data3_l, e_idx);
+        
+        plot(p1_pgi_l, 'r');
+        hold;
+        plot(p2_pgi_l, 'g');
+        plot(p3_pgi_l, 'b');
+        legend({'P1', 'P2', 'P3'},'Location','northeast')
+        nexttile;
+    end
+    
     
     t = tiledlayout(5,2, 'TileSpacing','Compact');
 
@@ -2503,7 +2533,7 @@ end
 
 
     for b=1:N
-        f = bands(1,:);
+        f = bands(b,:);
 
         save_path = strcat(save_path, {'_'}, int2str(f(1)), {'-'}, int2str(f(2)), '.png');
         save_path = save_path{1};
@@ -2538,6 +2568,7 @@ end
         grid on
         set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_path,'Resolution',500);
+        close;
     end
  end
  
@@ -2552,4 +2583,89 @@ end
     elseif strcmp(factor, 'visual_stress')
        electrode = 'A26';
     end
+ end
+ 
+ %% Woody Algorithm Implementation
+ % x is a matrix where each row is a participants ERP at electrode X over
+ % time
+ function out = woody_filtering(x, e_idx)
+    %Default parameter values
+    
+    N = numel(x);
+    erps = [];
+    for i=1:N
+        erps(i,:) = x{i}.avg(e_idx,:);
+    end
+    
+    x = erps';
+    x = x(1:257,:);
+    
+    tol= 0.1;
+    max_it=100;
+    xcorr_mthd='unbiased';
+    
+    [N,M]=size(x);
+    mx=mean(x,2);
+    p=zeros(N,1);
+    conv=1;
+    run=0;
+    sig_x=diag(sqrt(x'*x));
+    X=xcorr(mx);
+    ref=length(X)/2;
+
+    if(mod(ref,2))
+        ref=ceil(ref);
+    else
+        ref=floor(ref);
+    end
+
+    if(nargout>1)
+        %In this case we output the lag of the trials as well
+        lag_data=zeros(1,M);
+    end
+
+    while(conv*(run<max_it))
+        disp(run);
+        z=zeros(N,1);
+        w=ones(N,1);
+        for i=1:M
+
+            y=x(:,i);
+            xy=xcorr(mx,y,xcorr_mthd);
+            
+            [~,ind]=max(xy);
+            if(ind>ref)
+                lag=ref-ind-1;
+            else
+                lag=ref-ind;
+            end
+            if(lag>0)
+                num=w(lag:end)-1;
+                z(1:N-lag+1)=( z(1:N-lag+1).*num + y(lag:end))./w(lag:end);
+                w(lag:end)=w(lag:end)+1;
+            elseif(lag<0)
+                num=w(lag*(-1)+1:end)-1;
+                z(lag*(-1)+1:end)=( z(lag*(-1)+1:end).*num + y(1:N+lag) )./w(lag*(-1)+1:end);
+                w(lag*(-1)+1:end)=w(lag*(-1)+1:end)+1;
+            else
+                z=z.*(w-1)./w + y./w;
+                w=w+1;
+            end
+            if(exist('lag_data','var'))
+                lag_data(i)=lag;
+            end
+        end
+        
+        old_mx=mx;
+        mx=z;
+        p_old=p;
+        p=mx'*x./(sqrt(mx'*mx).*sig_x');
+        p=sum(p)./M;
+        err=abs(p-p_old);
+        if(err<tol)
+            conv=0;
+        end
+        run=run+1;
+    end
+    out=mx;
  end
