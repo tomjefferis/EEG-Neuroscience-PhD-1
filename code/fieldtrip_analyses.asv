@@ -139,10 +139,10 @@ for i = 1:numel(experiment_types)
                     data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
                 end
                 
-                electrode = 'A23';
+                electrode = return_mua_electrode(desired_design_mtx);
                 
                 if strcmp(frequency_type, 'fourier')
-                    fnames = {'fourier_med.mat','fourier_thin.mat','fourier_thick.mat'};
+                    fnames = {'3_fourier_med.mat','3_fourier_thin.mat','3_fourier_thick.mat'};
                 elseif strcmp(frequency_type, 'pow')
                     fnames = {'pow_med.mat','pow_thin.mat','pow_thick.mat'};
                 end
@@ -152,7 +152,7 @@ for i = 1:numel(experiment_types)
                 [data2, participant_order2] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition2);
                 [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
-                    data_file, partition3);
+                    data_file, partition3);          
                 
                 p1_freq = to_frequency_data(data1, main_path, 1, ...
                     participant_order1, analysis,fnames,frequency_type, electrode);
@@ -2217,7 +2217,7 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
          cfg = [];
          cfg.channel = 'eeg';
          cfg.method = 'wavelet';
-         cfg.width = 5;
+         cfg.width = 3;
          cfg.output = 'fourier';
          cfg.pad = 'nextpow2';
          cfg.foi = 5:60;
@@ -2236,7 +2236,7 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
     dataset = {};
     for i=1:numel(data)
         participant = data{i};
-        
+
         if i > 2
             continue;
         end
@@ -2442,45 +2442,118 @@ end
         avg_thick = squeeze(mean(thick,'omitnan'));
         avg_med = squeeze(mean(med,'omitnan'));
         
-        
         % save medium
+        save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_med_freq');
+        compute_frequency_bar_chart(avg_med, time, frequencies, save_dir);
         t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Medium,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
         t = t{1};
-        f = imagesc(time, frequencies, avg_med);
+        imagesc(time, frequencies, avg_med);
         axis xy;
+        set(get(gca, 'title'), 'string', t)
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_med_freq.png');
         xlabel('time -200 to 500ms');
         ylabel('Freq');
+        set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
         
         % save thin
-        title = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+        save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thin_freq');
+        compute_frequency_bar_chart(avg_thin, time, frequencies, save_dir);
+        t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thin,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
-        title = title{1};
+        t = t{1};
         imagesc(time, frequencies, avg_thin);
         axis xy;
+        set(get(gca, 'title'), 'string', t)
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thin_freq.png');
         xlabel('time -200 to 500ms');
         ylabel('Freq');
+        set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
         
         
         % save thick
-        title = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+        save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thick_freq');
+        compute_frequency_bar_chart(avg_thick, time, frequencies, save_dir);
+        t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thick,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
-        title = title{1};
+        t = t{1};
         imagesc(time, frequencies, avg_thick);
         axis xy;
+        set(get(gca, 'title'), 'string', t)
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thick_freq.png');
         xlabel('time -200 to 500ms');
         ylabel('Freq');
+        set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
+    end
+ end
+
+ %% compute a barchat of frequencies through time
+ function compute_frequency_bar_chart(mtx, time, freq, save_path)
+    interval = 0.020; % 20ms
+    max_time = 0.300; % 300ms
+    
+    % theta, alpha, beta, gamma
+    bands = [[5,7]; [8,15];[16,31];[32, 100]];
+    N = size(bands,1);
+
+
+    for b=1:N
+        f = bands(1,:);
+
+        save_path = strcat(save_path, {'_'}, int2str(f(1)), {'-'}, int2str(f(2)), '.png');
+        save_path = save_path{1};
+        
+        time_of_interest = 0; % start a 0ms
+        time_axes = [];
+        power_axes = [];
+        while time_of_interest <= max_time
+            
+            % get indices that fall between the desired time intervals
+            [~, time_idx] = find(time>=time_of_interest & time<=time_of_interest+interval);
+            [~, freq_idx] = find(freq>=f(1) & freq<=f(2));
+            
+            % get the data for plotting
+            subset = mtx(freq_idx,time_idx);
+            avg_at_t = mean(subset,'all','omitnan');
+            
+            time_axes(end+1) = time_of_interest;
+            power_axes(end+1) = avg_at_t;
+            time_of_interest = time_of_interest + interval;
+        end
+        
+        figure;
+        plot(time_axes, power_axes);
+        xlabel('Time in 20ms intervals');
+        ylabel('ITC value at time T (0-1)')
+        t = strcat('ITC values at frequencies:', {' '}, int2str(f(1)), {'-'}, int2str(f(2)));
+        t = t{1};
+        set(get(gca, 'title'), 'string', t)
+        set(gca, 'xtick', time_axes);
+        ylim([0,1]);
+        grid on
+        set(gcf,'Position',[100 100 750 750]);
+        exportgraphics(gcf,save_path,'Resolution',500);
+    end
+ end
+ 
+ %% hardcoded values from the MUA analysis which returns apriori electrode
+ function electrode = return_mua_electrode(factor)
+    if strcmp(factor, 'no-factor')
+       electrode = 'A22'; 
+    elseif strcmp(factor, 'headache')
+       electrode = 'A22'; 
+    elseif strcmp(factor, 'discomfort')
+       electrode = 'A15'; 
+    elseif strcmp(factor, 'visual_stress')
+       electrode = 'A26';
     end
  end
