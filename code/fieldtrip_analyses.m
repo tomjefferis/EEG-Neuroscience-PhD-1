@@ -11,7 +11,7 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'headache'};
+desired_design_mtxs = {'visual_stress'};
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -27,7 +27,7 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -2470,7 +2470,7 @@ end
         
         % save medium
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_med_freq');
-        compute_frequency_bar_chart(avg_med, time, frequencies, save_dir);
+        %compute_frequency_bar_chart(avg_med, time, frequencies, save_dir);
         t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Medium,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
@@ -2486,7 +2486,7 @@ end
         close;
         
         % save thin
-        save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thin_freq');
+        %save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thin_freq');
         compute_frequency_bar_chart(avg_thin, time, frequencies, save_dir);
         t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thin,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
@@ -2505,7 +2505,7 @@ end
         
         % save thick
         save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition), '_', participants,'_thick_freq');
-        compute_frequency_bar_chart(avg_thick, time, frequencies, save_dir);
+       % compute_frequency_bar_chart(avg_thick, time, frequencies, save_dir);
         t = strcat('ITC: Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thick,', {' '}, 'Channel:' ,{' '}, channel, {' '}, 'Regressor:', {' '}, regressor, {' '}, 'Participant Split:',...
             { ' '}, participants);
@@ -2581,7 +2581,7 @@ end
     elseif strcmp(factor, 'discomfort')
        electrode = 'A15'; 
     elseif strcmp(factor, 'visual_stress')
-       electrode = 'A26';
+       electrode = 'A22';
     end
  end
  
