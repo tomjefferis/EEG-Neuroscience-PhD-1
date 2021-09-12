@@ -27,7 +27,7 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'frequency_domaingit';
+type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -196,8 +196,7 @@ for i = 1:numel(experiment_types)
                     time = [0.050, 0.225];
                     freq = [3, 9];
                     average_power_values(p1_freq, freq, time, electrode);
-                    average_power_values(p2_freq, freq, time, electrode);
-                    average_power_values(p3_freq, freq, time, electrode);
+                    
                 end
                 
                 % let arnold schwarzenegger tell me when the analysis is
@@ -409,7 +408,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 5000;
+        cfg.numrandomization = 500;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
@@ -1012,72 +1011,6 @@ function scores = return_scores(regression_type, type_of_effect)
         scores.two = dataset;
         scores.three = dataset;
     
-    elseif strcmp(regression_type, 'headache_pow')
-        scores.one = [
-            1,-0.2885;2,-1.8595;3,10.9627;4,6.9245;5,8.6422;6,-0.1374;7,-0.3267;
-            8,5.1259;9,-0.5626;10,0.8134;11,2.8146;12,3.2084;14,11.449;16,-1.9692;
-            17,14.0609;20,2.289;21,5.2967;22,0.8743;23,0.2754;24,-3.1482;26,-8.6788;
-            28,-5.1555;29,2.0135;30,3.1227;31,-1.608;32,-0.3722;33,-0.9248;36,-1.3025;
-            37,-8.4987;38,-3.7692;39,1.4244;
-        ];
-    
-        scores.two = [
-            1,-1.23;2,-6.5894;3,-3.7494;4,0.0093;5,1.1629;6,0.2218;7,0.0675;
-            8,6.4038;9,1.3281;10,-2.5226;11,0.0225;12,0.1993;14,12.0323;16,-3.813;
-            17,6.2715;20,2.082;21,5.7632;22,0.538;23,-0.3641;24,20.5365;26,-3.53;
-            28,-0.4075;29,-0.9858;30,4.5612;31,-9.9556;32,-0.252;33,1.3657;36,-0.2272;
-            37,8.9155;38,1.533;39,-5.7536;
-        ];
-    
-        scores.three = [
-            1,-2.5159;2,6.135;3,2.3024;4,-6.4444;5,-4.9224;6,-1.026;7,-0.2189;
-            8,-2.0872;9,-0.792;10,-3.7518;11,-4.4468;12,-0.3598;14,9.0351;16,0.7133;
-            17,-12.8217;20,-1.192;21,-1.7435;22,0.2708;23,-0.2506;24,5.7662;26,-0.5664;
-            28,7.0665;29,0.5425;30,2.6584;31,0.8058;32,3.4491;33,-6.0637;36,-3.9158;37,-7.1591;
-            38,7.4466;39,-8.1057;
-        ];
-  
-        return;
-        
-        min_n = min([scores.one, scores.two, scores.three]);
-        scores.one(:,2) = scores.one(:,2) - min_n(2);
-        scores.two(:,2) = scores.two(:,2) - min_n(2);
-        scores.three(:,2) = scores.three(:,2) - min_n(2);
-    
-        if strcmp(type_of_effect, 'habituation')
-            scores.one(:,2) = scores.one(:,2) * 2.72;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 1.00;
-        elseif strcmp(type_of_effect, 'sensitization')
-            scores.one(:,2) = scores.one(:,2) * 1.00;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 2.72;
-        else
-            error('Type of experiment not properly specified');
-        end
-        
-        [n_participants, ~] = size(scores.one);
-        
-        for k=1:n_participants
-            p1 = scores.one(k,1);
-            p2 = scores.two(k,1);
-            p3 = scores.three(k,1);
-            
-            if p1 == p2 && p2 == p3                
-                if strcmp(type_of_effect, 'habituation')
-                    to_remove = scores.three(k,2);
-                elseif strcmp(type_of_effect, 'sensitization')
-                    to_remove = scores.one(k,2);
-                end
-                
-                scores.one(k,2) = scores.one(k,2) - to_remove;
-                scores.two(k,2) = scores.two(k,2) - to_remove;
-                scores.three(k,2) = scores.three(k,2) - to_remove;
-            else
-                error('Participants do not align...')
-            end
-        end    
-        
     elseif strcmp(regression_type, 'headache')
         dataset = [
         1,-0.2574;2,-0.0417;3,-0.6726;4,0.4236;5,1.781;6,-1.0608;7,-0.7657;
@@ -1529,7 +1462,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     t_value = round(t_value, 2);
     cluster_size = round(cluster_size, 0);
     
-    woody_filt = 0;
+    woody_filt = 1;
     if woody_filt == 1
         t = time(1:257);
         t = tiledlayout(1,2, 'TileSpacing','Compact');
@@ -2817,9 +2750,8 @@ end
  %% create power values from each participant
  function average_power_values(data, freq, time, electrode)
     N = numel(data);
-    electrode = find(contains(data{1}.label,electrode));
+    electrode = find(contains(data1{1}.label,electrode));
     
-    participant_data = [];
     for i=1:N
        participant = data{i}; 
        participant_number = participant.participant_number;
@@ -2833,24 +2765,11 @@ end
        [~,end_freq] = min(abs(data_freq-freq(2)));
        
        
-       thin = squeeze(participant.thin.powspctrm(electrode, ...
-           start_freq:end_freq, ...
-           start_time:end_time));
-       avg_thin = mean(thin,'all');
+       thin = squeeze(participant.thin.powspctrm(electrode,:,:));
+       med = squeeze(participant.med.powspctrm(electrode,:,:));
+       thick = squeeze(participant.thick.powspctrm(electrode,:,:));
        
-       thick = squeeze(participant.thick.powspctrm(electrode, ...
-           start_freq:end_freq, ...
-           start_time:end_time));
-       avg_thick = mean(thick,'all');
        
-       med = squeeze(participant.med.powspctrm(electrode, ...
-           start_freq:end_freq, ...
-           start_time:end_time));
-       avg_med = mean(med,'all');
-
-       avg_pgi = avg_med - (avg_thin + avg_thick)/2;
-       
-       participant_data(i, 1) = avg_pgi;
-       participant_data(i,2) = participant_number;
+        
     end
  end
