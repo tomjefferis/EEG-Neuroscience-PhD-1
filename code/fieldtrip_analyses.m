@@ -27,13 +27,14 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'frequency_domaingit';
+type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
-    compute_frequency_data = 0; % compute the freq data per particpant else load
-    frequency_type = 'pow'; % compute inter trial coherence
+    compute_frequency_data = 1; % compute the freq data per particpant else load
+    frequency_type = 'fourier'; % compute inter trial coherence
     run_mua = 0; % run a MUA in the frequnecy domain?
+    analysis_on_aggr_data = 0; % analysis on the aggregate power data?
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
 end
@@ -173,31 +174,39 @@ for i = 1:numel(experiment_types)
                         desired_design_mtx, 1, type_of_effect, 0, 0);
                     f_data.p1_freq_h = compute_spectrogram(p1_freq_h,1,save_path, electrode, desired_design_mtx, 'high', frequency_type);
                     f_data.p1_freq_l = compute_spectrogram(p1_freq_l,1,save_path, electrode, desired_design_mtx, 'low', frequency_type);
+                    plot_spectrogram(f_data.p1_freq_h,save_path,1,'pow',electrode, 'low')
+                    plot_spectrogram(f_data.p1_freq_l,save_path,1,'pow',electrode, 'high')
                     
                     [p2_freq_h, p2_freq_l, ~, ~] = get_partitions_medium_split(p2_freq, participant_order2,...
                         desired_design_mtx, 1, type_of_effect, 0, 0);  
                     f_data.p2_freq_h = compute_spectrogram(p2_freq_h,2,save_path, electrode, desired_design_mtx, 'high', frequency_type);
                     f_data.p2_freq_l = compute_spectrogram(p2_freq_l,2,save_path, electrode, desired_design_mtx, 'low', frequency_type);
+                    plot_spectrogram(f_data.p2_freq_h,save_path,2,'pow',electrode, 'low')
+                    plot_spectrogram(f_data.p2_freq_l,save_path,2,'pow',electrode, 'high')
                     
                     [p3_freq_h, p3_freq_l, ~, ~] = get_partitions_medium_split(p3_freq, participant_order3,...
                         desired_design_mtx, 1, type_of_effect, 0, 0);
                     f_data.p3_freq_h = compute_spectrogram(p3_freq_h,3,save_path, electrode, desired_design_mtx, 'high', frequency_type);
                     f_data.p3_freq_l = compute_spectrogram(p3_freq_l,3,save_path, electrode, desired_design_mtx, 'low', frequency_type);
+                    plot_spectrogram(f_data.p3_freq_h,save_path,3,'pow',electrode, 'low')
+                    plot_spectrogram(f_data.p3_freq_l,save_path,3,'pow',electrode, 'high')
                     
-                    % compute the aggregate freq-pow
-                    aggr_data = aggregate_freq_data(f_data);
-                    
-                    % create the grand average plot for each stimulus type
-                    plot_spectrogram(aggr_data,save_path,123,'pow', electrode)
-                    
-                    % based on the grand average, apply an ROI to each
-                    % participant and extract a value, this is manually
-                    % written in the design matrix fn.
-                    time = [0.050, 0.225];
-                    freq = [3, 9];
-                    average_power_values(p1_freq, freq, time, electrode);
-                    average_power_values(p2_freq, freq, time, electrode);
-                    average_power_values(p3_freq, freq, time, electrode);
+                    if analysis_on_aggr_data == 1          
+                        % compute the aggregate freq-pow
+                        aggr_data = aggregate_freq_data(f_data);
+
+                        % create the grand average plot for each stimulus type
+                        plot_spectrogram(aggr_data,save_path,123,'pow', electrode)
+
+                        % based on the grand average, apply an ROI to each
+                        % participant and extract a value, this is manually
+                        % written in the design matrix fn.
+                        time = [0.050, 0.225];
+                        freq = [3, 9];
+                        average_power_values(p1_freq, freq, time, electrode);
+                        average_power_values(p2_freq, freq, time, electrode);
+                        average_power_values(p3_freq, freq, time, electrode);
+                    end
                 end
                 
                 % let arnold schwarzenegger tell me when the analysis is
@@ -2339,9 +2348,10 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
         cfg.output       = 'pow';
         cfg.method       = 'mtmconvol';
         cfg.taper        = 'hanning';
+        cfg.width = 3;
         cfg.foi =   1:30;
         cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
-        cfg.toi          = -0.5:0.002:0.5;
+        cfg.toi          = -0.2:0.002:0.5;
         cfg.channel      = 'all';
      end
 
@@ -2670,7 +2680,7 @@ end
  
  %% plot sepctrogram
  function plot_spectrogram(data, save_path, partition, plotting_type, ...
-     channel)
+     channel, cat_type)
     participants = size(data,2);
     
     thin = data.thin;
@@ -2689,35 +2699,35 @@ end
         cfg.channel = channel;
         
         % save medium
-        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+        title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Medium,', {' '}, 'Channel:' ,{' '}, channel);
         title = title{1};
         cfg.title = title;
         figure
         ft_singleplotTFR(cfg, med);
-        save_dir = strcat(save_path, '\spectrograms\', 'p', int2str(partition),'_medium_freq.png');
+        save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition),'_medium_freq.png');
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
 
         % save thin
-        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+        title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thin,', {' '}, 'Channel:' ,{' '}, channel);
         title = title{1};
         cfg.title = title;
         figure
         ft_singleplotTFR(cfg, thin);
-        save_dir = strcat(save_path, '\spectrograms\', 'p', int2str(partition),'_thin_freq.png');
+        save_dir = strcat(save_path, '\spectrograms\', cat_type, '_p', int2str(partition),'_thin_freq.png');
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
 
         % save thick
-        title = strcat('Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+        title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thick,', {' '}, 'Channel:' ,{' '}, channel);
         title = title{1};
         cfg.title = title;
         figure
         ft_singleplotTFR(cfg, thick);
-        save_dir = strcat(save_path, '\spectrograms\', 'p', int2str(partition),'_thick_freq.png');
+        save_dir = strcat(save_path, '\spectrograms\', cat_type, '_p', int2str(partition),'_thick_freq.png');
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
     elseif strcmp(plotting_type, 'fourier')
