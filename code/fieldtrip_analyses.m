@@ -31,7 +31,7 @@ type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
-    compute_frequency_data = 0; % compute the freq data per particpant else load
+    compute_frequency_data = 1; % compute the freq data per particpant else load
     frequency_type = 'fourier'; % compute inter trial coherence
     run_mua = 0; % run a MUA in the frequnecy domain?
     analysis_on_aggr_data = 0; % analysis on the aggregate power data?
@@ -2341,7 +2341,7 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
          cfg.output = 'fourier';
          cfg.pad = 'nextpow2';
          cfg.foi = 1:30;
-         cfg.toi = -0.2:0.002:0.5;  
+         cfg.toi = -0.5:0.002:0.5;  
      elseif strcmp(frequency_type, 'pow')
         cfg              = [];
         cfg.output       = 'pow';
@@ -2350,7 +2350,7 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
         cfg.width = 3;
         cfg.foi =   1:30;
         cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
-        cfg.toi          = -0.2:0.002:0.5;
+        cfg.toi          = -0.5:0.002:0.5;
         cfg.channel      = 'all';
      end
 
