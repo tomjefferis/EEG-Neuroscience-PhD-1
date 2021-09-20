@@ -11,7 +11,7 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'headache', 'discomfort', 'visual_stress'};
+desired_design_mtxs = {'headache'};
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -31,10 +31,10 @@ type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
-    compute_frequency_data = 1; % compute the freq data per particpant else load
+    compute_frequency_data = 0; % compute the freq data per particpant else load
     frequency_type = 'fourier'; % compute inter trial coherence
     run_mua = 0; % run a MUA in the frequnecy domain?
-    analysis_on_aggr_data = 0; % analysis on the aggregate power data?
+    analysis_on_aggr_data = 1; % analysis on the aggregate power data?
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
 end
@@ -192,16 +192,16 @@ for i = 1:numel(experiment_types)
                     
                     if analysis_on_aggr_data == 1          
                         % compute the aggregate freq-pow
-                        aggr_data = aggregate_freq_data(f_data);
+                        aggr_data = aggregate_freq_data(f_data, frequency_type);
 
                         % create the grand average plot for each stimulus type
-                        plot_spectrogram(aggr_data,save_path,123,'pow', electrode)
+                        plot_spectrogram(aggr_data,save_path,123,frequency_type, electrode, 'All')
 
                         % based on the grand average, apply an ROI to each
                         % participant and extract a value, this is manually
                         % written in the design matrix fn.
-                        time = [0.050, 0.225];
-                        freq = [3, 9];
+                        time = [0.090, 0.175];
+                        freq = [5, 8];
                         average_power_values(p1_freq, freq, time, electrode);
                         average_power_values(p2_freq, freq, time, electrode);
                         average_power_values(p3_freq, freq, time, electrode);
@@ -210,9 +210,6 @@ for i = 1:numel(experiment_types)
                 
                 % let arnold schwarzenegger tell me when the analysis is
                 % complete
-                [y, Fs] = audioread('D:\PhD\misc\choppa.mp3');
-                player = audioplayer(y, Fs);
-                play(player);
                 continue;
             end
                 
@@ -2340,7 +2337,7 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
          cfg.width = 3;
          cfg.output = 'fourier';
          cfg.pad = 'nextpow2';
-         cfg.foi = 1:30;
+         cfg.foi = 5:30;
          cfg.toi = -0.5:0.002:0.5;  
      elseif strcmp(frequency_type, 'pow')
         cfg              = [];
@@ -2739,21 +2736,23 @@ end
         imagesc(time, freq, med);
         axis xy;
         set(get(gca, 'title'), 'string', t)
-        save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition),'_med_freq.png');
+        save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_med_freq.png');
+        save_dir = save_dir{1};
         xlabel('time -200 to 500ms');
         ylabel('Freq');
         set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
 
-        compute_frequency_bar_chart(avg_thin, time, frequencies, save_dir);
+
         t = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Thin,', {' '}, 'Channel:' ,{' '}, channel);
         t = t{1};
         imagesc(time, freq, thin);
         axis xy;
         set(get(gca, 'title'), 'string', t)
-        save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition),'_thin_freq.png');
+        save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_thin_freq.png');
+        save_dir = save_dir{1};
         xlabel('time -200 to 500ms');
         ylabel('Freq');
         set(gcf,'Position',[100 100 750 750]);
@@ -2766,7 +2765,8 @@ end
         imagesc(time, freq, thick);
         axis xy;
         set(get(gca, 'title'), 'string', t)
-        save_dir = strcat(save_path, '\itc\', 'itc_p', int2str(partition),'_thick_freq.png');
+        save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_thick_freq.png');
+        save_dir = save_dir{1};
         xlabel('time -200 to 500ms');
         ylabel('Freq');
         set(gcf,'Position',[100 100 750 750]);
@@ -2776,40 +2776,48 @@ end
  end
  
  %% aggregate the power data across participants
- function new_data = aggregate_freq_data(data)
-    fields = fieldnames(data);
-    N = numel(fields);
- 
-    [thin_pwrspec, thick_pwrspec, med_pwrspec] = deal([],[],[]);
-    for i= 1:N
-       data_i = data.(fields{i}); 
-       if i == 1
-            example_thin = data_i.thin;
-            example_thick = data_i.thick;
-            example_med = data_i.med;
-       end
+ function new_data = aggregate_freq_data(data, type)
     
-       thin_pwr = data_i.thin.powspctrm;
-       thick_pwr = data_i.thick.powspctrm;
-       med_pwr = data_i.med.powspctrm;
-       
-       thin_pwrspec(:,:,:,end+1) = thin_pwr;
-       thick_pwrspec(:,:,:,end+1) = thick_pwr;
-       med_pwrspec(:,:,:,end+1) = med_pwr;
-       
+    if strcmp(type, 'pow')
+
+        fields = fieldnames(data);
+        N = numel(fields);
+
+        [thin_pwrspec, thick_pwrspec, med_pwrspec] = deal([],[],[]);
+        for i= 1:N
+           data_i = data.(fields{i}); 
+           if i == 1
+                example_thin = data_i.thin;
+                example_thick = data_i.thick;
+                example_med = data_i.med;
+           end
+
+           thin_pwr = data_i.thin.powspctrm;
+           thick_pwr = data_i.thick.powspctrm;
+           med_pwr = data_i.med.powspctrm;
+
+           thin_pwrspec(:,:,:,end+1) = thin_pwr;
+           thick_pwrspec(:,:,:,end+1) = thick_pwr;
+           med_pwrspec(:,:,:,end+1) = med_pwr;
+
+        end
+
+        avg_thick = mean(thick_pwrspec,4);
+        avg_thin = mean(thin_pwrspec,4);
+        avg_med = mean(med_pwrspec,4);
+
+        example_thin.powspctrm = avg_thin;
+        example_thick.powspctrm = avg_thick;
+        example_med.powspctrm = avg_med;
+
+        new_data.thin = example_thin;
+        new_data.thick = example_thick;
+        new_data.med = example_med;
+    elseif strcmp(type, 'fourier')
+        new_data.thin = data.thin;
+        new_data.thick = data.thick;
+        new_data.med = data.med;
     end
-    
-    avg_thick = mean(thick_pwrspec,4);
-    avg_thin = mean(thin_pwrspec,4);
-    avg_med = mean(med_pwrspec,4);
-    
-    example_thin.powspctrm = avg_thin;
-    example_thick.powspctrm = avg_thick;
-    example_med.powspctrm = avg_med;
-    
-    new_data.thin = example_thin;
-    new_data.thick = example_thick;
-    new_data.med = example_med;
  end
  
  %% create power values from each participant
