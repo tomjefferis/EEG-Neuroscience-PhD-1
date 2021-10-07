@@ -34,7 +34,7 @@ if strcmp(type_of_analysis, 'frequency_domain')
     compute_frequency_data = 0; % compute the freq data per particpant else load
     frequency_type = 'fourier'; % compute inter trial coherence
     run_mua = 0; % run a MUA in the frequnecy domain?
-    analysis_on_aggr_data = 1; % analysis on the aggregate power data?
+    analysis_on_aggr_data = 1 ; % analysis on the aggregate power data?
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
 end
@@ -68,7 +68,7 @@ for i = 1:numel(experiment_types)
             partition.partition_number = 0;
 
             [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-                data_file, partition);
+                data_file, partition);            
             n_part = numel(data);
             design_matrix =  [1:n_part 1:n_part; ones(1,n_part) 2*ones(1,n_part)]; 
 
@@ -143,7 +143,7 @@ for i = 1:numel(experiment_types)
                 electrode = return_mua_electrode(desired_design_mtx);
                 
                 if strcmp(frequency_type, 'fourier')
-                    fnames = {'3_fourier_med.mat','3_fourier_thin.mat','3_fourier_thick.mat'};
+                    fnames = {'3_5_30_fourier_med.mat','3_5_30_fourier_thin.mat','3_1_30_fourier_thick.mat'};
                 elseif strcmp(frequency_type, 'pow')
                     fnames = {'pow_med.mat','pow_thin.mat','pow_thick.mat'};
                 end
@@ -195,16 +195,18 @@ for i = 1:numel(experiment_types)
                         aggr_data = aggregate_freq_data(f_data, frequency_type);
 
                         % create the grand average plot for each stimulus type
-                        plot_spectrogram(aggr_data,save_path,123,frequency_type, electrode, 'All')
-
+                        if strcmp(frequency_type, 'pow')
+                            plot_spectrogram(aggr_data,save_path,123,frequency_type, electrode, 'All')
+                        end
+                        
                         % based on the grand average, apply an ROI to each
                         % participant and extract a value, this is manually
-                        % written in the design matrix fn.
-                        time = [0.090, 0.175];
-                        freq = [5, 8];
-                        average_power_values(p1_freq, freq, time, electrode);
-                        average_power_values(p2_freq, freq, time, electrode);
-                        average_power_values(p3_freq, freq, time, electrode);
+                        % written in the design matrix fn
+                        time = [0.090, 0.190];
+                        freq = [5, 7.6];
+                        average_power_values(p1_freq, freq, time, electrode, frequency_type);
+                        average_power_values(p2_freq, freq, time, electrode, frequency_type);
+                        average_power_values(p3_freq, freq, time, electrode, frequency_type);
                     end
                 end
                 
@@ -2338,16 +2340,16 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
          cfg.output = 'fourier';
          cfg.pad = 'nextpow2';
          cfg.foi = 5:30;
-         cfg.toi = -0.5:0.002:0.5;  
+         cfg.toi = -0.2:0.002:0.5;  
      elseif strcmp(frequency_type, 'pow')
         cfg              = [];
         cfg.output       = 'pow';
         cfg.method       = 'mtmconvol';
         cfg.taper        = 'hanning';
         cfg.width = 3;
-        cfg.foi =   1:30;
+        cfg.foi =   5:30;
         cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
-        cfg.toi          = -0.5:0.002:0.5;
+        cfg.toi          = -0.2:0.002:0.5;
         cfg.channel      = 'all';
      end
 
@@ -2359,7 +2361,7 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
         participant_number = participant_order{i};
         med_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{1});
         thin_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{2});
-        thick_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{3});
+        thick_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{3});           
         
         if strcmp(type, 'preprocess')
             med.label = participant.label;
@@ -2682,7 +2684,7 @@ end
     thin = data.thin;
     thick = data.thick;
     med = data.med;
-
+    
     if strcmp(plotting_type, 'pow')
         cfg = [];
         cfg.baseline = 'yes';
@@ -2691,10 +2693,9 @@ end
         cfg.maskstyle    = 'saturation';
         cfg.xlim = [-0.200,0.500];
         cfg.ylim = [0, 30];
-        cfg.zlim = [-3, 3];
+        cfg.zlim = [-5, 5];
         cfg.channel = channel;
-        
-        % save medium
+                 
         title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Medium,', {' '}, 'Channel:' ,{' '}, channel);
         title = title{1};
@@ -2704,28 +2705,43 @@ end
         save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition),'_medium_freq.png');
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
+        
+        % if aggr avg
+        if isfield(data, 'aggr_avg')
+            cfg.zlim = 'maxmin';
+            title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+                'Aggrgated Avg,', {' '}, 'Channel:' ,{' '}, channel);
+            cfg.title = title;
+            figure
+            aggr_avg = data.aggr_avg;
+            ft_singleplotTFR(cfg, aggr_avg);
+            rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
+            save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition),'_medium_freq.png');
+            exportgraphics(gcf,save_dir,'Resolution',500);
+            close;
+        end
+% %         save thin
+%         title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+%             'Thin,', {' '}, 'Channel:' ,{' '}, channel);
+%         title = title{1};
+%         cfg.title = title;
+%         figure
+%         ft_singleplotTFR(cfg, thin);
+%         save_dir = strcat(save_path, '\spectrograms\', cat_type, '_p', int2str(partition),'_thin_freq.png');
+%         exportgraphics(gcf,save_dir,'Resolution',500);
+%         close;
 
-        % save thin
-        title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
-            'Thin,', {' '}, 'Channel:' ,{' '}, channel);
-        title = title{1};
-        cfg.title = title;
-        figure
-        ft_singleplotTFR(cfg, thin);
-        save_dir = strcat(save_path, '\spectrograms\', cat_type, '_p', int2str(partition),'_thin_freq.png');
-        exportgraphics(gcf,save_dir,'Resolution',500);
-        close;
+%         % save thick
+%         title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+%             'Thick,', {' '}, 'Channel:' ,{' '}, channel);
+%         title = title{1};
+%         cfg.title = title;
+%         figure
+%         ft_singleplotTFR(cfg, thick);
+%         save_dir = strcat(save_path, '\spectrograms\', cat_type, '_p', int2str(partition),'_thick_freq.png');
+%         exportgraphics(gcf,save_dir,'Resolution',500);
+%         close;
 
-        % save thick
-        title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
-            'Thick,', {' '}, 'Channel:' ,{' '}, channel);
-        title = title{1};
-        cfg.title = title;
-        figure
-        ft_singleplotTFR(cfg, thick);
-        save_dir = strcat(save_path, '\spectrograms\', cat_type, '_p', int2str(partition),'_thick_freq.png');
-        exportgraphics(gcf,save_dir,'Resolution',500);
-        close;
     elseif strcmp(plotting_type, 'fourier')
         time = data.time;
         freq = data.freq;
@@ -2733,7 +2749,8 @@ end
         t = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
             'Med,', {' '}, 'Channel:' ,{' '}, channel);
         t = t{1};
-        imagesc(time, freq, med);
+        imagesc(time, freq, med)
+        rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
         axis xy;
         set(get(gca, 'title'), 'string', t)
         save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_med_freq.png');
@@ -2743,35 +2760,35 @@ end
         set(gcf,'Position',[100 100 750 750]);
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
-
-
-        t = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
-            'Thin,', {' '}, 'Channel:' ,{' '}, channel);
-        t = t{1};
-        imagesc(time, freq, thin);
-        axis xy;
-        set(get(gca, 'title'), 'string', t)
-        save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_thin_freq.png');
-        save_dir = save_dir{1};
-        xlabel('time -200 to 500ms');
-        ylabel('Freq');
-        set(gcf,'Position',[100 100 750 750]);
-        exportgraphics(gcf,save_dir,'Resolution',500);
-        close;
+% 
+% 
+%         t = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+%             'Thin,', {' '}, 'Channel:' ,{' '}, channel);
+%         t = t{1};
+%         imagesc(time, freq, thin);
+%         axis xy;
+%         set(get(gca, 'title'), 'string', t)
+%         save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_thin_freq.png');
+%         save_dir = save_dir{1};
+%         xlabel('time -200 to 500ms');
+%         ylabel('Freq');
+%         set(gcf,'Position',[100 100 750 750]);
+%         exportgraphics(gcf,save_dir,'Resolution',500);
+%         close;
         
-        t = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
-            'Thick,', {' '}, 'Channel:' ,{' '}, channel);
-        t = t{1};
-        imagesc(time, freq, thick);
-        axis xy;
-        set(get(gca, 'title'), 'string', t)
-        save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_thick_freq.png');
-        save_dir = save_dir{1};
-        xlabel('time -200 to 500ms');
-        ylabel('Freq');
-        set(gcf,'Position',[100 100 750 750]);
-        exportgraphics(gcf,save_dir,'Resolution',500);
-        close;
+%         t = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+%             'Thick,', {' '}, 'Channel:' ,{' '}, channel);
+%         t = t{1};
+%         imagesc(time, freq, thick);
+%         axis xy;
+%         set(get(gca, 'title'), 'string', t)
+%         save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_thick_freq.png');
+%         save_dir = save_dir{1};
+%         xlabel('time -200 to 500ms');
+%         ylabel('Freq');
+%         set(gcf,'Position',[100 100 750 750]);
+%         exportgraphics(gcf,save_dir,'Resolution',500);
+%         close;
     end
  end
  
@@ -2790,6 +2807,7 @@ end
                 example_thin = data_i.thin;
                 example_thick = data_i.thick;
                 example_med = data_i.med;
+                example_aggr = data_i.med;
            end
 
            thin_pwr = data_i.thin.powspctrm;
@@ -2805,23 +2823,49 @@ end
         avg_thick = mean(thick_pwrspec,4);
         avg_thin = mean(thin_pwrspec,4);
         avg_med = mean(med_pwrspec,4);
+        aggr_avg = (avg_thick + avg_thin + avg_med)/3;
 
         example_thin.powspctrm = avg_thin;
         example_thick.powspctrm = avg_thick;
         example_med.powspctrm = avg_med;
+        example_aggr.powspctrm = aggr_avg;
 
         new_data.thin = example_thin;
         new_data.thick = example_thick;
         new_data.med = example_med;
+        new_data.aggr_avg = example_aggr;
     elseif strcmp(type, 'fourier')
-        new_data.thin = data.thin;
-        new_data.thick = data.thick;
-        new_data.med = data.med;
+        fields = fieldnames(data);
+        N = numel(fields);
+        
+        [thin_pwrspec, thick_pwrspec, med_pwrspec] = deal([],[],[]);
+        for i= 1:N
+           data_i = data.(fields{i}); 
+
+           thin_pwr = data_i.thin;
+           thick_pwr = data_i.thick;
+           med_pwr = data_i.med;
+
+           thin_pwrspec(:,:,:,end+1) = thin_pwr;
+           thick_pwrspec(:,:,:,end+1) = thick_pwr;
+           med_pwrspec(:,:,:,end+1) = med_pwr;
+           
+        end
+        
+        avg_thick = mean(thick_pwrspec,4);
+        avg_thin = mean(thin_pwrspec,4);
+        avg_med = mean(med_pwrspec,4);
+                
+        new_data.thin = avg_thin;
+        new_data.thick = avg_thick;
+        new_data.med = avg_med;
+        new_data.time = data_i.time;
+        new_data.freq = data_i.freq;
     end
  end
  
  %% create power values from each participant
- function average_power_values(data, freq, time, electrode)
+ function average_power_values(data, freq, time, electrode, type)
     N = numel(data);
     electrode = find(contains(data{1}.label,electrode));
     
@@ -2831,29 +2875,50 @@ end
        participant_number = participant.participant_number;
        
        data_time = participant.med.time;
+       data_freq = participant.med.freq;
+       
        [~,start_time] = min(abs(data_time-time(1)));
        [~,end_time] = min(abs(data_time-time(2)));
        
-       data_freq = participant.med.freq;
        [~,start_freq] = min(abs(data_freq-freq(1)));
        [~,end_freq] = min(abs(data_freq-freq(2)));
        
+       if strcmp(type, 'pow')
+           thin = squeeze(participant.thin.powspctrm(electrode, ...
+               start_freq:end_freq, ...
+               start_time:end_time));
+       else
+           thin = participant.thin.inter_trial_coherence(...
+               start_freq:end_freq, ...
+               start_time:end_time);
+       end
        
-       thin = squeeze(participant.thin.powspctrm(electrode, ...
-           start_freq:end_freq, ...
-           start_time:end_time));
-       avg_thin = mean(thin,'all');
+       avg_thin = nanmean(thin(:));
        
-       thick = squeeze(participant.thick.powspctrm(electrode, ...
-           start_freq:end_freq, ...
-           start_time:end_time));
-       avg_thick = mean(thick,'all');
+       if strcmp(type, 'pow')
+           thick = squeeze(participant.thick.powspctrm(electrode, ...
+               start_freq:end_freq, ...
+               start_time:end_time));
+       else
+           thick = participant.thick.inter_trial_coherence(...
+               start_freq:end_freq, ...
+               start_time:end_time);
+       end
+       avg_thick = nanmean(thick(:));
        
-       med = squeeze(participant.med.powspctrm(electrode, ...
-           start_freq:end_freq, ...
-           start_time:end_time));
-       avg_med = mean(med,'all');
-
+       
+       if strcmp(type, 'pow')
+           med = squeeze(participant.med.powspctrm(electrode, ...
+               start_freq:end_freq, ...
+               start_time:end_time));    
+       else
+           med = participant.med.inter_trial_coherence(...
+               start_freq:end_freq, ...
+               start_time:end_time);
+       end
+       avg_med = nanmean(med(:));
+       
+       
        avg_pgi = avg_med - (avg_thin + avg_thick)/2;
        
        participant_data(i, 1) = avg_pgi;

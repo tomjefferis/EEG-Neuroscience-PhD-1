@@ -12,7 +12,7 @@ to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3; 4,5; 6,7
+    2,3,4,5,6,7,8
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -93,7 +93,7 @@ for k=to_preprocess
                 cfg.bpfilter = 'yes';
                 cfg.bpfilttype = 'fir';
                 cfg.bpfreq = filter_freq;
-                
+               
                 data = ft_preprocessing(cfg, raw);
 
                 % Detect artefacts via thresholding -100:100 uV
