@@ -9,6 +9,10 @@ factor = get_scores(f);
 itc = get_scores('itc');
 power = get_scores('power');
 
+%% create barplots
+create_barplots(itc, factor)
+
+%% create regressors
 [~, y_itc] = align_participants_based_on_number(factor, itc);
 [factors, y_power] = align_participants_based_on_number(factor, power);
 
@@ -39,6 +43,56 @@ tbl = table(factors, power, itc, 'VariableNames',...
     {'Factors_Through_Partitions','Power_Through_Partitions', 'ITC_Through_Partitions'});
 mdl = fitlm(tbl, 'ITC_Through_Partitions~Factors_Through_Partitions+Power_Through_Partitions');
 disp(mdl);
+
+%% create barplots
+function create_barplots(itc, factor)
+    fields = fieldnames(factor);
+    
+    all_high = [];
+    all_low = [];
+    for k = 1:numel(fields)
+       partition_factor = factor.(fields{k}); 
+       itc_factor = itc.(fields{k});
+       
+       [~,idx] = sort(partition_factor(:,2), 'descend');
+       sortedmat = partition_factor(idx,:);
+       participants_high = sortedmat(1:17,1);
+       participants_low = sortedmat(18:34,1);
+       
+       low_cnt = 0;
+       for n = 1:numel(participants_low)
+          part_n =  participants_low(n);
+          [row, ~] = find(itc_factor(:,1)==part_n);
+          val = itc_factor(row,2);
+          if sum(val) ~= 0
+            low_cnt = low_cnt + val;
+          end
+       end
+       
+       high_cnt = 0;
+       for n = 1:numel(participants_high)
+          part_n =  participants_high(n);
+          [row, ~] = find(itc_factor(:,1)==part_n);
+          val = itc_factor(row,2);
+          if sum(val) ~= 0
+            high_cnt = high_cnt + val;
+          end
+       end
+      
+       
+       all_low(k) = low_cnt;
+       all_high(k) = high_cnt;
+       
+    end
+    
+    bar(all_low)
+    ylim([-0.5, 1])
+    title('Low Group: ITC Through the Partitions');
+    bar(all_high)
+    ylim([-0.5, 1])
+    title('High Group: ITC Through the Partitions');
+end
+
 %% align participants
 function [X, Y] = align_participants_based_on_number(x1, x2)
     fields = fieldnames(x1);

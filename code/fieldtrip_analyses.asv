@@ -162,8 +162,6 @@ for i = 1:numel(experiment_types)
                 
                 if extract_timeseries_values == 1
                     extract_time_series_values(data1, participant_order1, time_roi, electrode);
-                    extract_time_series_values(data2, participant_order2, time_roi, electrode);
-                    extract_time_series_values(data3, participant_order3, time_roi, electrode);
                 end
                 
                 p1_freq = to_frequency_data(data1, main_path, 1, ...
@@ -258,6 +256,7 @@ for i = 1:numel(experiment_types)
             design_matrix = [design1, design2, design3];
             n_part = numel(data);
             n_part_per_desgin = numel(design1);
+
 
             if strcmp(desired_design_mtx, 'no-factor')
                 design_matrix_a(1:numel(design1)) = 1.00;
@@ -398,7 +397,10 @@ for i = 1:numel(experiment_types)
                 p1_23, p1_45, p1_67, ...
                 p2_23, p2_45, p2_67, ...
                 p3_23, p3_45, p3_67
-            ];            
+            ];
+        
+            compute_peak
+               
         end
         %% setup FT analysis
         % we have to switch to SPM8 to use some of the functions in FT
@@ -487,18 +489,13 @@ end
 %% extract specific timeseries values
 function extract_time_series_values(data, participants, roi, electrode)
     electrode_idx = find(strcmp(data{1}.label,electrode));
-    
-    datas = [];
+
     for k = 1:numel(data)
         pgi = data{k}.avg;
-        time = data{k}.time;
-        [~, start_idx] = min(abs(time-roi(1)));
-        [~, end_idx] = min(abs(time-roi(2)));
-        pgi_at_electrode = pgi(electrode_idx,start_idx:end_idx);
-        m_pgi = max(pgi_at_electrode);
+        pgi_at_electrode = pgi(electrode_idx,:);
+        pgi_at_roi = 
         participant_number = participants{k};
-        datas(k,1) = m_pgi;
-        datas(k,2) = participant_number;
+        
     end
 
     disp('hello world');
