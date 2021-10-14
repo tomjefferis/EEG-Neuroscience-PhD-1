@@ -22,23 +22,24 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
-generate_erps = 1;
+generate_erps = 0;
 weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'frequency_domain';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
     compute_frequency_data = 0; % compute the freq data per particpant else load
     frequency_type = 'pow'; % compute inter trial coherence
     run_mua = 0; % run a MUA in the frequnecy domain?
-    analysis_on_aggr_data = 1 ; % analysis on the aggregate power data?
+    analysis_on_aggr_data = 0 ; % analysis on the aggregate power data?
     frequency_level = 'participant-level'; % freq analyses on participant or group level
-    extract_timeseries_values = 1;
+    extract_timeseries_values = 0;
     time_roi = [0.090, 0.190];
     freq_roi = [5, 7.6];
+    analysis = 'load';
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
 end
@@ -63,7 +64,9 @@ for i = 1:numel(experiment_types)
         % set up the experiment as needed
         if strcmp(experiment_type, 'onsets-2-8-explicit')
             data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
-            regressor = 'ft_statfun_depsamplesT';
+            regressor = 'ft_statfun_indepsamplesregrT';
+            type_of_effect = 'null';
+            regression_type = desired_design_mtx;
             n_participants = 40;
             start_latency = 0.056;
             end_latency = 0.256;
@@ -74,7 +77,8 @@ for i = 1:numel(experiment_types)
             [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
                 data_file, partition);            
             n_part = numel(data);
-            design_matrix =  [1:n_part 1:n_part; ones(1,n_part) 2*ones(1,n_part)]; 
+            [design_matrix, data] =  create_design_matrix_partitions(participant_order_1, data, ...
+                        regression_type, 0, type_of_effect);
 
 
         elseif strcmp(experiment_type, 'partitions-2-8')
@@ -136,22 +140,17 @@ for i = 1:numel(experiment_types)
                     data = create_hacked_roi(data, roi, weight_roi);
                 end
                 
-            elseif strcmp(type_of_analysis, 'frequency_domain')
-                if compute_frequency_data == 1
-                    analysis = 'preprocess';
+            elseif strcmp(type_of_analysis, 'frequency_domain') 
+                if strcmp(frequency_level, 'trial-level')
                     data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
-                else
-                    analysis = 'load';
+                    fnames = {'pow_med.mat','pow_thin.mat','pow_thick.mat'};
+                elseif strcmp(frequency_level, 'participant-level')
                     data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                    fnames = {'ga_pow_med.mat','ga_trial_pow_thin.mat','ga_trial_pow_thick.mat'};
                 end
                 
                 electrode = return_mua_electrode(desired_design_mtx);
-                
-                if strcmp(frequency_type, 'fourier')
-                    fnames = {'3_5_30_fourier_med.mat','3_5_30_fourier_thin.mat','3_5_30_fourier_thick.mat'};
-                elseif strcmp(frequency_type, 'pow')
-                    fnames = {'pow_med.mat','pow_thin.mat','pow_thick.mat'};
-                end
+
                 
                 [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition1);
@@ -167,11 +166,16 @@ for i = 1:numel(experiment_types)
                 end
                 
                 p1_freq = to_frequency_data(data1, main_path, 1, ...
-                    participant_order1, analysis,fnames,frequency_type, electrode);                
+                    participant_order1, analysis,fnames,frequency_type,...
+                    electrode, frequency_level);   
+                
                 p2_freq = to_frequency_data(data2, main_path, 2, ...
-                    participant_order2, analysis,fnames,frequency_type, electrode);
+                    participant_order2, analysis,fnames,frequency_type,...
+                    electrode, frequency_level);
+                
                 p3_freq = to_frequency_data(data3, main_path, 3, ...
-                    participant_order3, analysis,fnames,frequency_type, electrode);
+                    participant_order3, analysis,fnames,frequency_type, ...
+                    electrode, frequency_level);
                                 
                 if strcmp(desired_design_mtx, 'no-factor') && compute_frequency_data == 0
                    [~] = compute_spectrogram(p1_freq,1,save_path, electrode, desired_design_mtx, 'all', frequency_type, frequency_level);
@@ -217,7 +221,7 @@ for i = 1:numel(experiment_types)
                         average_power_values(p2_freq, freq_roi, time_roi, electrode, frequency_type);
                         average_power_values(p3_freq, freq_roi, time_roi, electrode, frequency_type);
                     end
-                end
+                 end
                 
                 % let arnold schwarzenegger tell me when the analysis is
                 % complete
@@ -282,7 +286,7 @@ for i = 1:numel(experiment_types)
             save_desgin_matrix(design_matrix, n_part_per_desgin, save_path, 'sensitization')
 
             if region_of_interest == 1
-                if strcmp(experiment_type, 'erps-23-45-67') || strcmp(experiment_type,  'erps-23-45-67-no-factor')
+                if strcmp(experiment_type, 'erps-23-45-67') || strcmp(experiment_type,  'erps-23-45-67-no-factor') 
                     if strcmp(roi_applied, 'one-tailed')
                         load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
                     elseif strcmp(roi_applied, 'two-tailed')
@@ -421,7 +425,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 500;
+        cfg.numrandomization = 25;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
@@ -430,14 +434,14 @@ for i = 1:numel(experiment_types)
         
         
         %% run the fieldtrip analyses
-        if contains(experiment_type, 'onsets-2-8-explicit') || contains(experiment_type, 'onsets-1-explicit')
+        if contains(experiment_type, 'onsets-2-8-explicit') && strcmp(regression_type, 'none')
             cfg.uvar = 1;
             cfg.ivar = 2;
             null_data = set_values_to_zero(data); % create null data to hack a t-test
             stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
             desired_cluster =1;
             get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
-        elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-factor') ...
+        elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
                 || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
                 || contains(experiment_type, 'coarse-vs-fine-granularity') || contains(experiment_type, 'Partitions')
             cfg.ivar = 1;
@@ -500,8 +504,6 @@ function extract_time_series_values(data, participants, roi, electrode)
         datas(k,1) = m_pgi;
         datas(k,2) = participant_number;
     end
-
-    disp('hello world');
 end
 
 %% plot the t values through time and select the best electrode
@@ -1013,6 +1015,8 @@ function [design, new_participants] = create_design_matrix_partitions(participan
             ratings = scores.two;
         elseif partition == 3
             ratings = scores.three;
+        elseif partition == 0
+            ratings = scores.one;
         end
     end
     
@@ -1110,6 +1114,17 @@ function scores = return_scores(regression_type, type_of_effect)
             end
         end    
         
+    elseif strcmp(regression_type, 'headache-mean-intercept')
+        dataset = [
+        1,-0.2574;2,-0.0417;3,-0.6726;4,0.4236;5,1.781;6,-1.0608;7,-0.7657;
+        8,0.1279;9,-0.6553;10,-0.2896;11,-0.5122;12,2.1424;13,-0.1803;
+        14,1.4491;16,0.1157;17,-0.1649;20,-0.4721;21,1.0486;22,-0.554;23,-0.8912;
+        24,-0.4481;25,-0.7581;26,-1.2784;28,0.2989;29,0.0439;30,-0.4732;31,-0.7701;
+        32,-0.7037;33,-0.819;34,-0.7987;37,1.1507;38,-0.2806;39,0.8546;40,-0.3823;   
+        ];
+    
+        scores.one = dataset;
+    
     elseif strcmp(regression_type, 'headache')
         dataset = [
         1,-0.2574;2,-0.0417;3,-0.6726;4,0.4236;5,1.781;6,-1.0608;7,-0.7657;
@@ -2355,7 +2370,9 @@ function ft = cut_data_using_analysis_window(ft, analysis_window)
 end
 
 %% applies the wavelett decomposition to the data
-function dataset = to_frequency_data(data, save_dir, partition, participant_order, type, fname, frequency_type, channel)
+function dataset = to_frequency_data(data, save_dir, partition, ...
+    participant_order, type, fname, frequency_type, channel, ...
+    participant_level)
     
      if strcmp(frequency_type, 'fourier')
          cfg = [];
@@ -2392,21 +2409,28 @@ function dataset = to_frequency_data(data, save_dir, partition, participant_orde
             med.label = participant.label;
             med.elec = participant.elec;
             med.trial = participant.med;
-            med.time = update_with_time_info(med.trial, participant.time);
+            
             med.dimord = 'chan_time';
-
             thick.label = participant.label;
             thick.elec = participant.elec;
             thick.trial = participant.thick;
-            thick.time = update_with_time_info(thick.trial, participant.time);
+            
             thick.dimord = 'chan_time';
-
             thin.label = participant.label;
             thin.elec = participant.elec;
             thin.trial = participant.thin;
-            thin.time = update_with_time_info(thin.trial, participant.time);
             thin.dimord = 'chan_time';
 
+            if strcmp(participant_level, 'trial-level')
+                med.time = update_with_time_info(med.trial, participant.time);
+                thin.time = update_with_time_info(thin.trial, participant.time);
+                thick.time = update_with_time_info(thick.trial, participant.time);
+            else
+                med.time = participant.time;
+                thick.time = participant.time;
+                thin.time = participant.time;
+            end
+            
             TFRwave_med = ft_freqanalysis(cfg, med);
             TFRwave_med.info = 'medium';
             save(med_path, 'TFRwave_med', '-v7.3')
@@ -2720,22 +2744,23 @@ end
         cfg.baselinetype = 'db';
         cfg.maskstyle    = 'saturation';
         cfg.xlim = [-0.200,0.500];
-        cfg.ylim = [0, 30];
-        cfg.zlim = [-5, 5];
+        cfg.ylim = [0, 15];
+        %cfg.zlim = [-10, 10];
         cfg.channel = channel;
       
         for k = 1:numel(data)
             thin = data{k}.thin;
             thick = data{k}.thick;
             med = data{k}.med;
+            pgi = data{k}.avg;
             
             title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
                 'Medium,', {' '}, 'Channel:' ,{' '}, channel);
             title = title{1};
             cfg.title = title;
             figure
-            ft_singleplotTFR(cfg, med);
-            rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
+            ft_singleplotTFR(cfg, pgi);
+            %rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
             save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition), 'part', int2str(k), '_medium_freq.png');
             exportgraphics(gcf,save_dir,'Resolution',500);
             close;
