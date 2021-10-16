@@ -2,18 +2,18 @@ clear;
 clc;
 log_trnsfrm = 1;
 
-f = 'visual_stress';
+f = 'headache';
 
 f = strcat(f, '-factor');
 factor = get_scores(f);
-pgi = get_scores('pgi-max');
+pgi = get_scores('pgi-howards_method');
 power = get_scores('power');
 
 %% create barplots
 %create_barplots(itc, factor)
 
 %% create regressors
-[~, y_pgi] = align_participants_based_on_number(factor, pgi);
+[y_pgi, ~] = align_participants_based_on_number(factor, pgi);
 [factors, y_power] = align_participants_based_on_number(factor, power);
 
 factors = factors';
@@ -27,8 +27,8 @@ factors_with_power(:,3) = power(:,1);
 
 % model one
 tbl = table(factors, pgi, 'VariableNames',...
-    {'Factors_Through_Partitions','PGI_Through_Partitions'});
-mdl = fitlm(tbl, 'PGI_Through_Partitions~Factors_Through_Partitions');
+    {'Factors_Through_Partitions','Abs_Diff_Trial_vs_Ga_Max_Freq_Power'});
+mdl = fitlm(tbl, 'Abs_Diff_Trial_vs_Ga_Max_Freq_Power~Factors_Through_Partitions');
 disp(mdl);
 
 % model two
@@ -39,8 +39,8 @@ mdl = fitlm(tbl, 'Power_Through_Partitions~Factors_Through_Partitions');
 
 % model three
 tbl = table(factors, power, pgi, 'VariableNames',...
-    {'Factors_Through_Partitions','Power_Through_Partitions', 'PGI_Through_Partitions'});
-mdl = fitlm(tbl, 'PGI_Through_Partitions~Factors_Through_Partitions+Power_Through_Partitions');
+    {'Factors_Through_Partitions','Power_Through_Partitions', 'Abs_Diff_Trial_vs_Ga_Max_Freq_Power'});
+mdl = fitlm(tbl, 'Abs_Diff_Trial_vs_Ga_Max_Freq_Power~Factors_Through_Partitions+Power_Through_Partitions');
 disp(mdl);
 
 %% create barplots
@@ -93,7 +93,7 @@ function create_barplots(itc, factor)
 end
 
 %% align participants
-function [X, Y] = align_participants_based_on_number(x1, x2)
+function [X, Y] = align_participants_based_on_number(x2, x1)
     fields = fieldnames(x1);
     
     [X,Y] = deal([], []);
@@ -167,26 +167,23 @@ function scores = get_scores(type)
         31,-0.028;32,-0.093;33,-0.04;36,0.242;37,-0.165;38,-0.087;39,-0.111;
         ];
     
-    elseif strcmp(type, 'pgi-avg')
-    scores.two = [
-        1,2.132;2,-1.645;3,-2.566;4,0.901;5,1.251;6,1.757;7,-0.433;8,1.014;
-        9,-1.163;10,-0.579;11,1.131;12,1.668;14,3.15;16,0.897;17,2.516;20,-2.085;
-        21,4.487;22,2.154;23,1.335;24,1.017;26,0.87;28,0.228;29,0.217;30,3.768;
-        31,0.997;32,1.872;33,2.312;36,1.713;37,-2.144;38,-1.859;39,3.168;   
+    elseif strcmp(type, 'pgi-howards_method')
+    scores.one = [
+        1,1.111;2,0;4,0;5,3.111;8,0;10,0;12,0;14,0.889;16,2;17,0;21,5.111;
+        28,2;29,0;37,2;38,1.111;39,0;3,0;6,0;7,2.889;9,0;11,0;20,4.889;
+        22,4.889;23,10;24,5.111;26,2;30,0;31,0;32,0;33,0.889;
         ];
     
-    scores.one = [
-    1,0.888;2,1.566;3,0.944;4,1.446;5,4.317;6,2.457;7,0.181;8,3.922;9,0.363;
-    10,3.002;11,0.626;12,2.836;14,3.311;16,4.511;17,5.934;20,0.096;21,10.497;22,0.831;
-    23,0.89;24,-0.67;26,-1.058;28,-3.015;29,2.4;30,3.366;31,0.34;32,0.64;33,0.836;
-    36,-0.033;37,1.983;38,-2.825;39,2.529;      
+    scores.two = [
+       1,1.111;2,8;4,5.111;5,2.889;8,0;10,0;12,0;14,0;16,0;17,0;21,4;28,0;
+       29,4;37,4;38,0;39,0.889;3,6.889;6,0;7,4;9,2.889;11,0;20,4;22,2;23,0;
+        24,4;26,0.889;30,0;31,0;32,10;33,2;
     ];
 
     scores.three = [
-    1,0.448;2,1.125;3,-2.861;4,-1.388;5,0.26;6,2.113;7,0.071;8,-1.978;9,0.035;
-    10,-0.941;11,3.123;12,2.67;14,2.693;16,0.025;17,1.044;20,-0.441;21,0.643;
-    22,2.672;23,-0.095;24,0.495;26,0.273;28,2.219;29,2.32;30,3.205;31,-0.643;
-    32,3.957;33,3.828;36,0.807;37,1.354;38,5.672;39,5.265;
+        1,0.889;2,0;4,0;5,0.889;8,4;10,7.111;12,10;14,0;16,0;17,7.111;
+        21,5.111;28,0.889;29,0;37,0.889;38,0;39,8;3,0;6,0;7,0.889;9,10;
+        11,0;20,8;22,2;23,4.889;24,0;26,2.889;30,0;31,0;32,0;33,4.889;
     ];
     
     elseif strcmp(type, 'pgi-max')

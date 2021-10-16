@@ -27,19 +27,17 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
-    compute_frequency_data = 0; % compute the freq data per particpant else load
-    frequency_type = 'pow'; % compute inter trial coherence
     run_mua = 0; % run a MUA in the frequnecy domain?
-    analysis_on_aggr_data = 0 ; % analysis on the aggregate power data?
-    frequency_level = 'participant-level'; % freq analyses on participant or group level
+    analyse_spectrogram = 1 ; % analysis on the aggregate power data?
+    frequency_level = 'participant-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
-    time_roi = [0.090, 0.190];
-    freq_roi = [5, 7.6];
-    analysis = 'load';
+    toi = [0.090, 0.250];
+    foi = [5, 15];
+    analysis = 'load'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
 end
@@ -140,17 +138,18 @@ for i = 1:numel(experiment_types)
                     data = create_hacked_roi(data, roi, weight_roi);
                 end
                 
-            elseif strcmp(type_of_analysis, 'frequency_domain') 
-                if strcmp(frequency_level, 'trial-level')
-                    data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
-                    fnames = {'pow_med.mat','pow_thin.mat','pow_thick.mat'};
-                elseif strcmp(frequency_level, 'participant-level')
-                    data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
-                    fnames = {'ga_pow_med.mat','ga_trial_pow_thin.mat','ga_trial_pow_thick.mat'};
-                end
-                
+            elseif strcmp(type_of_analysis, 'frequency_domain')
                 electrode = return_mua_electrode(desired_design_mtx);
-
+                
+                if strcmp(analysis, 'preprocess')
+                    if strcmp(frequency_level, 'trial-level')
+                        data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
+                    elseif strcmp(frequency_level, 'participant-level') && strcmp(analysis, 'preprocess')
+                        data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                    end
+                else
+                    data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                end
                 
                 [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition1);
@@ -166,44 +165,62 @@ for i = 1:numel(experiment_types)
                 end
                 
                 p1_freq = to_frequency_data(data1, main_path, 1, ...
-                    participant_order1, analysis,fnames,frequency_type,...
-                    electrode, frequency_level);   
+                    participant_order1, analysis, frequency_level);   
                 
                 p2_freq = to_frequency_data(data2, main_path, 2, ...
-                    participant_order2, analysis,fnames,frequency_type,...
-                    electrode, frequency_level);
+                    participant_order2, analysis, frequency_level);
                 
                 p3_freq = to_frequency_data(data3, main_path, 3, ...
-                    participant_order3, analysis,fnames,frequency_type, ...
-                    electrode, frequency_level);
+                    participant_order3, analysis, frequency_level);
                                 
-                if strcmp(desired_design_mtx, 'no-factor') && compute_frequency_data == 0
-                   [~] = compute_spectrogram(p1_freq,1,save_path, electrode, desired_design_mtx, 'all', frequency_type, frequency_level);
-                   [~] = compute_spectrogram(p2_freq,2,save_path, electrode, desired_design_mtx, 'all', frequency_type, frequency_level);
-                   [~] = compute_spectrogram(p3_freq,3,save_path, electrode, desired_design_mtx, 'all', frequency_type, frequency_level);
-                elseif ~strcmp(desired_design_mtx, 'no-factor') && compute_frequency_data == 0
+                if strcmp(desired_design_mtx, 'no-factor')
+                   [~] = prepare_data(p1_freq, frequency_level);
+                   [~] = prepare_data(p2_freq, frequency_level);
+                   [~] = prepare_data(p3_freq, frequency_level);
+                elseif ~strcmp(desired_design_mtx, 'no-factor') 
                     
                     % get the partitioned data
                     [p1_freq_h, p1_freq_l, ~, ~] = get_partitions_medium_split(p1_freq, participant_order1,...
                         desired_design_mtx, 1, type_of_effect, 0, 0);
-                    f_data.p1_freq_h = compute_spectrogram(p1_freq_h,1,save_path, electrode, desired_design_mtx, 'high', frequency_type, frequency_level);
-                    f_data.p1_freq_l = compute_spectrogram(p1_freq_l,1,save_path, electrode, desired_design_mtx, 'low', frequency_type, frequency_level);
-                    plot_spectrogram(f_data.p1_freq_h,save_path,1,frequency_type,electrode, 'High')
-                    plot_spectrogram(f_data.p1_freq_l,save_path,1,frequency_type,electrode, 'Low')
+                    
+                    f_data.p1_freq_h = prepare_data(p1_freq_h, 'participant-level');
+                    f_data.p1_freq_l = prepare_data(p1_freq_l, 'participant-level');
+                    
+                    plot_spectrogram(f_data.p1_freq_h,save_path,1,electrode, 'High')
+                    plot_spectrogram(f_data.p1_freq_l,save_path,1,electrode, 'Low')
                     
                     [p2_freq_h, p2_freq_l, ~, ~] = get_partitions_medium_split(p2_freq, participant_order2,...
                         desired_design_mtx, 1, type_of_effect, 0, 0);  
-                    f_data.p2_freq_h = compute_spectrogram(p2_freq_h,2,save_path, electrode, desired_design_mtx, 'high', frequency_type, frequency_level);
-                    f_data.p2_freq_l = compute_spectrogram(p2_freq_l,2,save_path, electrode, desired_design_mtx, 'low', frequency_type, frequency_level);
-                    plot_spectrogram(f_data.p2_freq_h,save_path,2,frequency_type,electrode, 'High')
-                    plot_spectrogram(f_data.p2_freq_l,save_path,2,frequency_type,electrode, 'Low')
+                    
+                    f_data.p2_freq_h = prepare_data(p2_freq_h, 'participant-level');
+                    f_data.p2_freq_l = prepare_data(p2_freq_l, 'participant-level');
+                    
+                    plot_spectrogram(f_data.p2_freq_h,save_path,2,electrode, 'High')
+                    plot_spectrogram(f_data.p2_freq_l,save_path,2,electrode, 'Low')
                     
                     [p3_freq_h, p3_freq_l, ~, ~] = get_partitions_medium_split(p3_freq, participant_order3,...
                         desired_design_mtx, 1, type_of_effect, 0, 0);
-                    f_data.p3_freq_h = compute_spectrogram(p3_freq_h,3,save_path, electrode, desired_design_mtx, 'high', frequency_type, frequency_level);
-                    f_data.p3_freq_l = compute_spectrogram(p3_freq_l,3,save_path, electrode, desired_design_mtx, 'low', frequency_type, frequency_level);
-                    plot_spectrogram(f_data.p3_freq_h,save_path,3,frequency_type,electrode, 'High')
-                    plot_spectrogram(f_data.p3_freq_l,save_path,3,frequency_type,electrode, 'Low')
+                    
+                    f_data.p3_freq_h = prepare_data(p3_freq_h,'participant-level');
+                    f_data.p3_freq_l = prepare_data(p3_freq_l,'participant-level');
+                    
+                    plot_spectrogram(f_data.p3_freq_h,save_path,3,electrode, 'High')
+                    plot_spectrogram(f_data.p3_freq_l,save_path,3,electrode, 'Low')
+                    
+                    if analyse_spectrogram == 1
+                        % p1
+                        extract_frequency_from_highest_power(f_data.p1_freq_h, foi, toi, electrode)
+                        extract_frequency_from_highest_power(f_data.p1_freq_l, foi, toi, electrode)
+                        
+                        % p2
+                        extract_frequency_from_highest_power(f_data.p2_freq_h, foi, toi, electrode)
+                        extract_frequency_from_highest_power(f_data.p2_freq_l, foi, toi, electrode)
+                        
+                        % p3
+                        extract_frequency_from_highest_power(f_data.p3_freq_h, foi, toi, electrode)
+                        extract_frequency_from_highest_power(f_data.p3_freq_l, foi, toi, electrode)
+                    end
+                    
                     
                     if analysis_on_aggr_data == 1          
                         % compute the aggregate freq-pow
@@ -488,6 +505,39 @@ for i = 1:numel(experiment_types)
     end
 end
 
+%% Extract the frequency where power is highest 
+function extract_frequency_from_highest_power(data, foi, toi, electrode)
+   frequencies = data{1}.med.freq;
+   time = data{1}.med.time;
+   electrodes = data{1}.med.label;
+   
+   electrode_idx = find(strcmp(electrodes,electrode));
+   [~, start_time] = min(abs(time-toi(1)));
+   [~, end_time] = min(abs(time-toi(2)));
+   [~, start_freq] = min(abs(frequencies-foi(1)));
+   [~, end_freq] = min(abs(frequencies-foi(2)));
+   
+   freq_of_max_pow = [];
+   for k = 1:numel(data)
+       thin = data{k}.thin.powspctrm;
+       med = data{k}.med.powspctrm;
+       thick = data{k}.thick.powspctrm;
+       pgi = med - (thin + thick)/2;
+       participant_number = data{k}.participant_number;
+       
+       pgi_at_electrode = squeeze(pgi(electrode_idx,...
+           start_freq:end_freq, ...
+           start_time:end_time ...
+        ));
+   
+        max_power = max(pgi_at_electrode, [], 'all');
+        [f, ~] = find(pgi_at_electrode==max_power);
+        freq_of_maximum_power = frequencies(f);
+        
+        freq_of_max_pow(k,1) = freq_of_maximum_power;
+        freq_of_max_pow(k,2) = participant_number; 
+   end
+end
 %% extract specific timeseries values
 function extract_time_series_values(data, participants, roi, electrode)
     electrode_idx = find(strcmp(data{1}.label,electrode));
@@ -505,6 +555,8 @@ function extract_time_series_values(data, participants, roi, electrode)
         datas(k,2) = participant_number;
     end
 end
+
+
 
 %% plot the t values through time and select the best electrode
 function peak_stat_info = compute_best_electrode_from_t_values(stat, electrode_stats, save_dir, tail, peak_stat_info)
@@ -2371,29 +2423,17 @@ end
 
 %% applies the wavelett decomposition to the data
 function dataset = to_frequency_data(data, save_dir, partition, ...
-    participant_order, type, fname, frequency_type, channel, ...
-    participant_level)
-    
-     if strcmp(frequency_type, 'fourier')
-         cfg = [];
-         cfg.channel = 'eeg';
-         cfg.method = 'wavelet';
-         cfg.width = 3;
-         cfg.output = 'fourier';
-         cfg.pad = 'nextpow2';
-         cfg.foi = 5:30;
-         cfg.toi = -0.2:0.002:0.5;  
-     elseif strcmp(frequency_type, 'pow')
-        cfg              = [];
-        cfg.output       = 'pow';
-        cfg.method       = 'mtmconvol';
-        cfg.taper        = 'hanning';
-        cfg.width = 3;
-        cfg.foi =   5:30;
-        cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
-        cfg.toi          = -0.2:0.002:0.5;
-        cfg.channel      = 'all';
-     end
+    participant_order, type, participant_level)
+
+    cfg              = [];
+    cfg.output       = 'pow';
+    cfg.method       = 'wavelet';
+    cfg.taper        = 'hanning';
+    cfg.width = 3;
+    cfg.foi =   5:30;
+    cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
+    cfg.toi          = -0.2:0.002:0.5;
+    cfg.channel      = 'all';
 
     dataset = {};
     for i=1:numel(data)
@@ -2401,9 +2441,13 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
         
         disp(strcat('Loading/Processing Participant ', int2str(i)));
         participant_number = participant_order{i};
-        med_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{1});
-        thin_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{2});
-        thick_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_', fname{3});           
+        save_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_');      
+        
+        if strcmp(participant_level, 'participant-level')
+            full_save_dir = strcat(save_path, 'participant_level.mat');
+        elseif strcmp(participant_level, 'trial-level')
+            full_save_dir = strcat(save_path, 'trial_level.mat');
+        end
         
         if strcmp(type, 'preprocess')
             med.label = participant.label;
@@ -2433,38 +2477,22 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
             
             TFRwave_med = ft_freqanalysis(cfg, med);
             TFRwave_med.info = 'medium';
-            save(med_path, 'TFRwave_med', '-v7.3')
-            clear TFRwave_med;
-            
             TFRwave_thick = ft_freqanalysis(cfg, thick);
             TFRwave_thick.info = 'thick';
-            save(thick_path, 'TFRwave_thick', '-v7.3')
-            clear TFRwave_thick;
-
             TFRwave_thin = ft_freqanalysis(cfg, thin);
             TFRwave_thin.info = 'thin';
-            save(thin_path, 'TFRwave_thin', '-v7.3')
-            clear TFRwave_thin;
+            
+            frequency_data.med = TFRwave_med;
+            frequency_data.thick = TFRwave_thick;
+            frequency_data.thin = TFRwave_thin;
+            frequency_data.participant_number = participant_number;
+                
+            save(full_save_dir, 'frequency_data', '-v7.3')
+            dataset{end+1} = frequency_data;
+            clear frequency_data;
         elseif strcmp(type, 'load')
-            load(med_path);            
-            load(thin_path);
-            load(thick_path);
-            
-            if strcmp(frequency_type, 'pow')
-                participant.thin = TFRwave_thin;
-                participant.thick = TFRwave_thick;
-                participant.med = TFRwave_med; 
-            elseif strcmp(frequency_type, 'fourier')
-                med = calculate_itc(TFRwave_med, channel);
-                thick = calculate_itc(TFRwave_thick, channel);
-                thin = calculate_itc(TFRwave_thin, channel);
-                participant.thin = thin;
-                participant.thick = thick;
-                participant.med = med; 
-            end
-            
-            participant.participant_number = participant_number;
-            dataset{end+1} = participant;
+            load(full_save_dir);            
+            dataset{end+1} = frequency_data;
         end
     end
 end
@@ -2523,63 +2551,33 @@ function avg_mtx = calculate_aritmetic_mean(data)
 end
 
 %% compute spectrograms of the participant data
- function f_data = compute_spectrogram(data, partition, save_path, channel, ...
-     regressor, participants, frequency_type, analysis_type)
+ function f_data = prepare_data(data, analysis_type)
+    if strcmp(analysis_type, 'trial-level')
 
-    if strcmp(frequency_type, 'pow')
-
-        if strcmp(analysis_type, 'group-level')
-        
-            [thin, med, thick] = deal({}, {}, {});
-            n_participants = size(data,2);
-
-            for i=1:n_participants
-                participant = data{i};
-                thin{end+1} = participant.thin;
-                thick{end+1} = participant.thick;
-                med{end+1} = participant.med;
-            end
-
-            % save the freq plots
-            cfg = [];
-            thin_avg = ft_freqgrandaverage(cfg, thin{:});
-            thick_avg = ft_freqgrandaverage(cfg, thick{:});
-            med_avg = ft_freqgrandaverage(cfg, med{:});
-
-            freq_data.thin = thin_avg;
-            freq_data.thick = thick_avg;
-            freq_data.med = med_avg;
-            freq_data.time = data{1}.med.time;
-            freq_data.freq = data{1}.med.freq;
-            f_data{1} = freq_data;
-        elseif strcmp(analysis_type, 'participant-level')
-            f_data = data;
-        end
-
-    elseif strcmp(frequency_type, 'fourier')
-
-        [thin, med, thick] = deal([], [], []);
+        [thin, med, thick] = deal({}, {}, {});
         n_participants = size(data,2);
-        
+
         for i=1:n_participants
             participant = data{i};
-            thin(end+1,:,:) = participant.thin.inter_trial_coherence;
-            thick(end+1,:,:) = participant.thick.inter_trial_coherence;
-            med(end+1,:,:) = participant.med.inter_trial_coherence;
+            thin{end+1} = participant.thin;
+            thick{end+1} = participant.thick;
+            med{end+1} = participant.med;
         end
 
-        time = participant.med.time;
-        frequencies = participant.med.freq;
-        avg_thin = squeeze(mean(thin,'omitnan'));
-        avg_thick = squeeze(mean(thick,'omitnan'));
-        avg_med = squeeze(mean(med,'omitnan'));
-        
-        f_data.thin = avg_thin;
-        f_data.thick = avg_thick;
-        f_data.med = avg_med;
-        f_data.time = time;
-        f_data.freq = frequencies;
-        
+        % save the freq plots
+        cfg = [];
+        thin_avg = ft_freqgrandaverage(cfg, thin{:});
+        thick_avg = ft_freqgrandaverage(cfg, thick{:});
+        med_avg = ft_freqgrandaverage(cfg, med{:});
+
+        freq_data.thin = thin_avg;
+        freq_data.thick = thick_avg;
+        freq_data.med = med_avg;
+        freq_data.time = data{1}.med.time;
+        freq_data.freq = data{1}.med.freq;
+        f_data{1} = freq_data;
+    elseif strcmp(analysis_type, 'participant-level')
+        f_data = data;
     end
  end
 
@@ -2732,84 +2730,59 @@ end
  end
  
  %% plot sepctrogram
- function plot_spectrogram(data, save_path, partition, plotting_type, ...
+ function plot_spectrogram(data, save_path, partition, ...
      channel, cat_type)
+ 
     participants = size(data,2);
+
+    cfg = [];
+    cfg.baseline = 'yes';
+    cfg.baseline     = [-0.5 0];
+    cfg.baselinetype = 'db';
+    cfg.maskstyle    = 'saturation';
+    cfg.xlim = [-0.200,0.500];
+    cfg.ylim = [0, 15];
+    %cfg.zlim = [-5, 5];
+    cfg.channel = channel;
+
     
+    for k = 1:numel(data)
+        thin = data{k}.thin;
+        thick = data{k}.thick;
+        med = data{k}.med;
+        %pgi = data{k}.avg;
 
-    if strcmp(plotting_type, 'pow')
-        cfg = [];
-        cfg.baseline = 'yes';
-        cfg.baseline     = [-0.5 0];
-        cfg.baselinetype = 'db';
-        cfg.maskstyle    = 'saturation';
-        cfg.xlim = [-0.200,0.500];
-        cfg.ylim = [0, 15];
-        %cfg.zlim = [-10, 10];
-        cfg.channel = channel;
-      
-        for k = 1:numel(data)
-            thin = data{k}.thin;
-            thick = data{k}.thick;
-            med = data{k}.med;
-            pgi = data{k}.avg;
-            
-            title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
-                'Medium,', {' '}, 'Channel:' ,{' '}, channel);
-            title = title{1};
-            cfg.title = title;
-            figure
-            ft_singleplotTFR(cfg, pgi);
-            %rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
-            save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition), 'part', int2str(k), '_medium_freq.png');
-            exportgraphics(gcf,save_dir,'Resolution',500);
-            close;
-
-            % if aggr avg
-            if isfield(data, 'aggr_avg')
-                cfg.zlim = 'maxmin';
-                title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
-                    'Aggrgated Avg,', {' '}, 'Channel:' ,{' '}, channel);
-                cfg.title = title;
-                figure
-                aggr_avg = data.aggr_avg;
-                ft_singleplotTFR(cfg, aggr_avg);
-                rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
-                save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition),'_medium_freq.png');
-                exportgraphics(gcf,save_dir,'Resolution',500);
-                close;
-            end
-        end
-
-    elseif strcmp(plotting_type, 'fourier')
-        time = data.time;
-        freq = data.freq;
-        thin = data.thin;
-        thick = data.thick;
-        med = data.med;
-        
-        t = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
-            'Med,', {' '}, 'Channel:' ,{' '}, channel);
-        t = t{1};
-        imagesc(time, freq, med)
-        rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
-        axis xy;
-        set(get(gca, 'title'), 'string', t)
-        save_dir = strcat(save_path, '\itc\', cat_type, {'_'}, 'itc_p', int2str(partition),'_med_freq.png');
-        save_dir = save_dir{1};
-        xlabel('time -200 to 500ms');
-        ylabel('Freq');
-        set(gcf,'Position',[100 100 750 750]);
+        title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+            'Medium,', {' '}, 'Channel:' ,{' '}, channel);
+        title = title{1};
+        cfg.title = title;
+        figure
+        ft_singleplotTFR(cfg, med);
+        %rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
+        save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition), 'part', int2str(k), '_medium_freq.png');
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
+
+        % if aggr avg
+        if isfield(data, 'aggr_avg')
+            cfg.zlim = 'maxmin';
+            title = strcat(cat_type, {' '}, 'Partition:', {' '}, int2str(partition), ',', {' '}, 'Grating:', {' '},...
+                'Aggrgated Avg,', {' '}, 'Channel:' ,{' '}, channel);
+            cfg.title = title;
+            figure
+            aggr_avg = data.aggr_avg;
+            ft_singleplotTFR(cfg, aggr_avg);
+            rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
+            save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition),'_medium_freq.png');
+            exportgraphics(gcf,save_dir,'Resolution',500);
+            close;
+        end
     end
  end
  
  %% aggregate the power data across participants
  function new_data = aggregate_freq_data(data, type)
     
-    if strcmp(type, 'pow')
-
         fields = fieldnames(data);
         N = numel(fields);
 
@@ -2847,34 +2820,7 @@ end
         new_data.thick = example_thick;
         new_data.med = example_med;
         new_data.aggr_avg = example_aggr;
-    elseif strcmp(type, 'fourier')
-        fields = fieldnames(data);
-        N = numel(fields);
-        
-        [thin_pwrspec, thick_pwrspec, med_pwrspec] = deal([],[],[]);
-        for i= 1:N
-           data_i = data.(fields{i}); 
 
-           thin_pwr = data_i.thin;
-           thick_pwr = data_i.thick;
-           med_pwr = data_i.med;
-
-           thin_pwrspec(:,:,:,end+1) = thin_pwr;
-           thick_pwrspec(:,:,:,end+1) = thick_pwr;
-           med_pwrspec(:,:,:,end+1) = med_pwr;
-           
-        end
-        
-        avg_thick = mean(thick_pwrspec,4);
-        avg_thin = mean(thin_pwrspec,4);
-        avg_med = mean(med_pwrspec,4);
-                
-        new_data.thin = avg_thin;
-        new_data.thick = avg_thick;
-        new_data.med = avg_med;
-        new_data.time = data_i.time;
-        new_data.freq = data_i.freq;
-    end
  end
  
  %% create power values from each participant
