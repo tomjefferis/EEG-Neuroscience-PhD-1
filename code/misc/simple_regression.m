@@ -2,21 +2,98 @@ clear;
 clc;
 log_trnsfrm = 1;
 
+f = 'headache';
 
-headache = get_scores('headache');
-headache_power = get_scores('power');
+f = strcat(f, '-factor');
+factor = get_scores(f);
+pgi = get_scores('pgi-howards_method');
+power = get_scores('power');
 
-[independent, dependent] = align_participants_based_on_number(headache, headache_power);
+%% create barplots
+%create_barplots(itc, factor)
 
-lm = fitlm(independent, dependent);
-plot(lm);
-xlabel('Headache')
-ylabel('PGI of Power of Headache');
-title('Dependent: PGI of Power of Headache, Independent: Headache Factor Scores'); 
-disp(lm);
+%% create regressors
+[y_pgi, ~] = align_participants_based_on_number(factor, pgi);
+[factors, y_power] = align_participants_based_on_number(factor, power);
+
+factors = factors';
+%factors(:,2) = 1;
+power = y_power';
+pgi = y_pgi';
+
+factors_with_power = factors;
+factors_with_power(:,3) = power(:,1);
+
+
+% model one
+tbl = table(factors, pgi, 'VariableNames',...
+    {'Factors_Through_Partitions','Abs_Diff_Trial_vs_Ga_Max_Freq_Power'});
+mdl = fitlm(tbl, 'Abs_Diff_Trial_vs_Ga_Max_Freq_Power~Factors_Through_Partitions');
+disp(mdl);
+
+% model two
+tbl = table(factors, power, 'VariableNames',...
+    {'Factors_Through_Partitions','Power_Through_Partitions'});
+mdl = fitlm(tbl, 'Power_Through_Partitions~Factors_Through_Partitions');
+
+
+% model three
+tbl = table(factors, power, pgi, 'VariableNames',...
+    {'Factors_Through_Partitions','Power_Through_Partitions', 'Abs_Diff_Trial_vs_Ga_Max_Freq_Power'});
+mdl = fitlm(tbl, 'Abs_Diff_Trial_vs_Ga_Max_Freq_Power~Factors_Through_Partitions+Power_Through_Partitions');
+disp(mdl);
+
+%% create barplots
+function create_barplots(itc, factor)
+    fields = fieldnames(factor);
+    
+    all_high = [];
+    all_low = [];
+    for k = 1:numel(fields)
+       partition_factor = factor.(fields{k}); 
+       itc_factor = itc.(fields{k});
+       
+       [~,idx] = sort(partition_factor(:,2), 'descend');
+       sortedmat = partition_factor(idx,:);
+       participants_high = sortedmat(1:17,1);
+       participants_low = sortedmat(18:34,1);
+       
+       low_cnt = 0;
+       for n = 1:numel(participants_low)
+          part_n =  participants_low(n);
+          [row, ~] = find(itc_factor(:,1)==part_n);
+          val = itc_factor(row,2);
+          if sum(val) ~= 0
+            low_cnt = low_cnt + val;
+          end
+       end
+       
+       high_cnt = 0;
+       for n = 1:numel(participants_high)
+          part_n =  participants_high(n);
+          [row, ~] = find(itc_factor(:,1)==part_n);
+          val = itc_factor(row,2);
+          if sum(val) ~= 0
+            high_cnt = high_cnt + val;
+          end
+       end
+      
+       
+       all_low(k) = low_cnt;
+       all_high(k) = high_cnt;
+       
+    end
+    
+    bar(all_low)
+    ylim([-0.5, 1])
+    title('Low Group: ITC Through the Partitions');
+    bar(all_high)
+    ylim([-0.5, 1])
+    title('High Group: ITC Through the Partitions');
+end
 
 %% align participants
-function [X, Y] = align_participants_based_on_number(x1, x2)
+function [X, Y] = align_participants_based_on_number(x2, x1)
     fields = fieldnames(x1);
     
     [X,Y] = deal([], []);
@@ -66,8 +143,73 @@ function scores = get_scores(type)
                 17,-13.738;20,-1.092;21,-5.965;22,1.744;23,0.759;24,-4.341;26,-2.607;28,1.316;29,0.051;
                 30,4.519;31,-2.434;32,3.01;33,-1.068;36,-2.51;37,-2.409;38,3.922;39,-8.562;
             ];
+       
+    elseif strcmp(type, 'itc')
+        scores.one = [
+        1,0.277;2,-0.163;3,0.304;4,-0.053;5,0.042;6,0.002;7,0.063;8,0.133;
+        9,0.058;10,0.095;11,0.022;12,-0.032;14,0.114;16,-0.052;17,0.107;
+        20,0.076;21,0.049;22,0.311;23,-0.224;24,-0.219;26,-0.046;28,-0.046;
+        29,-0.157;30,0.068;31,0.042;32,0.01;33,0.171;36,-0.167;37,0.295;38,-0.049;
+        39,0.07;
+        ];
         
-    elseif strcmp(type, 'headache')
+        scores.two = [   
+        1,0.193;2,0.051;3,0.116;4,0.03;5,-0.006;6,0.054;7,0.135;8,0.129;9,-0.064;
+        10,-0.041;11,-0.064;12,-0.164;14,0.104;16,0.084;17,0.285;20,-0.031;21,0.197;
+        22,0.17;23,-0.261;24,-0.101;26,0.018;28,-0.018;29,-0.009;30,0.214;31,-0.1;32,-0.052;33,-0.117;
+        36,-0.097;37,0.143;38,-0.044;39,0.06;
+        ];
+    
+        scores.three = [
+        1,0.094;2,-0.111;3,0.274;4,-0.066;5,0.221;6,0.038;7,-0.036;8,0.081;
+        9,-0.17;10,-0.247;11,-0.013;12,-0.156;14,0.148;16,-0.079;17,0.219;20,0.239;
+        21,-0.285;22,0.172;23,-0.151;24,0.12;26,-0.081;28,0.011;29,-0.044;30,0.485;
+        31,-0.028;32,-0.093;33,-0.04;36,0.242;37,-0.165;38,-0.087;39,-0.111;
+        ];
+    
+    elseif strcmp(type, 'pgi-howards_method')
+    scores.one = [
+        1,1.111;2,0;4,0;5,3.111;8,0;10,0;12,0;14,0.889;16,2;17,0;21,5.111;
+        28,2;29,0;37,2;38,1.111;39,0;3,0;6,0;7,2.889;9,0;11,0;20,4.889;
+        22,4.889;23,10;24,5.111;26,2;30,0;31,0;32,0;33,0.889;
+        ];
+    
+    scores.two = [
+       1,1.111;2,8;4,5.111;5,2.889;8,0;10,0;12,0;14,0;16,0;17,0;21,4;28,0;
+       29,4;37,4;38,0;39,0.889;3,6.889;6,0;7,4;9,2.889;11,0;20,4;22,2;23,0;
+        24,4;26,0.889;30,0;31,0;32,10;33,2;
+    ];
+
+    scores.three = [
+        1,0.889;2,0;4,0;5,0.889;8,4;10,7.111;12,10;14,0;16,0;17,7.111;
+        21,5.111;28,0.889;29,0;37,0.889;38,0;39,8;3,0;6,0;7,0.889;9,10;
+        11,0;20,8;22,2;23,4.889;24,0;26,2.889;30,0;31,0;32,0;33,4.889;
+    ];
+    
+    elseif strcmp(type, 'pgi-max')
+   
+    scores.one = [
+    1,3.497;2,4.762;3,6.064;4,7.128;5,5.999;6,4.99;7,0.93;8,7.07;9,2.183;
+    10,5.116;11,4.002;12,5.256;14,5.611;16,9.492;17,10.689;20,1.878;21,15.659;
+    22,5.267;23,2.391;24,5.718;26,0.649;28,-1.101;29,4.157;30,5.153;31,3.811;
+    32,3.318;33,4.231;36,1.53;37,9.518;38,10.719;39,7.398;  
+    ];
+
+    scores.two = [
+    1,3.561;2,0.53;3,1.258;4,5.221;5,4.007;6,4.719;7,0.417;8,4.471;9,-0.173;
+    10,1.33;11,6.205;12,2.796;14,5.999;16,3.831;17,6.455;20,-0.461;21,9.373;
+    22,5.264;23,3.316;24,3.686;26,4.741;28,1.98;29,1.871;30,7.931;31,4.139;
+    32,5.669;33,9.313;36,4.769;37,3.623;38,10.035;39,7.469;
+    ];
+
+    scores.three = [
+    1,2.355;2,4.651;3,1.043;4,3.45;5,1.868;6,4.577;7,1.133;8,0.785;9,1.248;
+    10,1.332;11,7.099;12,3.665;14,6.318;16,2.744;17,8.67;20,1.672;21,4.908;
+    22,6.227;23,1.727;24,11.418;26,2.691;28,5.788;29,4.808;30,7.483;31,5.593;
+    32,7.602;33,6.135;36,3.999;37,8.431;38,16.254;39,10.842;
+    ];
+        
+    elseif strcmp(type, 'headache-factor')
         dataset = [
         1,-0.2574;2,-0.0417;3,-0.6726;4,0.4236;5,1.781;6,-1.0608;7,-0.7657;
         8,0.1279;9,-0.6553;10,-0.2896;11,-0.5122;12,2.1424;13,-0.1803;
@@ -106,5 +248,84 @@ function scores = get_scores(type)
                 error('Participants do not align...')
             end
         end   
+    elseif strcmp(type, 'discomfort-factor')
+        dataset = [
+            1,-0.2427;2,0.4398;3,-0.5221;4,1.8399;5,-0.6095;6,0.8092;7,-0.6979;
+            8,0.9717;9,-0.8232;10,-0.9152;11,0.3501;12,-0.8418;13,-0.7414;
+            14,1.5086;16,1.0678;17,1.5466;20,0.1606;21,0.1343;22,0.6145;23,-1.3703;
+            24,2.2964;25,-0.7656;26,-0.5905;28,-0.8957;29,0.3773;30,-0.6245;31,2.1948;
+            32,-1.5111;33,1.1882;34,-0.7889;37,-0.5762;38,-1.0582;39,-0.7461;40,0.5811;
+        ];
+    
+        scores.one = dataset;
+        scores.two = dataset;
+        scores.three = dataset;
+    
+        min_n = min(scores.one);
+        scores.one(:,2) = scores.one(:,2) - min_n(2);
+        scores.two(:,2) = scores.two(:,2) - min_n(2);
+        scores.three(:,2) = scores.three(:,2) - min_n(2);
+        
+        scores.one(:,2) = scores.one(:,2) * 2.72;
+        scores.two(:,2) = scores.two(:,2) * 1.65;
+        scores.three(:,2) = scores.three(:,2) * 1.00;
+   
+        [n_participants, ~] = size(dataset);
+        
+        for k=1:n_participants
+            p1 = scores.one(k,1);
+            p2 = scores.two(k,1);
+            p3 = scores.three(k,1);
+            
+            if p1 == p2 && p2 == p3                
+                to_remove = scores.three(k,2);
+                
+                scores.one(k,2) = scores.one(k,2) - to_remove;
+                scores.two(k,2) = scores.two(k,2) - to_remove;
+                scores.three(k,2) = scores.three(k,2) - to_remove;
+            else
+                error('Participants do not align...')
+            end
+        end   
+    elseif strcmp(type, 'visual_stress-factor')
+        dataset = [
+        1,0.3227;2,-0.1086;3,-0.5102;4,1.1336;5,-0.6395;6,-1.2147;
+        7,-0.3301;8,0.7524;9,-0.3903;10,-0.7221;11,-0.769;12,-1.063;
+        13,-0.8985;14,-1.4672;16,-1.1987;17,0.1542;20,0.5867;21,1.0008;
+        22,-0.1169;23,1.7209;24,0.1411;25,0.6221;26,-0.7483;28,0.6739;
+        29,-0.0237;30,0.0364;31,0.6996;32,-0.2998;33,-0.65;34,0.0262;
+        37,0.7986;38,-0.5883;39,2.3332;40,2.2667;   
+        ];
+    
+        scores.one = dataset;
+        scores.two = dataset;
+        scores.three = dataset;
+    
+        min_n = min(scores.one);
+        scores.one(:,2) = scores.one(:,2) - min_n(2);
+        scores.two(:,2) = scores.two(:,2) - min_n(2);
+        scores.three(:,2) = scores.three(:,2) - min_n(2);
+        
+        scores.one(:,2) = scores.one(:,2) * 2.72;
+        scores.two(:,2) = scores.two(:,2) * 1.65;
+        scores.three(:,2) = scores.three(:,2) * 1.00;
+   
+        [n_participants, ~] = size(dataset);
+        
+        for k=1:n_participants
+            p1 = scores.one(k,1);
+            p2 = scores.two(k,1);
+            p3 = scores.three(k,1);
+            
+            if p1 == p2 && p2 == p3                
+                to_remove = scores.three(k,2);
+                
+                scores.one(k,2) = scores.one(k,2) - to_remove;
+                scores.two(k,2) = scores.two(k,2) - to_remove;
+                scores.three(k,2) = scores.three(k,2) - to_remove;
+            else
+                error('Participants do not align...')
+            end
+        end
     end
 end
