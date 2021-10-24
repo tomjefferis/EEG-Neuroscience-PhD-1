@@ -22,7 +22,7 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
-generate_erps = 0;
+generate_erps = 1;
 weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
@@ -33,11 +33,11 @@ if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
     run_mua = 0; % run a MUA in the frequnecy domain?
     analyse_spectrogram = 1 ; % analysis on the aggregate power data?
-    frequency_level = 'participant-level'; % freq analyses on 'participant-level' or 'trial-level'
+    frequency_level = 'trial-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
     toi = [0.090, 0.250];
     foi = [5, 15];
-    analysis = 'load'; % 'load' or 'preprocess'
+    analysis = 'preprocess'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
 end
@@ -442,7 +442,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 25;
+        cfg.numrandomization = 1000;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
