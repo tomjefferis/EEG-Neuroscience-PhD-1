@@ -2,8 +2,8 @@ clear all;clc
 
 %% settings for synth data
 samples = 2001;
-num_participants = 40;
-n_trials = 500;
+num_participants = 1;
+n_trials = 10;
 total_trials = num_participants*n_trials;
 width_lag = 160;
 toi = [-0.2, 0.8];
@@ -65,9 +65,8 @@ start_value = toi(1);
 n_elements = samples;
 step_size = (end_value-start_value)/(n_elements-1);
 
-all_participant_data = [];
+all_participant_data = {};
 for p=1:num_participants
-    disp(p);
     data = participants{p};
     erp = data.erp;
     trials = data.trials;
@@ -80,7 +79,7 @@ for p=1:num_participants
     erp_level.label = {'A1'};
     erp_level.time = time;
     erp_tf = ft_freqanalysis(cfg, erp_level);
-    freq_of_maximum_power_erp = freq_of_max_pow(erp_tf);
+    freq_of_maximum_power = freq_of_max_pow(erp_tf);
     
     % trial-level
     trial_level.dimord = 'chan_time';
@@ -89,10 +88,10 @@ for p=1:num_participants
     trial_level.label = {'A1'};
     trial_level.time = create_fieldtrip_format(n_trials,time);
     tl_tf = ft_freqanalysis(cfg, trial_level);
-    freq_of_maximum_power_trial_level = freq_of_max_pow(tl_tf);
     
-    all_participant_data(p,1) = freq_of_maximum_power_erp;
-    all_participant_data(p,2) = freq_of_maximum_power_trial_level;
+    participant_data.trial_level = tl_tf;
+    participant_data.erp_level = erp_tf;
+    
 end
 
 
@@ -103,7 +102,7 @@ cfg.channel = 'A1';
 ft_singleplotTFR(cfg, tl_tf);
 
 %% gets the frequency of maximum power
-function freq = freq_of_max_pow(data)
+function f = freq_of_max_pow(data)
     f = data.freq;
     d = squeeze(data.powspctrm);
     [row, col] = find(ismember(d, max(d(:))));
