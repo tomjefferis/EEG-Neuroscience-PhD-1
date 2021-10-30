@@ -1,5 +1,7 @@
-function signal = noise (frames, epochs, srate, sumsig)
+function signal = noise (frames, epochs, srate)
 
+% function signal = noise (frames, epochs, srate)
+%
 % Function generates noise with the power spectrum of human EEG
 % Inputs:
 %  frames - number of signal frames per each trial
@@ -10,6 +12,7 @@ function signal = noise (frames, epochs, srate, sumsig)
 % Implemented by: Rafal Bogacz and Nick Yeung, Princeton Univesity, December 2002
 
 load meanpower  
+sumsig = 50;	%number of sinusoids from which each simulated signal is composed of
 
 signal = zeros (1, epochs * frames);
 for trial = 1:epochs
