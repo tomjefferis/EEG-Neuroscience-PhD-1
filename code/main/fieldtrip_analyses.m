@@ -62,6 +62,7 @@ for i = 1:numel(experiment_types)
         % set up the experiment as needed
         if strcmp(experiment_type, 'onsets-2-8-explicit')
 
+            if contains(desired_design_mtxs, 'eye')
                 data_file = 'time_domain_eye_confound_onsets_2_3_4_5_6_7_8_grand-average.mat';
             else
                 data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
