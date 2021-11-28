@@ -8,7 +8,7 @@ cd("D:\PhD");
     
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
-to_preprocess = {'partitions'};
+to_preprocess = {'eye_confound'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
@@ -22,7 +22,7 @@ for k=to_preprocess
     
     analysis_type=k{1};
     
-    if strcmp(analysis_type, 'mean_intercept')
+    if strcmp(analysis_type, 'mean_intercept') || strcmp(analysis_type, 'eye_confound')
         n_participants = 40;
     elseif strcmp(analysis_type, 'partitions')
         n_participants = 40;
@@ -91,18 +91,16 @@ for k=to_preprocess
                 cfg.baselinewindow  = baseline_window;
 
                 cfg.bpfilter = 'yes';
-                cfg.bpfilttype = 'fir';
+                cfg.bpfilttype = 'fir';                
                 cfg.bpfreq = filter_freq;
-               
                 data = ft_preprocessing(cfg, raw);
 
                 % Detect artefacts via thresholding -100:100 uV
-                
                 cfg = [];
                 cfg.continious = 'no';
                 cfg.artfctdef.threshold.min = -100;
                 cfg.artfctdef.threshold.max = 100;
-                cfg.artfctdef.threshold.channel = get_eeg_channels(data);
+                cfg.artfctdef.threshold.channel = get_eeg_channels(data, analysis_type);
                 cfg.artfctdef.threshold.bpfilter  = 'no';
 
                 [~, artifact] = ft_artifact_threshold(cfg, data);
@@ -115,8 +113,9 @@ for k=to_preprocess
 
                 % update with the proper trial names after artefact rejection
                 postprocessed = label_data_with_trials(raw, postprocessed);
+                % relabel the relevant conditions after postprocessing
                 postprocessed = relabel_conditions(postprocessed, D);
-                
+
                 % reject based on count of trials per condition
                 reject_participant = reject_particiapnt_based_on_bad_trials(postprocessed, raw);
                 if reject_participant == 1
@@ -141,7 +140,7 @@ end
 %% label and create the grand average dataset
 function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, data_type)
 
-    postprocessed = remove_electrodes(postprocessed);
+    postprocessed = remove_electrodes(postprocessed, data_type);
 
     idx_used_for_saving_data = 1; 
     trial_names_and_order = postprocessed.trial_order;
@@ -235,7 +234,7 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
         grand_averages.elec = postprocessed.elec;
         grand_averages.dimord = 'chan_time';
         grand_averages.label = postprocessed.label;
-    elseif strcmp(data_type, 'mean_intercept')
+    elseif strcmp(data_type, 'mean_intercept') || strcmp(data_type, 'eye_confound')
         thin_idx = find(contains(trial_names_and_order,'thin'));
         med_idx = find(contains(trial_names_and_order,'medium'));
         thick_idx = find(contains(trial_names_and_order,'thick'));
@@ -281,9 +280,27 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
     end
 end
 %% remvoe electrodes
-function postprocessed = remove_electrodes(postprocessed)
-    to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+function postprocessed = remove_electrodes(postprocessed, type)
     
+    if strcmp(type, 'eye_confound')
+        to_remove = {
+    'A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12','A13','A14', ...
+    'A15','A16','A17','A18','A19','A20','A21','A22','A23','A24','A25','A26','A27', ...
+    'A28','A29','A30','A31','A32','B1','B2','B3','B4','B5','B6','B7','B8','B9', ...
+    'B10','B11','B12','B13','B14','B15','B16','B17','B18','B19','B20','B21','B22', ...
+    'B23','B24','B25','B26','B27','B28','B29','B30','B31','B32','C1','C2','C3', ...
+    'C4','C5','C6','C7','C8','C9','C10','C11','C12','C13','C14','C15','C16','C17','C18', ...
+    'C19','C20','C21','C22','C23','C24','C25','C26','C27','C28','C29','C30','C31', ...
+    'C32','D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','D11','D12','D13', ...
+    'D14','D15','D16','D17','D18','D19','D20','D21','D22','D23','D24','D25','D26', ...
+    'D27','D28','D29','D30','D31','D32', 'EXG5', 'EXG6'
+    };
+    else
+        to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+    end
+
+
+
     electorode_information = postprocessed.elec;
     
     trials = postprocessed.trial;
@@ -376,9 +393,15 @@ function postprocessed = label_data_with_trials(raw, postprocessed)
     postprocessed.sampleinfo = new_info;
 end
 %% get the eeg channels excluding EOG etc
-function labels = get_eeg_channels(data)
-    to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
-    to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+function labels = get_eeg_channels(data, type)
+
+    if strcmp(type, 'partition') || strcmp(type, 'mean_intercept')
+        to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+        to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+    elseif strcmp(type, 'eye_confound')
+        to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+    end
+    
     labels = setdiff(data.elec.label, to_remove);
 end
 

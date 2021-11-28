@@ -9,16 +9,17 @@ addpath C:\External_Software\fieldtrip-20210807\
 
 desired_time = 2; % in seconds
 desired_fs = 500;
-desired_noise_level = 0.7;
-desired_trials = 500;
+desired_noise_level = 0;
+desired_trials = 50;
 desired_participants = 1;
 desired_total_trials = desired_participants * desired_trials;
-desired_jitter = 30;
-desired_peak_fs = 30;
+desired_jitter = 40;
+desired_peak_fs = 25;
 desired_toi = [0, desired_time];
 
 n_samples = desired_time * desired_fs;
 peak_time = floor(n_samples/3)*2;
+
 
 my_noise = noise(n_samples, desired_total_trials, desired_fs);
 my_peak = peak(n_samples, desired_total_trials, desired_fs, desired_peak_fs, peak_time, desired_jitter);
@@ -28,6 +29,9 @@ signal = my_peak + (my_noise*desired_noise_level);
 if desired_total_trials > 1
     my_noise = split_vector(my_noise, n_samples);
     my_peak = split_vector(my_peak, n_samples);
+else
+    my_noise = my_noise';
+    my_peak = my_peak';
 end
 
 %% add the pink noise on top of the sythetic data
@@ -52,30 +56,27 @@ for p = 1:desired_participants
         k_trials = k_trials + desired_trials;
     end
     
+    %subset = bpfilt(subset, 0.1, 30, desired_fs, 0);
     erp = mean(subset,2);
+    %erp  = bpfilt(erp, 0.1, 30, desired_fs, 0);
+    plot(subset);
     data.erp = erp;
     data.trials = subset;
     participants{p} = data;
     
-    if make_plot == 1
-        %bandpass_erp = bandpass(erp, [0.1,30]);
-        %plot(subset, 'Color',[0, 0.5, 0, 0.1]);
-        hold;
-        plot(erp);
-        hold;
-    end
     
 end
 
 %% create spectrograms using morlett waveletts on both the trial and ERP leve
 cfg              = [];
 cfg.output       = 'pow';
-cfg.method       = 'wavelet';
-cfg.taper        = 'hanning';
-cfg.width = 3;
-cfg.foi =   5:30;
-cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
-cfg.toi          = desired_toi(1):0.002:desired_toi(2);
+cfg.method       = 'mtmconvol';
+cfg.taper = 'hanning';
+cfg.foi =   5:1:30; % in 1 Hz steps
+cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25; % time window = 0.250ms
+cfg.toi          = desired_toi(1):0.002:desired_toi(2); % 2ms steps
+cfg.toi = 'all';
+%cfg.width = 5;
 
 end_value = desired_toi(2);  
 start_value = desired_toi(1);
@@ -108,11 +109,11 @@ for p=1:desired_participants
     tl_tf = ft_freqanalysis(cfg, trial_level);
     freq_of_maximum_power_trial_level = freq_of_max_pow(tl_tf);
     
-    all_participant_data(p,1) = freq_of_maximum_power_erp;
-    all_participant_data(p,2) = freq_of_maximum_power_trial_level;
+    disp('ERP')
+    disp(freq_of_maximum_power_erp);
+    disp('Trial')
+    disp(freq_of_maximum_power_trial_level);
 end
-
-all_participant_data;
 
 
 cfg = [];
@@ -120,14 +121,18 @@ cfg.baseline = 'no';
 cfg.xlim = [desired_toi(1),desired_toi(2)];
 cfg.channel = 'A1';
 ft_singleplotTFR(cfg, tl_tf);
-title('Trial Level')
+s = strcat('Trial Level ', {' '},  num2str(freq_of_maximum_power_trial_level), 'Hz');
+s = s{1};
+title(s, 'FontSize', 25)
 
 cfg = [];
 cfg.baseline = 'no';
 cfg.xlim = [desired_toi(1),desired_toi(2)];
 cfg.channel = 'A1';
 ft_singleplotTFR(cfg, erp_tf);
-title('GA Level')
+s = strcat('Participant Level ', {' '},  num2str(freq_of_maximum_power_erp), 'Hz');
+s = s{1};
+title(s, 'FontSize', 25)
 
 %% gets the frequency of maximum power
 function freq = freq_of_max_pow(data)
@@ -172,5 +177,21 @@ function v = split_vector(vector, n_samples)
         c = c';
         v(:, chunk) = c(:,1);
         
+    end
+end
+
+%% increase width of wavelett with higher Fs
+function width = increasing_width_with_time(K, woi)
+    width = ones(K,1);
+    for j = 1:size(woi,2)
+        if j == 1
+            start_i = j;
+            end_i = K/size(woi,2);
+            width(start_i:end_i) = ones(1,K/size(woi,2)) * woi(j); 
+        else
+            start_i = K/size(woi,2);
+            end_i = end_i + K/size(woi,2);
+            width(start_i+1:end_i) = ones(1,K/size(woi,2)) * woi(j); 
+        end
     end
 end

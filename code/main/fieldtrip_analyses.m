@@ -10,8 +10,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'headache'};
+experiment_types = {'onsets-2-8-explicit'};   
+desired_design_mtxs = {'eye_confound_exg1-4_heog_veog'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -27,7 +27,7 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'frequency_domain';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -61,8 +61,14 @@ for i = 1:numel(experiment_types)
         %% Are we looking at onsets 2-8 or partitions
         % set up the experiment as needed
         if strcmp(experiment_type, 'onsets-2-8-explicit')
-            data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
-            regressor = 'ft_statfun_indepsamplesregrT';
+
+                data_file = 'time_domain_eye_confound_onsets_2_3_4_5_6_7_8_grand-average.mat';
+            else
+                data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+            end
+
+            
+            regressor = 'ft_statfun_depsamplesT';
             type_of_effect = 'null';
             regression_type = desired_design_mtx;
             n_participants = 40;
@@ -75,8 +81,13 @@ for i = 1:numel(experiment_types)
             [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
                 data_file, partition);            
             n_part = numel(data);
-            [design_matrix, data] =  create_design_matrix_partitions(participant_order_1, data, ...
-                        regression_type, 0, type_of_effect);
+            %[design_matrix, data] =  create_design_matrix_partitions(participant_order_1, data, ...
+            %            regression_type, 0, type_of_effect);
+            design_matrix =  [1:n_part 1:n_part; ones(1,n_part) 2*ones(1,n_part)]; 
+            
+            if contains(desired_design_mtxs, 'eye')
+                data = apply_dummy_coordinates_to_eye_electrodes(data);
+            end
 
 
         elseif strcmp(experiment_type, 'partitions-2-8')
@@ -436,13 +447,13 @@ for i = 1:numel(experiment_types)
         % all experiment configuraitons:
         cfg = [];
         cfg.latency = [start_latency, end_latency];
-        cfg.channel = 'eeg';
+        cfg.channel = {'EXG1'};
         cfg.statistic = regressor;
         cfg.method = 'montecarlo';
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 1000;
+        cfg.numrandomization = 500;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
@@ -451,13 +462,13 @@ for i = 1:numel(experiment_types)
         
         
         %% run the fieldtrip analyses
-        if contains(experiment_type, 'onsets-2-8-explicit') && strcmp(regression_type, 'none')
+        if contains(experiment_type, 'onsets-2-8-explicit') && strcmp(regression_type, 'none') || contains(regression_type, 'eye')
             cfg.uvar = 1;
             cfg.ivar = 2;
             null_data = set_values_to_zero(data); % create null data to hack a t-test
             stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
-            desired_cluster =1;
-            get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
+            %desired_cluster =1;
+            %get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
         elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
                 || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
                 || contains(experiment_type, 'coarse-vs-fine-granularity') || contains(experiment_type, 'Partitions')
@@ -504,6 +515,30 @@ for i = 1:numel(experiment_types)
             0.05, 'negative', save_path)
     end
 end
+
+%% applies dummy coordinates at the top of the scalp to eye electrodes
+function data = apply_dummy_coordinates_to_eye_electrodes(data)
+    for i=1:numel(data)
+        participant = data{i};
+        elec = participant.elec;
+        elec.label = participant.label;
+        elec.chantype = {'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg'};
+        elec.chanunit = {'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V'};
+        dummy_coordinates = [
+            [39.0041,73.3611,14.3713], % C16
+            [66.289,55.4377,6.436], % C8
+            [-30.8659,74.2231,18.9699], % C29
+            [-61.033,56.6667,14.7309], % C30
+            [3.4209,79.7912,16.9555], % C17
+            [4.6444,72.0457,39.0973], % C18
+        ];
+        elec.chanpos = dummy_coordinates;
+        elec.elecpos = dummy_coordinates;
+        participant.elec = elec;
+        data{i} = participant;
+    end
+end
+
 
 %% Extract the frequency where power is highest 
 function extract_frequency_from_highest_power(data, foi, toi, electrode)
@@ -1089,7 +1124,7 @@ end
 
 %% return scores
 function scores = return_scores(regression_type, type_of_effect)
-    if strcmp(regression_type, 'no-factor')
+    if strcmp(regression_type, 'no-factor') || contains(regression_type, 'eye')
         dataset = [
         1,1;2,1;3,1;4,1;5,1;6,1;7,1;8,1;9,1;10,1;11,1;12,1;13,1;14,1;15,1;
         16,1;17,1;18,1;19,1;20,1;21,1;22,1;23,1;24,1;25,1;26,1;27,1;28,1;
@@ -1716,7 +1751,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xline(end_peak, '-', 'HandleVisibility','off');
        xline(peak_effect, '--r', 'HandleVisibility','off');
        xlim(plotting_window);
-       ylim([-6, 8])
+       ylim([-4, 10])
        grid on
      
 
@@ -2294,7 +2329,7 @@ function ci = bootstrap_erps(data, e_idx)
         for k=1:numel(fields)
            time_series_name = fields{k}; 
            participant_level.series = p.(fields{k});
-           participant_level.weighting = p.weighting;
+           participant_level.weighting = 1;
            
            if contains(time_series_name, 'med')
                 participant_level.series = participant_level.series(e_idx,:);
