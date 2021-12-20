@@ -22,7 +22,7 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
-generate_erps = 0;
+generate_erps = 1;
 weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
@@ -1043,11 +1043,8 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
     end
     max_iter = numel(m)-1;
     
-    max_t = max(stat.stat, [], 'all');
-    max_t = round(max_t, 2);
-
     for k = 1:max_iter
-         subplot(2,4,k);
+         subplot(1,10,k);
          cfg = [];
          cfg.xlim = [j(k) j(k+1)];
          cfg.zlim = [-5e-14 5e-14];
@@ -1059,13 +1056,18 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
          cfg.comment = 'xlim';
          cfg.commentpos = 'title';
          cfg.parameter = 'stat';
-         cfg.zlim=[-max_t,max_t];
+         cfg.zlim=[-4,4];
          %cfg.colorbar = 'SouthOutside';
          %cfg.layout = 'biosemi128.lay';
          ft_topoplotER(cfg, stat);
          %ft_clusterplot(cfg, stat)
     end
-
+    
+    %%cfg = [];
+    %%cfg.alpha  = 0.025;
+    %%cfg.parameter = 'stat';
+    %%cfg.zlim   = [-4 4];
+    %%ft_clusterplot(cfg, stat);
     set(gcf,'Position',[100 100 650 650])
     exportgraphics(gcf,save_dir,'Resolution',500);
     close;
@@ -1812,13 +1814,13 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off', 'LineStyle','none');
        set(h,'facealpha',.05)
        
-       plot(time, ci1_h.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_h.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
-       plot(time, ci1_h.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+       plot(time, ci1_h.dist_thick_avg, 'color', '#FFE600', 'LineWidth', 3.5,'HandleVisibility','off');
+       plot(time, ci1_h.dist_thick_high, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
+       plot(time, ci1_h.dist_thick_low, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
        x2 = [time, fliplr(time)];
        inBetween = [ci1_h.dist_thick_high, fliplr(ci1_h.dist_thick_low)];
        h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
-       set(h,'facealpha',.175)
+       set(h,'facealpha',.15)
        
        xlim(plotting_window);
        title('High Group');
@@ -1854,13 +1856,13 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off', 'LineStyle','none');
        set(h,'facealpha',.05)
        
-       plot(time, ci1_l.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_l.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
-       plot(time, ci1_l.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+       plot(time, ci1_l.dist_thick_avg, 'color', '#FFE600', 'LineWidth', 3.5,'HandleVisibility','off');
+       plot(time, ci1_l.dist_thick_high, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
+       plot(time, ci1_l.dist_thick_low, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
        x2 = [time, fliplr(time)];
        inBetween = [ci1_l.dist_thick_high, fliplr(ci1_l.dist_thick_low)];
        h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
-       set(h,'facealpha',.175)
+       set(h,'facealpha',.15)
        
        xlim(plotting_window);
        title('Low Group');
@@ -2023,8 +2025,8 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off', 'LineStyle','none');
        set(h,'facealpha',.05)
        
-       plot(time, ci3_l.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci3_l.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+       plot(time, ci3_l.dist_thick_avg, 'color', '#FFE600', 'LineWidth', 3.5,'HandleVisibility','off');
+       plot(time, ci3_l.dist_thick_high, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
        plot(time, ci3_l.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
        x2 = [time, fliplr(time)];
        inBetween = [ci3_l.dist_thick_high, fliplr(ci3_l.dist_thick_low)];

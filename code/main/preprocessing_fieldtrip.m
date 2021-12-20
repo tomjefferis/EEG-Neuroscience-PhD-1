@@ -8,7 +8,7 @@ cd("D:\PhD");
     
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
-to_preprocess = {'eye_confound'};
+to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
@@ -31,7 +31,7 @@ for k=to_preprocess
     [n_onsets, ~] = size(onsets);
     for i=1:n_onsets
         subset_onsets = onsets(i,:);
-        for participant = 1:n_participants
+        for participant = 28:n_participants
 
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);
@@ -395,7 +395,7 @@ end
 %% get the eeg channels excluding EOG etc
 function labels = get_eeg_channels(data, type)
 
-    if strcmp(type, 'partition') || strcmp(type, 'mean_intercept')
+    if strcmp(type, 'partitions') || strcmp(type, 'mean_intercept')
         to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
         to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
     elseif strcmp(type, 'eye_confound')
