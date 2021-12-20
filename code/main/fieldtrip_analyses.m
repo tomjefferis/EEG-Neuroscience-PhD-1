@@ -11,7 +11,7 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'headache', 'visual_stress', 'discomfort'}; 
+desired_design_mtxs = {'visual_stress', 'headache', 'discomfort'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -454,7 +454,7 @@ for i = 1:numel(experiment_types)
         cfg.correctm = 'cluster';
         cfg.neighbours = neighbours;
         cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 500;
+        cfg.numrandomization = 30000;
         cfg.tail = roi_to_apply; 
         cfg.design = design_matrix;
         cfg.computeprob = 'yes';
@@ -468,6 +468,7 @@ for i = 1:numel(experiment_types)
             cfg.ivar = 2;
             null_data = set_values_to_zero(data); % create null data to hack a t-test
             stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
+            save(strcat(save_path, '\stat.mat'), 'stat')
             %desired_cluster =1;
             %get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
         elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
@@ -479,18 +480,23 @@ for i = 1:numel(experiment_types)
         end
 
         %% get peak level stats
-        [pos_peak_level_stats, pos_all_stats] = get_peak_level_stats(stat, 1, 'positive');
-        [neg_peak_level_stats, neg_all_stats] = get_peak_level_stats(stat, 1, 'negative');
+        for i=1:numel(stat.posclusters)
+            [pos_peak_level_stats, pos_all_stats] = get_peak_level_stats(stat, i, 'positive');
+            fname = "\pos_peak_level_stats_c_" + num2str(i) + ".mat";
+            save(strcat(save_path, fname), 'pos_all_stats')
+        end
 
-        % save 
-        save(strcat(save_path, '\pos_peak_level_stats.mat'), 'pos_all_stats')
-        save(strcat(save_path, '\neg_peak_level_stats.mat'), 'neg_all_stats')
+        for i=1:numel(stat.negclusters)
+            [neg_peak_level_stats, neg_all_stats] = get_peak_level_stats(stat, i, 'negative');
+            fname = "\neg_peak_level_stats_c_" + num2str(i) + ".mat";
+            save(strcat(save_path, '\neg_peak_level_stats.mat'), 'neg_all_stats')
+        end
 
         %% function that plots the t values through time and decides whcih electrode to plot
-        if numel(pos_all_stats) > 0
+        if numel(stat.posclusters) > 0
             pos_peak_level_stats = compute_best_electrode_from_t_values(stat,pos_all_stats,save_path, 'positive', pos_peak_level_stats);
         end
-        if numel(neg_all_stats) > 0
+        if numel(stat.negclusters) > 0
             neg_peak_level_stats = compute_best_electrode_from_t_values(stat,neg_all_stats,save_path, 'negative', neg_peak_level_stats);
         end
         
@@ -506,13 +512,15 @@ for i = 1:numel(experiment_types)
         
         %% get cluster level percentage through time
         % 1 for the most positive going cluster
-        xlim = 256;
-        title = 'Most positive going cluster through time as a % of entire volume';
-        calculate_cluster_size(stat, 1, title, xlim, 'positive', ...
-            save_path);
-        title = 'Most negative going cluster through time as a % of entire volume';
-        calculate_cluster_size(stat, 1, title, xlim, 'negative', ...
-            save_path);
+        if numel(stat.posclusters) > 0
+            title = 'Positive going clusters through time as a % of entire volume';
+            calculate_cluster_size(stat, title, 'positive', save_path);
+        end
+        
+        if numel(stat.negclusters) > 0
+            title = 'Negative going clusters through time as a % of entire volume';
+            calculate_cluster_size(stat, title, 'negative', save_path);
+        end
         
         %% make pretty plots
         create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
@@ -669,10 +677,10 @@ end
 
 %% plot and save the design matrix
 function save_desgin_matrix(design_matrix, n_participants, save_path, experiment_type)
-    plot(design_matrix(1:n_participants), 'color', 'r', 'LineWidth', 1);
+    plot(design_matrix(1:n_participants), 'color', 'r', 'LineWidth', 3.5);
     hold on;
-    plot(design_matrix(n_participants+1:n_participants*2), 'color', 'g', 'LineWidth', 1);
-    plot(design_matrix((n_participants*2)+1:n_participants*3), 'color', 'b', 'LineWidth', 1);
+    plot(design_matrix(n_participants+1:n_participants*2), 'color', 'g', 'LineWidth', 3.5);
+    plot(design_matrix((n_participants*2)+1:n_participants*3), 'color', 'b', 'LineWidth', 3.5);
     xlabel('Participants');
     ylabel('Interaction');
     if strcmp(experiment_type, 'habituation')
@@ -680,7 +688,7 @@ function save_desgin_matrix(design_matrix, n_participants, save_path, experiment
     else
         legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','northwest')
     end
-    set(gcf,'Position',[100 100 1000 1000])
+    set(gcf,'Position',[100 100 500 500])
     save_dir = strcat(save_path, '\', 'design_matrix.png');
     exportgraphics(gcf,save_dir,'Resolution',500);
     close;   
@@ -872,37 +880,58 @@ function create_viz_cluster_effect(stat, alpha)
 end
 
 %% used to calculate the cluster size through time
-function calculate_cluster_size(stat, desired_cluster, ptitle, xlim_t, type, save_dir)
+function calculate_cluster_size(stat, ptitle, type, save_dir)
     if contains(type, 'positive')
         cluster_labelling_mtx = stat.posclusterslabelmat;
+        number_of_formed_clusters = unique(stat.posclusterslabelmat);
+        number_of_formed_clusters = number_of_formed_clusters(number_of_formed_clusters~=0);
+        significance_clusters = stat.posclusters;
         save_dir = strcat(save_dir, '\', 'positive_cluster.png');
     elseif contains(type, 'negative')
         cluster_labelling_mtx = stat.negclusterslabelmat;
+        number_of_formed_clusters = unique(stat.negclusterslabelmat);
+        number_of_formed_clusters = number_of_formed_clusters(number_of_formed_clusters~=0);
+        significance_clusters = stat.negclusters;
         save_dir = strcat(save_dir, '\', 'negative_cluster.png');
     end
     
     time_mtx = stat.time;
-    
     [electrodes, time] = size(cluster_labelling_mtx);
-    
-    cluster_size_through_time = zeros(2,time);
-    
-    for i = 1:time
-        t = time_mtx(i);
-        electrodes_in_time = cluster_labelling_mtx(:,i);
-        clusters_in_time = find(electrodes_in_time==desired_cluster);
-        cluster_size_through_time(1,i) = t;
-        cluster_size_through_time(2,i) = numel(clusters_in_time)/electrodes;
+    colours = ['r', 'g', 'b', 'm', 'y'];
+    legend_to_use = {};
+
+    ylim_max = 0;
+    for k=1:numel(number_of_formed_clusters)
+        desired_cluster = number_of_formed_clusters(k);
+        c = colours(k);
+
+        description = "Cluster: " + num2str(desired_cluster) + " p-value: " + num2str(round(significance_clusters(desired_cluster).prob, 4));
+        legend_to_use{k} = description;
+
+        cluster_size_through_time = zeros(2,time);
+        for i = 1:time
+            t = time_mtx(i);
+            electrodes_in_time = cluster_labelling_mtx(:,i);
+            clusters_in_time = find(electrodes_in_time==desired_cluster);
+            cluster_size_through_time(1,i) = t;
+            cluster_size_through_time(2,i) = numel(clusters_in_time)/electrodes;
+        end
+        area(cluster_size_through_time(1,:)*1000, cluster_size_through_time(2,:)*100);
+        curr_max = max(cluster_size_through_time(2,:)*100, [], 'all') + 5;
+        if curr_max > ylim_max
+            ylim_max = curr_max;
+        end
+        hold on;
     end
-    
-    area(cluster_size_through_time(1,:)*1000, cluster_size_through_time(2,:)*100);
-    ylim([0 100]);
+    ylim([0 ylim_max]);
     grid on;
     xlabel('Time (ms)');
     ylabel('Percentage of cluster');
     %xlim([0,260])
-    xlim([0,xlim_t])
+    xlim([56,256])
     title(ptitle, 'FontSize', 14); 
+    legend(legend_to_use, 'Location', 'northwest');
+
    
     set(gcf,'Position',[100 100 1000 350])
     exportgraphics(gcf,save_dir,'Resolution',500);
@@ -1582,9 +1611,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        time = data{1}.time * 1000;
        nexttile
        hold on;
-       plot(time, ci.dist_pgi_avg, 'color', '#0072BD', 'LineWidth', 2.5,'DisplayName','PGI')
-       plot(time, ci.dist_pgi_high, 'LineWidth', 0.01, 'color', '#0072BD','DisplayName','');
-       plot(time, ci.dist_pgi_low, 'LineWidth', 0.001, 'color', '#0072BD','DisplayName','');
+       plot(time, ci.dist_pgi_avg, 'color', 'm', 'LineWidth', 3.5,'DisplayName','PGI')
+       plot(time, ci.dist_pgi_high, 'LineWidth', 0.01, 'color', 'm','DisplayName','');
+       plot(time, ci.dist_pgi_low, 'LineWidth', 0.001, 'color', 'm','DisplayName','');
        x2 = [time, fliplr(time)];
        inBetween = [ci.dist_pgi_high, fliplr(ci.dist_pgi_low)];
        h = fill(x2, inBetween, 'b' , 'LineStyle','none');
@@ -1605,7 +1634,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         plot(NaN(1), 'Color', '#FFFF00');
         legend({'Thin', 'Medium', 'Thick'},'Location','northeast')
         
-        plot(time, ci.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 2.5, 'HandleVisibility','off')
+        plot(time, ci.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5, 'HandleVisibility','off')
         plot(time, ci.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
         plot(time, ci.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
         x2 = [time, fliplr(time)];
@@ -1613,7 +1642,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         h = fill(x2, inBetween, [0, 0.447, 0.741], 'HandleVisibility','off', 'LineStyle','none');
         set(h,'facealpha',.05)
        
-        plot(time, ci.dist_med_avg, 'color', '#D95319','LineWidth', 2.5, 'HandleVisibility','off');
+        plot(time, ci.dist_med_avg, 'color', '#D95319','LineWidth', 3.5, 'HandleVisibility','off');
         plot(time, ci.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
         plot(time, ci.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
         x2 = [time, fliplr(time)];
@@ -1622,7 +1651,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         set(h,'facealpha',.05)
        
 
-        plot(time, ci.dist_thick_avg, 'color', '#FFE600','LineWidth', 2.5, 'HandleVisibility','off');
+        plot(time, ci.dist_thick_avg, 'color', '#FFE600','LineWidth', 3.5, 'HandleVisibility','off');
         plot(time, ci.dist_thick_high, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
         plot(time, ci.dist_thick_low, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
         x2 = [time, fliplr(time)];
@@ -1821,7 +1850,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('High Group');
+       title('High Group P1');
        ylim([-4, 12])
        grid on;
        hold off;
@@ -1863,7 +1892,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('Low Group');
+       title('Low Group P1');
        ylim([-4, 12])
        grid on;
        hold off;
@@ -1905,7 +1934,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('High Group');
+       title('High Group P2');
        ylim([-4, 10])
        grid on;
        hold off;
@@ -1947,7 +1976,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('Low Group');
+       title('Low Group P2');
        ylim([-4, 10])
        grid on;
        hold off;
@@ -1989,7 +2018,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('High Group');
+       title('High Group P3');
        ylim([-4, 10])
        grid on;
        hold off;
@@ -2032,7 +2061,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('Low Group');
+       title('Low Group P3');
        ylim([-4, 10])
        grid on;
        hold off;
