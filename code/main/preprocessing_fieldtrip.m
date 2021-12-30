@@ -147,15 +147,8 @@ function raw = label_data_with_trial_order(raw, D)
     num_trials = size(raw.sampleinfo, 1);
 
     for onset =1:num_trials
-        events = D.trials(onset).events;
-        [~, rows] = size(events);
-        for i = 1:rows
-            t = events(i).epoch;
-            if ~strcmp(t, '""')
-                break
-            end
-        end
-        raw.sampleinfo(onset, 3) = t;
+        t_order = D.trials(onset).trial_order;
+        raw.sampleinfo(onset, 3) = t_order;
     end
 end
 
@@ -511,6 +504,9 @@ function condition_names = label_data(thin, medium, thick, path, fname, analysis
     condition_names = {};
     
     if ~strcmp(analysis_type, 'partitions')
+        med_order = 1;
+        thick_order = 1;
+        thin_order = 1;
         for onset = 1:n_trials                              
             
             events = D.trials(onset).events;
@@ -525,21 +521,31 @@ function condition_names = label_data(thin, medium, thick, path, fname, analysis
 
             if sum(contains(condition, thin))
                 condition = strcat(factor_name, '_thin');
+                D.trials(onset).trial_order = thin_order;  
+                thin_order = thin_order + 1;
             elseif sum(contains(condition, medium))
                 condition = strcat(factor_name, '_medium');
+                D.trials(onset).trial_order = med_order;  
+                med_order = med_order + 1;
             elseif sum(contains(condition, thick))
                 condition = strcat(factor_name, '_thick');
+                D.trials(onset).trial_order = thick_order;  
+                thick_order = thick_order + 1;
             else
                 condition = 'N/A';
+                D.trials(onset).trial_order = -999; 
             end
 
             condition_names{onset} = condition;
-            D.trials(onset).label = condition;        
+            D.trials(onset).label = condition;    
             count = count + 1;
         end      
     else        
         partition_number = 1;
         max_epoch = D.trials(n_trials).events.epoch;
+        med_order = 1;
+        thick_order = 1;
+        thin_order = 1;
         for onset = 1:n_trials
             events = D.trials(onset).events;
             current_epoch = D.trials(onset).events.epoch;
@@ -572,16 +578,23 @@ function condition_names = label_data(thin, medium, thick, path, fname, analysis
                 condition = strcat(description, '_thin');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = thin_order;  
+                thin_order = thin_order + 1;
             elseif sum(contains(condition, medium))
                 condition = strcat(description, '_medium');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = med_order;  
+                med_order = med_order + 1;
             elseif sum(contains(condition, thick))
                 condition = strcat(description, '_thick');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = thick_order; 
+                thick_order = thick_order + 1;
             else
                 condition = 'N/A';     
+                D.trials(onset).trial_order = -999; 
             end
 
             condition_names{onset} = condition;
