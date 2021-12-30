@@ -98,6 +98,7 @@ for k=1:numel(to_preprocess)
                 cfg.bpfilter = 'yes';
                 cfg.bpfilttype = 'fir';                
                 cfg.bpfreq = filter_freq;
+                cfg.bpfiltord = 1;
                 data = ft_preprocessing(cfg, raw);
 
                 % Detect artefacts via thresholding -100:100 uV
@@ -233,15 +234,15 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
         trial_level.p2_thick = convert_to_fieldtrip_format(p2_thick);
         trial_level.p3_thick = convert_to_fieldtrip_format(p3_thick);
 
-        trial_level.p1_med_order = p1_med_order;
-        trial_level.p2_med_order = p2_med_order;
-        trial_level.p3_med_order = p3_med_order;
-        trial_level.p1_thin_order = p1_thin_order;
-        trial_level.p2_thin_order = p2_thin_order;
-        trial_level.p3_thin_order = p3_thin_order;
-        trial_level.p1_thick_order = p1_thick_order;
-        trial_level.p2_thick_order = p2_thick_order;
-        trial_level.p3_thick_order = p3_thick_order;
+        trial_level.p1_med_order = convert_to_fieldtrip_format(p1_med);
+        trial_level.p2_med_order = convert_to_fieldtrip_format(p2_med);
+        trial_level.p3_med_order = convert_to_fieldtrip_format(p3_med);
+        trial_level.p1_thin_order = convert_to_fieldtrip_format(p1_thin);
+        trial_level.p2_thin_order = convert_to_fieldtrip_format(p2_thin);
+        trial_level.p3_thin_order = convert_to_fieldtrip_format(p3_thin);
+        trial_level.p1_thick_order = convert_to_fieldtrip_format(p1_thick);
+        trial_level.p2_thick_order = convert_to_fieldtrip_format(p2_thick);
+        trial_level.p3_thick_order = convert_to_fieldtrip_format(p3_thick);
 
 
         trial_level.elec = postprocessed.elec;

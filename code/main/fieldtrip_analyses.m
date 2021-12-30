@@ -10,8 +10,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'visual_stress', 'headache', 'discomfort'}; 
+experiment_types = {'trial-level-2-8'};   
+desired_design_mtxs = {'visual_stress_p1', 'headache_p1', 'discomfort_p1'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -27,7 +27,7 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'time_domain_p1';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -43,9 +43,9 @@ elseif strcmp(type_of_analysis, 'time_domain')
 end
     
 %% OFF TO THE RACES WE GO
-for i = 1:numel(experiment_types)
+for exp_type = 1:numel(experiment_types)
     for j = 1:numel(desired_design_mtxs)
-        experiment_type = experiment_types{i};
+        experiment_type = experiment_types{exp_type};
         desired_design_mtx = desired_design_mtxs{j};
         %% create the results save path depending on the experiment
         if strcmp(experiment_type, 'partitions-2-8')
@@ -56,8 +56,9 @@ for i = 1:numel(experiment_types)
             save_path = strcat(results_dir, '\', 'mean_intercept', '\', desired_design_mtx);
         elseif strcmp(experiment_type, 'partitions_vs_onsets')
             save_path = strcat(results_dir, '\', 'partitions_vs_onsets', '\', desired_design_mtx);
+        elseif strcmp(experiment_types, 'trial-level-2-8')
+            save_path = strcat(results_dir, '\', 'trial_level_2_8', '\', desired_design_mtx);
         end
-        
         %% Are we looking at onsets 2-8 or partitions
         % set up the experiment as needed
         if strcmp(experiment_type, 'onsets-2-8-explicit')
@@ -90,6 +91,33 @@ for i = 1:numel(experiment_types)
                 data = apply_dummy_coordinates_to_eye_electrodes(data);
             end
 
+        elseif strcmp(experiment_type, 'trial-level-2-8')
+            partition1.is_partition = 1; % partition 1
+            partition1.partition_number = 999;   
+            n_participants = 40;
+            regression_type = desired_design_mtx;
+            type_of_effect = 'null';
+            regressor = 'ft_statfun_indepsamplesregrT';
+            k_trials = 30;
+            data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_trial-level.mat';
+            
+            % create the data
+            [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition1);
+
+            if region_of_interest == 1
+                load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+            end
+            
+            all_data = create_data_with_increasing_number_of_trials(data1, k_trials, roi);
+
+            % create the design
+            [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, ...
+                regression_type, 1, type_of_effect);
+            all_designs = {};
+            for i=1:k_trials
+                all_designs{i} = design1;
+            end
 
         elseif strcmp(experiment_type, 'partitions-2-8')
             partition1.is_partition = 1; % partition 1
@@ -149,7 +177,31 @@ for i = 1:numel(experiment_types)
                     end
                     data = create_hacked_roi(data, roi, weight_roi);
                 end
-                
+            elseif strcmp(type_of_analysis, 'time_domain_p1')
+                data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                partition1.is_partition = 3; % partition 1
+                partition1.partition_number = 3;
+                [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                    data_file, partition1);
+                partition = 1;
+                [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, ...
+                        regression_type, partition, type_of_effect);
+                design_matrix = design1;
+                design_matrix = design_matrix - mean(design_matrix);
+                data = data1;
+                %save_desgin_matrix(design_matrix, n_part_per_desgin, save_path, 'habituation')
+
+                if region_of_interest == 1
+                    if strcmp(experiment_type, 'partitions-2-8') 
+                        if strcmp(roi_applied, 'one-tailed')
+                            load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                        elseif strcmp(roi_applied, 'two-tailed')
+                            load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                        end
+                    end
+                    data = create_hacked_roi(data, roi, weight_roi);
+                end
+
             elseif strcmp(type_of_analysis, 'frequency_domain')
                 electrode = return_mua_electrode(desired_design_mtx);
                 
@@ -433,102 +485,193 @@ for i = 1:numel(experiment_types)
                 p3_23, p3_45, p3_67
             ];            
         end
-        %% setup FT analysis
-        % we have to switch to SPM8 to use some of the functions in FT
-        addpath 'C:\External_Software\spm8';
-        rmpath 'C:\External_Software\spm12';
+        
+        %% loop all the experiments / designs
+        for i =2:numel(all_data)
+            data = all_data{i};
+            design_matrix = all_designs{i};
 
-        % we need to tell fieldtrip how our electrodes are structured
-        cfg = [];
-        cfg.feedback = 'no';
-        cfg.method = 'distance';
-        cfg.elec = data{1}.elec;
-        neighbours = ft_prepare_neighbours(cfg);
+            %% check the type of experiment, if its a specific one we should
+            %% create a new folder every time
+            if strcmp(experiment_type, 'trial-level-2-8')
+                new_save_path = save_path + "_" + num2str(i);
+                mkdir([new_save_path]);
+            else
+                new_save_path = save_path;
+            end
 
-        % all experiment configuraitons:
-        cfg = [];
-        cfg.latency = [start_latency, end_latency];
-        cfg.channel = 'eeg';
-        cfg.statistic = regressor;
-        cfg.method = 'montecarlo';
-        cfg.correctm = 'cluster';
-        cfg.neighbours = neighbours;
-        cfg.clusteralpha = 0.025;
-        cfg.numrandomization = 30000;
-        cfg.tail = roi_to_apply; 
-        cfg.design = design_matrix;
-        cfg.computeprob = 'yes';
-        cfg.alpha = 0.05; 
-        cfg.correcttail = 'alpha'; 
-        
-        
-        %% run the fieldtrip analyses
-        if contains(experiment_type, 'onsets-2-8-explicit') && strcmp(regression_type, 'no-factor') || contains(regression_type, 'eye')
-            cfg.uvar = 1;
-            cfg.ivar = 2;
-            null_data = set_values_to_zero(data); % create null data to hack a t-test
-            stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
-            save(strcat(save_path, '\stat.mat'), 'stat')
-            %desired_cluster =1;
-            %get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
-        elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
-                || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
-                || contains(experiment_type, 'coarse-vs-fine-granularity') || contains(experiment_type, 'Partitions')
-            cfg.ivar = 1;
-            stat = ft_timelockstatistics(cfg, data{:});
-            save(strcat(save_path, '\stat.mat'), 'stat')
+            %% setup FT analysis
+            % we have to switch to SPM8 to use some of the functions in FT
+            addpath 'C:\External_Software\spm8';
+            rmpath 'C:\External_Software\spm12';
+    
+            % we need to tell fieldtrip how our electrodes are structured
+            cfg = [];
+            cfg.feedback = 'no';
+            cfg.method = 'distance';
+            cfg.elec = data{1}.elec;
+            neighbours = ft_prepare_neighbours(cfg);
+    
+            % all experiment configuraitons:
+            cfg = [];
+            cfg.latency = [start_latency, end_latency];
+            cfg.channel = 'eeg';
+            cfg.statistic = regressor;
+            cfg.method = 'montecarlo';
+            cfg.correctm = 'cluster';
+            cfg.neighbours = neighbours;
+            cfg.clusteralpha = 0.025;
+            cfg.numrandomization = 2500;
+            cfg.tail = roi_to_apply; 
+            cfg.design = design_matrix;
+            cfg.computeprob = 'yes';
+            cfg.alpha = 0.05; 
+            cfg.correcttail = 'alpha'; 
+            
+            
+            %% run the fieldtrip analyses
+            if contains(experiment_type, 'onsets-2-8-explicit') && strcmp(regression_type, 'no-factor') || contains(regression_type, 'eye')
+                cfg.uvar = 1;
+                cfg.ivar = 2;
+                null_data = set_values_to_zero(data); % create null data to hack a t-test
+                stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
+                save(strcat(new_save_path, '\stat.mat'), 'stat')
+                desired_cluster =1;
+                get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
+            elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
+                    || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
+                    || contains(experiment_type, 'coarse-vs-fine-granularity') || contains(experiment_type, 'Partitions') ...
+                    || contains(experiment_types, 'trial-level-2-8')
+                cfg.ivar = 1;
+                stat = ft_timelockstatistics(cfg, data{:});
+                save(strcat(new_save_path, '\stat.mat'), 'stat')
+                
+                if ~isfield(stat, 'posclusters') || ~isfield(stat, 'negclusters')
+                    continue;
+                end
+            end
+    
+            %% get peak level stats
+            if numel(stat.posclusters) > 0
+                for i=1:numel(stat.posclusters)
+                    [pos_peak_level_stats, pos_all_stats] = get_peak_level_stats(stat, i, 'positive');
+                    fname = "\pos_peak_level_stats_c_" + num2str(i) + ".mat";
+                    save(strcat(new_save_path, fname), 'pos_all_stats')
+                end
+            end
+    
+            if numel(stat.negclusters) > 0
+                for i=1:numel(stat.negclusters)
+                    [neg_peak_level_stats, neg_all_stats] = get_peak_level_stats(stat, i, 'negative');
+                    fname = "\neg_peak_level_stats_c_" + num2str(i) + ".mat";
+                    save(strcat(new_save_path, '\neg_peak_level_stats.mat'), 'neg_all_stats')
+                end
+            end
+    
+            %% function that plots the t values through time and decides whcih electrode to plot
+            if numel(stat.posclusters) > 0
+                pos_peak_level_stats = compute_best_electrode_from_t_values(stat,pos_all_stats,new_save_path, 'positive', pos_peak_level_stats);
+            end
+            if numel(stat.negclusters) > 0
+                neg_peak_level_stats = compute_best_electrode_from_t_values(stat,neg_all_stats,new_save_path, 'negative', neg_peak_level_stats);
+            end
+            
+            %% generate ERPs using the stat information
+            if generate_erps == 1
+                if numel(stat.posclusters) > 0
+                    generate_peak_erps(master_dir, main_path, experiment_type, ...
+                        stat, pos_peak_level_stats, 'positive', desired_design_mtx, 1, ...
+                        new_save_path, weight_erps, weighting_factor);
+                end
+                if numel(stat.negclusters) > 0
+                    generate_peak_erps(master_dir, main_path, experiment_type, ...
+                        stat, neg_peak_level_stats, 'negative', desired_design_mtx, 1, ...
+                        new_save_path, weight_erps, weighting_factor);
+                end
+            end
+            
+            %% get cluster level percentage through time
+            % 1 for the most positive going cluster
+            if numel(stat.posclusters) > 0
+                title = 'Positive going clusters through time as a % of entire volume';
+                calculate_cluster_size(stat, title, 'positive', new_save_path);
+            end
+            
+            if numel(stat.negclusters) > 0
+                title = 'Negative going clusters through time as a % of entire volume';
+                calculate_cluster_size(stat, title, 'negative', new_save_path);
+            end
+            
+            %% make pretty plots
+            create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
+                0.05, 'positive', new_save_path)
+            create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
+                0.05, 'negative', new_save_path)
         end
-
-        %% get peak level stats
-        for i=1:numel(stat.posclusters)
-            [pos_peak_level_stats, pos_all_stats] = get_peak_level_stats(stat, i, 'positive');
-            fname = "\pos_peak_level_stats_c_" + num2str(i) + ".mat";
-            save(strcat(save_path, fname), 'pos_all_stats')
-        end
-
-        for i=1:numel(stat.negclusters)
-            [neg_peak_level_stats, neg_all_stats] = get_peak_level_stats(stat, i, 'negative');
-            fname = "\neg_peak_level_stats_c_" + num2str(i) + ".mat";
-            save(strcat(save_path, '\neg_peak_level_stats.mat'), 'neg_all_stats')
-        end
-
-        %% function that plots the t values through time and decides whcih electrode to plot
-        if numel(stat.posclusters) > 0
-            pos_peak_level_stats = compute_best_electrode_from_t_values(stat,pos_all_stats,save_path, 'positive', pos_peak_level_stats);
-        end
-        if numel(stat.negclusters) > 0
-            neg_peak_level_stats = compute_best_electrode_from_t_values(stat,neg_all_stats,save_path, 'negative', neg_peak_level_stats);
-        end
-        
-        %% generate ERPs using the stat information
-        if generate_erps == 1
-            generate_peak_erps(master_dir, main_path, experiment_type, ...
-                stat, pos_peak_level_stats, 'positive', desired_design_mtx, 1, ...
-                save_path, weight_erps, weighting_factor);
-            generate_peak_erps(master_dir, main_path, experiment_type, ...
-                stat, neg_peak_level_stats, 'negative', desired_design_mtx, 1, ...
-                save_path, weight_erps, weighting_factor);
-        end
-        
-        %% get cluster level percentage through time
-        % 1 for the most positive going cluster
-        if numel(stat.posclusters) > 0
-            title = 'Positive going clusters through time as a % of entire volume';
-            calculate_cluster_size(stat, title, 'positive', save_path);
-        end
-        
-        if numel(stat.negclusters) > 0
-            title = 'Negative going clusters through time as a % of entire volume';
-            calculate_cluster_size(stat, title, 'negative', save_path);
-        end
-        
-        %% make pretty plots
-        create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
-            0.05, 'positive', save_path)
-        create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
-            0.05, 'negative', save_path)
     end
 end
+
+%% create a dataset with increasing number of trials
+function new_data = create_data_with_increasing_number_of_trials(data, n_trials, roi)
+    
+    function new_data = return_average(data)
+        n = numel(data);
+        new_data = [];
+        for k=1:n
+            new_data(:,:,k) = data{k};
+        end
+        
+        if numel(size(new_data)) == 2
+           return; 
+        else
+            new_data = mean(new_data,3);
+        end
+    end
+    
+    new_data = {};
+    for kth=2:n_trials
+        for i=1:numel(data)
+            participant = data{i};
+            
+            thin = participant.thin;
+            thick = participant.thick;
+            med = participant.med;
+
+            %participant_trials = max([numel(thin), numel(thick), numel(med)]);
+            %if participant_trials < k
+            %    participant_trials = k;
+            %end
+
+            if numel(thin) < kth
+                thin_cpy = return_average(thin(2:numel(thin)));
+            else
+                thin_cpy = return_average(thin(2:kth));
+            end
+            
+            if numel(med) < kth
+                med_cpy = return_average(med(2:numel(med)));
+            else
+                med_cpy = return_average(med(2:kth));
+            end
+
+            if numel(thick) < kth
+                thick_cpy = return_average(thick(2:numel(thick)));
+            else
+                thick_cpy = return_average(thick(2:kth));
+            end
+
+            pgi = med_cpy - (thick_cpy + thin_cpy)/2;
+            participant_cpy = participant;
+            participant_cpy.avg = pgi;
+            participant_cpy = rmfield(participant_cpy, 'med');
+            participant_cpy = rmfield(participant_cpy, 'thin');
+            participant_cpy = rmfield(participant_cpy, 'thick');
+            participant_cpy = create_hacked_roi(participant_cpy, roi, 0);
+            participant_cpy = participant_cpy{1};
+            new_data{kth}{i} = participant_cpy; 
+        end
+    end
+end    
 
 %% applies dummy coordinates at the top of the scalp to eye electrodes
 function data = apply_dummy_coordinates_to_eye_electrodes(data)
@@ -759,7 +902,11 @@ function new_data = create_hacked_roi(data, roi, weight_roi)
     end_latency = NaN;
     new_data = {};
     for idx_i = 1:numel(data)
-        each_participant = data{idx_i};
+        if class(data) == 'struct';
+            each_participant = data;
+        else
+            each_participant = data{idx_i};
+        end
         participant_data = each_participant.avg;
         participant_time = each_participant.time;
         [electrodes, time] = size(participant_data);
@@ -854,16 +1001,8 @@ function get_region_of_interest_electrodes(stat, desired_cluster, experiment_typ
     roi.clusters = roi_clusters;
     roi.time = time;
     
-    if contains(experiment_type, 'onsets-2-8')  && contains(roi_applied, 'one-tailed')
-        save 'C:\ProgramFiles\PhD\fieldtrip\roi\one_tailed_roi_28.mat' roi; 
-    elseif contains(experiment_type, 'onsets-1') && contains(roi_applied, 'one-tailed')
-        save 'C:\ProgramFiles\PhD\fieldtrip\roi\one_tailed_roi_1.mat' roi; 
-    elseif contains(experiment_type, 'onsets-2-8')  && contains(roi_applied, 'two-tailed')
-        save 'C:\ProgramFiles\PhD\fieldtrip\roi\two_tailed_roi_28.mat' roi; 
-    elseif contains(experiment_type, 'onsets-1') && contains(roi_applied, 'two-tailed')
-        save 'C:\ProgramFiles\PhD\fieldtrip\roi\two_tailed_roi_1.mat' roi; 
-    end
-   
+    save 'D:\PhD\fieldtrip\roi' roi;
+
 end
 
     %% plots the cluster effect through time
@@ -897,7 +1036,7 @@ function calculate_cluster_size(stat, ptitle, type, save_dir)
     
     time_mtx = stat.time;
     [electrodes, time] = size(cluster_labelling_mtx);
-    colours = ['r', 'g', 'b', 'm', 'y'];
+    colours = ['r', 'g', 'b', 'm', 'y', 'c', 'k', 'w'];
     legend_to_use = {};
 
     ylim_max = 0;
@@ -1179,6 +1318,51 @@ function scores = return_scores(regression_type, type_of_effect)
     
         scores.one = dataset;
     
+    elseif strcmp(regression_type, 'discomfort_p1') || strcmp(regression_type, 'discomfort_p2') || strcmp(regression_type, 'discomfort_p3')
+        dataset = [
+            1, -0.264; 2, 0.4459; 3, -0.49781; 4, 1.77666; 5, -0.55638; 6, 0.87174; 7, -0.68504; 8, 0.92835; 9, -0.80581; 10, -0.87505;
+            11, 0.39111; 12, -0.76054; 13, -0.68987; 14, 1.60776; 15, -0.19637; 16, 1.13956; 17, 1.53606; 19, -0.08254; 20, 0.12186;
+            21, 0.08428; 22, 0.61663; 23, -1.47958; 24, 2.28422; 25, -0.80891; 26, -0.55738; 27, 0.2238; 28, -0.93291; 29, 0.3791; 30, -0.63074;
+            31, 2.14683; 32, -1.49948; 33, 1.21954; 34, -0.79734; 35, -0.51303; 36, -1.0687; 37, -0.61345; 38, -1.02592; 39, -0.87653; 40, 0.444;
+        ];
+        scores.one = dataset;
+
+    elseif strcmp(regression_type, 'headache_p1') || strcmp(regression_type, 'headache_p2') || strcmp(regression_type, 'headache_p3')
+        dataset = [
+            1, -0.22667; 2, -0.05198; 3, -0.72116; 4, 0.53139; 5, 1.72021; 6, -1.17636; 7, -0.79706; 8, 0.19942; 9, -0.6924;
+            10, -0.35826; 11, -0.58533; 12, 2.04136; 13, -0.26573; 14, 1.30963; 15, 3.4497; 16, 0.00172; 17, -0.15026; 19, -0.55639;
+            20, -0.41626; 21, 1.14373; 22, -0.56513; 23, -0.72755; 24, -0.43472; 25, -0.69897; 26, -1.34952; 27, 1.40986; 28, 0.36296; 29, 0.04162;
+            30, -0.4697; 31, -0.70362; 32, -0.73219; 33, -0.88081; 34, -0.79623; 35, -0.75114; 36, 0.09594; 37, 1.22665; 38, -0.3365; 39, 1.07651;
+            40, -0.16678; 
+        ];
+        
+        scores.one = dataset;
+    elseif strcmp(regression_type, 'visual_stress_p1') || strcmp(regression_type, 'visual_stress_p2') || strcmp(regression_type, 'visual_stress_p3')
+        dataset = [
+            1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
+            11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
+            21, 1.0008; 22, -0.11689; 23, 1.72091; 24, 0.14105; 25, 0.62214; 26, -0.74829; 27, 2.02421; 28, 0.67386; 29, -0.02367;
+            30, 0.03638; 31, 0.6996; 32, -0.29977; 33, -0.64998; 34, 0.02624; 35, -0.82177; 36, -0.42512; 37, 0.79861; 38, -0.58832; 39, 2.33323;
+            40, 2.26667;
+        ];
+        scores.one = dataset;
+
+    elseif strcmp(regression_type, 'headache-orthog')
+        
+        load D:\PhD\misc\orthog_headache.mat 
+        
+        scores.one = factor_of_interest(1:39,:);
+        scores.two = factor_of_interest(40:78,:);
+        scores.three = factor_of_interest(79:117,:);
+
+
+    elseif strcmp(regression_type, 'discomfort-orthog')
+    
+        load D:\PhD\misc\orthog_discomfort.mat 
+        scores.one = factor_of_interest(1:39,:);
+        scores.two = factor_of_interest(40:78,:);
+        scores.three = factor_of_interest(79:117,:);
+    
     elseif strcmp(regression_type, 'headache')
         dataset = [
             1, -0.22667; 2, -0.05198; 3, -0.72116; 4, 0.53139; 5, 1.72021; 6, -1.17636; 7, -0.79706; 8, 0.19942; 9, -0.6924;
@@ -1411,7 +1595,7 @@ function [ft_regression_data, participant_order] = ...
     participant_order = {};
 
     idx_used_for_saving_data = 1;
-    for i=1:n_participants
+    for i=1:n_participants        
 
         disp(strcat('LOADING PARTICIPANT...', int2str(i)));
         participant_main_path = strcat(main_path, int2str(i));
@@ -1455,6 +1639,10 @@ function [ft_regression_data, participant_order] = ...
                    thin = data.p3_thin;
                    med = data.p3_med;
                    thick = data.p3_thick;
+               else
+                    thin = data.thin;
+                    med = data.med;
+                    thick = data.thick;  
                end
             elseif ~partition.is_partition
                 pgi = data.med - (data.thin + data.thick)/2;
@@ -2594,7 +2782,7 @@ end
     end
 
     if(nargout>1)
-        %In this case we output the lag of the trials as well
+        %In this case we output the la3g of the trials as well
         lag_data=zeros(1,M);
     end
 
