@@ -91,17 +91,17 @@ for exp_type = 1:numel(experiment_types)
                 data = apply_dummy_coordinates_to_eye_electrodes(data);
             end
 
-        if strcmp(experiment_type, 'pure-factor-effect') 
+        elseif strcmp(experiment_type, 'pure-factor-effect') 
             data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
-            regressor = regressor = 'ft_statfun_indepsamplesregrT';
+            regressor = 'ft_statfun_indepsamplesregrT';
             type_of_effect = 'null';
             regression_type = desired_design_mtx;
             n_participants = 40;
             start_latency = 0.056;
             end_latency = 0.256;
 
-            partition.is_partition = 1;
-            partition.partition_number = 1;
+            partition.is_partition = 0;
+            partition.partition_number = 999;
 
 
             [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
@@ -112,7 +112,7 @@ for exp_type = 1:numel(experiment_types)
                 regression_type, 0, type_of_effect);
 
              if region_of_interest == 1
-                if strcmp(experiment_type, 'partitions-2-8') 
+                if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect') 
                     if strcmp(roi_applied, 'one-tailed')
                         load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
                     elseif strcmp(roi_applied, 'two-tailed')
@@ -130,6 +130,9 @@ for exp_type = 1:numel(experiment_types)
             save_dir = strcat(save_path, '\', 'design_matrix.png');
             exportgraphics(gcf,save_dir,'Resolution',500);
             close;   
+
+            all_data{1} = data;
+            all_designs{1} = design_matrix;
 
         elseif strcmp(experiment_type, 'trial-level-2-8')
             partition1.is_partition = 1; % partition 1
@@ -604,7 +607,7 @@ for exp_type = 1:numel(experiment_types)
             elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
                     || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
                     || contains(experiment_type, 'coarse-vs-fine-granularity') || contains(experiment_type, 'Partitions') ...
-                    || contains(experiment_types, 'trial-level-2-8')
+                    || contains(experiment_type, 'trial-level-2-8') || contains(experiment_type, 'pure-factor-effect')
                 cfg.ivar = 1;
                 stat = ft_timelockstatistics(cfg, data{:});
                 save(strcat(new_save_path, '\stat.mat'), 'stat')
@@ -1817,7 +1820,25 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
             data_file, partition);
         e_idx = find(contains(data{1}.label,peak_electrode));
         ci = bootstrap_erps(data, e_idx);
-        
+     
+    elseif strcmp(experiment_type, 'pure-factor-effect') 
+        data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+        n_participants = 40;
+        type_of_effect = 'none';
+
+        partition.is_partition = 0;
+        partition.partition_number = 999;
+
+
+        [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+            data_file, partition);     
+        e_idx = find(contains(data{1}.label,peak_electrode));
+        n_part = numel(data);
+        [data1_h, data1_l] = get_partitions_medium_split(data, participant_order_1,...
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+        ci1_h = bootstrap_erps(data1_h, e_idx);
+        ci1_l = bootstrap_erps(data1_l, e_idx);
+
     elseif strcmp(experiment_type, 'partitions-2-8') && contains(regression_type, 'p1')
         n_participants = 40;
         partition1.is_partition = 1; % partition 1
@@ -1913,6 +1934,8 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         experiment_name = 'ERPs 2,3; 4,5; 6,7 (No Factor)';
     elseif strcmp(experiment_type, 'onsets-2-8-explicit')
         experiment_name = "Illustration of Onsets 2:8 Mean/Intercept";
+    elseif strcmp(experiment_type, 'pure-factor-effect')
+        experiment_name = "Illustration of Onsets 2:8 Factor";
     else
        experiment_name = experiment_type;
     end
@@ -2010,7 +2033,8 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
        hold off;
 
-    elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion == 1
+    elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion == 1 || ...
+        strcmp(experiment_type,'pure-factor-effect')
         t = tiledlayout(2,2, 'TileSpacing','Compact');
         time = data{1}.time * 1000;
         nexttile
@@ -2020,6 +2044,8 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'r');
        if contains(experiment_type, 'partitions-2-8')
         legend({'P1-PGI'},'Location','northwest')
+       elseif contains(experiment_type, 'pure-factor-effect')
+        legend({'PGI'},'Location','northwest')
        end
        
        plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2031,7 +2057,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.05)
        
        xlim(plotting_window);
-       title('Low Group: Partition 1: PGI');
+       if contains(experiment_type, 'partitions-2-8')
+            title('Low Group: Partition 1: PGI');
+       elseif contains(experiment_type, 'pure-factor-effect')
+            title('Low Group: PGI')
+       end
        ylim([-4, 6])
        grid on;
        hold off;
@@ -2049,8 +2079,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'r');
        if contains(experiment_type, 'partitions-2-8')
         legend({'P1-PGI'},'Location','northwest')
+       elseif contains(experiment_type, 'pure-factor-effect')
+            title('High Group: PGI')
        end
-       
+
        plot(time, ci1_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci1_h.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
        plot(time, ci1_h.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
@@ -2060,7 +2092,12 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.05)
        
        xlim(plotting_window);
-       title('High Group: Partition 1: PGI');
+        if contains(experiment_type, 'partitions-2-8')
+            title('High Group: Partition 1: PGI');
+        elseif contains(experiment_type, 'pure-factor-effect')
+            title('High Group: PGI')
+        end
+
        ylim([-4, 6])
        grid on;
        hold off;
@@ -2106,7 +2143,13 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('Low Group P1');
+
+        if contains(experiment_type, 'partitions-2-8')
+            title('Low Group P1');
+        elseif contains(experiment_type, 'pure-factor-effect')
+            title('Low Group')
+        end
+
        ylim([-4, 12])
        grid on;
        hold off;
@@ -2151,7 +2194,13 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('High Group P1');
+
+        if contains(experiment_type, 'partitions-2-8')
+            title('High Group P1');
+        elseif contains(experiment_type, 'pure-factor-effect')
+            title('High Group')
+        end
+
        ylim([-4, 12])
        grid on;
        hold off;
