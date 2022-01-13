@@ -8,8 +8,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'pure-factor-effect'};   
-desired_design_mtxs = {'visual_stress_p1', 'headache_p1', 'discomfort_p1'}; 
+experiment_types = {'onsets-2-8-explicit'};   
+desired_design_mtxs = {'visual_stress_p1', 'headache_p1', 'discomfort_'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -56,12 +56,10 @@ for exp_type = 1:numel(experiment_types)
             save_path = strcat(results_dir, '\', 'partitions_vs_onsets', '\', desired_design_mtx);
         elseif strcmp(experiment_types, 'trial-level-2-8')
             save_path = strcat(results_dir, '\', 'trial_level_2_8', '\', desired_design_mtx);
-        elseif strcmp(experiment_types, 'pure-factor-effect')
-            save_path = strcat(results_dir, '\', 'pure-factor-effect', '\', desired_design_mtx);
         end
         %% Are we looking at onsets 2-8 or partitions
         % set up the experiment as needed
-        if strcmp(experiment_type, 'onsets-2-8-explicit')
+        if strcmp(experiment_type, 'onsets-2-8-explicit') && contains(desired_design_mtx, 'no-factor') 
 
             if contains(desired_design_mtxs, 'eye')
                 data_file = 'time_domain_eye_confound_onsets_2_3_4_5_6_7_8_grand-average.mat';
@@ -91,46 +89,8 @@ for exp_type = 1:numel(experiment_types)
                 data = apply_dummy_coordinates_to_eye_electrodes(data);
             end
 
-        if strcmp(experiment_type, 'pure-factor-effect') 
-            data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
-            regressor = regressor = 'ft_statfun_indepsamplesregrT';
-            type_of_effect = 'null';
-            regression_type = desired_design_mtx;
-            n_participants = 40;
-            start_latency = 0.056;
-            end_latency = 0.256;
 
-            partition.is_partition = 1;
-            partition.partition_number = 1;
-
-
-            [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-                data_file, partition);            
-            n_part = numel(data);
-
-            [design_matrix, data] =  create_design_matrix_partitions(participant_order_1, data, ...
-                regression_type, 0, type_of_effect);
-
-             if region_of_interest == 1
-                if strcmp(experiment_type, 'partitions-2-8') 
-                    if strcmp(roi_applied, 'one-tailed')
-                        load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
-                    elseif strcmp(roi_applied, 'two-tailed')
-                        load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
-                    end
-                end
-                data = create_hacked_roi(data, roi, weight_roi);
-            end
-
-            plot(design_matrix(1:numel(design_matrix)), 'color', 'r', 'LineWidth', 3.5);
-            hold on;
-            xlabel('Participants');
-            ylabel('Factor Score');
-            set(gcf,'Position',[100 100 500 500])
-            save_dir = strcat(save_path, '\', 'design_matrix.png');
-            exportgraphics(gcf,save_dir,'Resolution',500);
-            close;   
-
+            
         elseif strcmp(experiment_type, 'trial-level-2-8')
             partition1.is_partition = 1; % partition 1
             partition1.partition_number = 999;   
@@ -154,7 +114,6 @@ for exp_type = 1:numel(experiment_types)
                 regression_type, 1, type_of_effect);
             [all_designs, all_data] = update_design_matrix(all_data, design1);
             
-
 
         elseif strcmp(experiment_type, 'partitions-2-8')
             partition1.is_partition = 1; % partition 1
