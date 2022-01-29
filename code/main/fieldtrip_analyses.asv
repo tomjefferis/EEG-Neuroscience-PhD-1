@@ -9,7 +9,7 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'visual_stress'}; 
+desired_design_mtxs = {'visual_stress_p1'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -25,7 +25,7 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'time_domain_p1';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -2016,7 +2016,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xline(peak_effect, '--r', "LineWidth", 1.5);
        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-       legend({'PGI'},'Location','bestoutside','FontSize', 8))
+       legend({'PGI'},'Location','bestoutside','FontSize', 8)
        xlabel("Milliseconds", "FontSize",11)
        ylabel("Microvolts (uV)", "FontSize",11)
 
@@ -2278,9 +2278,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1),  'color','#4DBEEE');
        if contains(experiment_type, 'partitions-2-8')
-            legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', 11)
+            legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', 11)
+           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2331,9 +2331,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1),  'color','#4DBEEE');
        if contains(experiment_type, 'partitions-2-8')
-            legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', 11)
+            legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', 11)
+           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        plot(time, ci1_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2383,9 +2383,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1), 'b');
        if contains(experiment_type, 'partitions-2-8')
-            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', 11)
+            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', 11)
+            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        plot(time, ci1_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2411,9 +2411,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1), 'b');
        if contains(experiment_type, 'partitions-2-8')
-            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', 11)
+            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', 11)
+            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        
@@ -2443,7 +2443,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'Color', '#0072BD');
        plot(NaN(1), 'Color', '#D95319');
        plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 11)
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci1_l.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci1_l.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -2490,7 +2490,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'Color', '#0072BD');
        plot(NaN(1), 'Color', '#D95319');
        plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 11)
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci1_h.dist_thin_avg, 'color','#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci1_h.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -2537,7 +2537,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 11)
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci2_l.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci2_l.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2585,7 +2585,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 11)
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci2_h.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci2_h.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2633,7 +2633,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 11)
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci3_l.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci3_l.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2733,9 +2733,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     
 
     if contains(experiment_type, 'partitions-2-8')
-        set(gcf,'Position',[100 100 1000 1000])
+        set(gcf,'Position',[100 100 1250 1250])
     else
-        set(gcf,'Position',[100 100 1000 500])
+        set(gcf,'Position',[100 100 1000 750])
     end
 
     exportgraphics(gcf,save_dir,'Resolution',500);

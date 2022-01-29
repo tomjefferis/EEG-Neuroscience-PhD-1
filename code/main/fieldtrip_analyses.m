@@ -8,8 +8,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'visual_stress'}; 
+experiment_types = {'onsets-2-8-explicit'};   
+desired_design_mtxs = {'no-factor'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -25,7 +25,7 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'time_domain_p1';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -90,6 +90,9 @@ for exp_type = 1:numel(experiment_types)
             if contains(desired_design_mtxs, 'eye')
                 data = apply_dummy_coordinates_to_eye_electrodes(data);
             end
+
+            all_data{1} = data;
+            all_designs{1} = design_matrix;
 
         elseif strcmp(experiment_type, 'pure-factor-effect') 
             data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
@@ -2735,7 +2738,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     if contains(experiment_type, 'partitions-2-8')
         set(gcf,'Position',[100 100 1250 1250])
     else
-        set(gcf,'Position',[100 100 1250 750])
+        set(gcf,'Position',[100 100 1000 750])
     end
 
     exportgraphics(gcf,save_dir,'Resolution',500);
