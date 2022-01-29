@@ -8,8 +8,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'pure-factor-effect'};   
-desired_design_mtxs = {'visual_stress_p1', 'headache_p1', 'discomfort_p1'}; 
+experiment_types = {'partitions-2-8'};   
+desired_design_mtxs = {'headache'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -25,7 +25,7 @@ weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain_p1';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -1720,6 +1720,10 @@ function [ft_regression_data, participant_order] = ...
     for i=1:n_participants        
         disp(strcat('LOADING PARTICIPANT...', int2str(i)));
         participant_main_path = strcat(main_path, int2str(i));
+
+        if i > 2 
+            continue;
+        end
 
         if exist(participant_main_path, 'dir')
             cd(participant_main_path);
