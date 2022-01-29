@@ -876,26 +876,11 @@ function peak_stat_info = compute_best_electrode_from_t_values(stat, electrode_s
     
     % updates the mask matrix with 0s if not in any of the clusters found
     % in the label matrix
-    function significant_masks = update_mask_matrix(stat, tail)
-        significant_masks = stat.mask;
-        
-        if strcmp(tail, 'positive')
-            cla = stat.posclusterslabelmat;
-        else
-            cla = stat.negclusterslabelmat;
-        end
+    function significant_masks = update_mask_matrix(significant_masks,...
+            tail,)
 
-        for k = 1:size(cla, 1)
-            for j = 1:size(cla, 2)
-                cluster_assgn = cla(k, j);
-                if cluster_assgn == 0
-                    significant_masks(k, j) = 0;
-                end
-            end
-        end
-    end
 
-    significant_masks = update_mask_matrix(stat, tail);
+    significant_masks = stat.mask;
     electrodes = electrode_stats.electrodes;
     
     if strcmp(tail, 'positive')
