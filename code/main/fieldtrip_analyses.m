@@ -1340,8 +1340,14 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
     sample_count  = length(stat.time);
     
     j = [start_latency:timestep:end_latency]; % Temporal endpoints (in seconds) of the ERP average computed in each subplot
-    m = [1:timestep*sampling_rate:sample_count];  % temporal endpoints in M/EEG samples
     
+    %$m = zeros(1,size(j,2));
+    %for ith = 1:size(j,2)    
+    %end
+   
+    m = [1:timestep*sampling_rate:sample_count];  % temporal endpoints in M/EEG samples
+    m(end+1) = sample_count;
+
     if contains(type, 'positive')
         pos_cluster_pvals = [stat.posclusters(:).prob];
         pos_clust = find(pos_cluster_pvals < alpha);
@@ -1372,7 +1378,7 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
          cfg.commentpos = 'title';
          cfg.parameter = 'stat';
          cfg.zlim=[-max_t,max_t];
-         %cfg.colorbar = 'SouthOutside';
+         cfg.colorbar = 'SouthOutside';             
          %cfg.layout = 'biosemi128.lay';
          ft_topoplotER(cfg, stat);
          %ft_clusterplot(cfg, stat)
@@ -2003,13 +2009,16 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        h = fill(x2, inBetween, 'b' , 'LineStyle','none');
        set(h,'facealpha',.05)
        xlim(plotting_window);
-       ylim([-5, 8])
+       ylim([-6, 8])
        grid on
-       xline(start_peak, '-');
-       xline(end_peak, '-');
-       xline(peak_effect, '--r');
-       xline(0, '--b','HandleVisibility','off')
-       legend({'PGI'},'Location','northeast')
+       xline(start_peak, '-', "LineWidth", 1.5);
+       xline(end_peak, '-', "LineWidth", 1.5);
+       xline(peak_effect, '--r', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       legend({'PGI'},'Location','bestoutside','FontSize', 8)
+       xlabel("Milliseconds", "FontSize",11)
+       ylabel("Microvolts (uV)", "FontSize",11)
 
         nexttile
         hold on;
@@ -2017,7 +2026,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-        legend({'Thin', 'Medium', 'Thick'},'Location','northeast')
+        legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside', 'FontSize', 8)
         
         plot(time, ci.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5, 'HandleVisibility','off')
         plot(time, ci.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2044,12 +2053,15 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
         set(h,'facealpha',.05)
        
-       xline(start_peak, '-', 'HandleVisibility','off');
-       xline(end_peak, '-', 'HandleVisibility','off');
-       xline(peak_effect, '--r', 'HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r', 'HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        xlim(plotting_window);
-       ylim([-4, 10])
+       ylim([-6, 10])
+       xlabel("Milliseconds", "FontSize",11)
+       ylabel("Microvolts (uV)", "FontSize",11)
        grid on
      
 
@@ -2065,9 +2077,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        hold on;
        plot(NaN(1), 'r');
        if contains(experiment_type, 'partitions-2-8')
-        legend({'P1-PGI'},'Location','northwest')
+        legend({'P1-PGI'},'Location','bestoutside','FontSize', 8)
        elseif contains(experiment_type, 'pure-factor-effect')
-        legend({'PGI'},'Location','northwest')
+        legend({'PGI'},'Location','bestoutside','FontSize', 8)
        end
        
        plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2080,29 +2092,33 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        if contains(experiment_type, 'partitions-2-8')
-            title('Low Group: Partition 1: PGI');
+            title('Low Group: Partition 1: PGI','FontSize', 11);
        elseif contains(experiment_type, 'pure-factor-effect')
-            title('Low Group: PGI')
+            title('Low Group: PGI','FontSize', 11)
        end
-       ylim([-4, 6])
+       ylim([-6, 6])
        grid on;
        hold off;
        
        if peak_effect ~= 0
-           xline(start_peak, '-','HandleVisibility','off');
-           xline(end_peak, '-','HandleVisibility','off');
-           xline(peak_effect, '--r','HandleVisibility','off');
-           xline(0, '--b','HandleVisibility','off')
+           xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+           xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+           yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        end
+
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
 
        % PGI HIGH
        nexttile;
        hold on;
        plot(NaN(1), 'r');
        if contains(experiment_type, 'partitions-2-8')
-        legend({'P1-PGI'},'Location','northwest')
+            legend({'P1-PGI'},'Location','bestoutside','FontSize', 8)
        elseif contains(experiment_type, 'pure-factor-effect')
-            title('High Group: PGI')
+            title('High Group: PGI','FontSize', 11)
        end
 
        plot(time, ci1_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2115,21 +2131,26 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
         if contains(experiment_type, 'partitions-2-8')
-            title('High Group: Partition 1: PGI');
+            title('High Group: Partition 1: PGI','FontSize', 11);
         elseif contains(experiment_type, 'pure-factor-effect')
-            title('High Group: PGI')
+            title('High Group: PGI','FontSize', 11)
         end
 
-       ylim([-4, 6])
+       ylim([-6, 6])
        grid on;
        hold off;
        
        if peak_effect ~= 0
-           xline(start_peak, '-','HandleVisibility','off');
-           xline(end_peak, '-','HandleVisibility','off');
-           xline(peak_effect, '--r','HandleVisibility','off');
-           xline(0, '--b','HandleVisibility','off')
+           xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+           xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+           yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        end
+
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
 
        
        % P1 LOW
@@ -2138,7 +2159,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'Color', '#0072BD');
        plot(NaN(1), 'Color', '#D95319');
        plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci1_l.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci1_l.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -2167,21 +2188,26 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xlim(plotting_window);
 
         if contains(experiment_type, 'partitions-2-8')
-            title('Low Group P1');
+            title('Low Group P1','FontSize', 11);
         elseif contains(experiment_type, 'pure-factor-effect')
-            title('Low Group')
+            title('Low Group','FontSize', 11)
         end
 
-       ylim([-4, 12])
+       ylim([-6, 12])
        grid on;
        hold off;
        
        if peak_effect ~= 0
-           xline(start_peak, '-','HandleVisibility','off');
-           xline(end_peak, '-','HandleVisibility','off');
-           xline(peak_effect, '--r','HandleVisibility','off');
-           xline(0, '--b','HandleVisibility','off')
+           xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+           xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+           yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        end
+
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
 
        % P1 HIGH
        nexttile
@@ -2189,7 +2215,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'Color', '#0072BD');
        plot(NaN(1), 'Color', '#D95319');
        plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci1_h.dist_thin_avg, 'color','#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci1_h.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -2218,21 +2244,26 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xlim(plotting_window);
 
         if contains(experiment_type, 'partitions-2-8')
-            title('High Group P1');
+            title('High Group P1','FontSize', 11);
         elseif contains(experiment_type, 'pure-factor-effect')
-            title('High Group')
+            title('High Group','FontSize', 11)
         end
 
-       ylim([-4, 12])
+       ylim([-6, 12])
        grid on;
        hold off;
        
        if peak_effect ~= 0
-           xline(start_peak, '-','HandleVisibility','off');
-           xline(end_peak, '-','HandleVisibility','off');
-           xline(peak_effect, '--r','HandleVisibility','off');
-           xline(0, '--b','HandleVisibility','off')
+           xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+           xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+           xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+           yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        end
+
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
 
     elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erps-23-45-67')
        t = tiledlayout(5,2, 'TileSpacing','Compact');
@@ -2247,9 +2278,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1),  'color','#4DBEEE');
        if contains(experiment_type, 'partitions-2-8')
-        legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','northwest')
+            legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','northwest')
+           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2277,15 +2308,20 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.05)
        
        xlim(plotting_window);
-       title('Low Group: Partitions: PGI');
-       ylim([-4, 8])
+       title('Low Group: Partitions: PGI','FontSize', 11);
+       ylim([-6, 8])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
 
 
        % PGI HIGH
@@ -2295,9 +2331,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1),  'color','#4DBEEE');
        if contains(experiment_type, 'partitions-2-8')
-        legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','northwest')
+            legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','northwest')
+           legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        plot(time, ci1_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2325,17 +2361,20 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.05)
        
        xlim(plotting_window);
-       title('High Group: Partitions: PGI');
-       ylim([-4, 8])
+       title('High Group: Partitions: PGI','FontSize', 11);
+       ylim([-6, 8])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
-       
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
        
        % MED LOW
        nexttile
@@ -2344,9 +2383,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1), 'b');
        if contains(experiment_type, 'partitions-2-8')
-            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','northwest')
+            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','northwest')
+            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        plot(time, ci1_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -2354,15 +2393,16 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(time, ci3_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
        
        xlim(plotting_window);
-       title('Low Group: Medium Through the Partitions');
-       ylim([-2, 10])
+       title('Low Group: Medium Through the Partitions','FontSize', 11);
+       ylim([-6, 10])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
         % MED HIGH
        nexttile
@@ -2371,9 +2411,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1), 'b');
        if contains(experiment_type, 'partitions-2-8')
-            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','northwest')
+            legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', 8)
        elseif strcmp(experiment_type, 'erps-23-45-67')
-            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','northwest')
+            legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', 8)
        end
        
        
@@ -2382,24 +2422,28 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(time, ci3_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
        
        xlim(plotting_window);
-       title('High Group: Medium Through the Partitions');
-       ylim([-2, 10])
+       title('High Group: Medium Through the Partitions','FontSize', 11);
+       ylim([-6, 10])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-       
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
+
        % P1 LOW
        nexttile
        hold on;
        plot(NaN(1), 'Color', '#0072BD');
        plot(NaN(1), 'Color', '#D95319');
        plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci1_l.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci1_l.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -2426,15 +2470,19 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('Low Group P1');
-       ylim([-4, 12])
+       title('Low Group P1','FontSize', 11);
+       ylim([-6, 12])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
 
 % P1 HIGH
        nexttile
@@ -2442,7 +2490,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'Color', '#0072BD');
        plot(NaN(1), 'Color', '#D95319');
        plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci1_h.dist_thin_avg, 'color','#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci1_h.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -2469,23 +2517,27 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('High Group P1');
-       ylim([-4, 12])
+       title('High Group P1','FontSize', 11);
+       ylim([-6, 12])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
-       
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
+
        % P2 LOW
        nexttile
        hold on;
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci2_l.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci2_l.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2512,23 +2564,28 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('Low Group P2');
-       ylim([-4, 10])
+       title('Low Group P2','FontSize', 11);
+       ylim([-6, 10])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
+
         % P2 HIGH
        nexttile
        hold on;
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci2_h.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci2_h.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2555,24 +2612,28 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('High Group P2');
-       ylim([-4, 10])
+       title('High Group P2','FontSize', 11);
+       ylim([-6, 10])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
-
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
+
        % P3 LOW
        nexttile
        hold on;
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci3_l.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci3_l.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2599,15 +2660,20 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('Low Group P3');
-       ylim([-4, 10])
+       title('Low Group P3','FontSize', 11);
+       ylim([-6, 10])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
 
         % P3 HIGH 
        nexttile
@@ -2615,7 +2681,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         plot(NaN(1), 'Color', '#0072BD');
         plot(NaN(1), 'Color', '#D95319');
         plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','northwest')
+       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', 8)
        
        plot(time, ci3_h.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
        plot(time, ci3_h.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -2642,29 +2708,34 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title('High Group P3');
-       ylim([-4, 10])
+       title('High Group P3','FontSize', 11);
+       ylim([-6, 10])
        grid on;
        hold off;
        
-       xline(start_peak, '-','HandleVisibility','off');
-       xline(end_peak, '-','HandleVisibility','off');
-       xline(peak_effect, '--r','HandleVisibility','off');
-       xline(0, '--b','HandleVisibility','off')
+       xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+       xline(end_peak, '-','HandleVisibility','off',"LineWidth", 1.5);
+       xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+       xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+       yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
+        xlabel("Milliseconds", "FontSize",11)
+        ylabel("Microvolts (uV)", "FontSize",11)
+
+
     end
     
     title(t, m_title, 'FontSize', 12);
     cluster_stats = "Cluster: P-value: " + num2str(round(pvalue, 3)) + ", Mass: " + num2str(cluster_size);
     peak_stats = "Max sample: T" + "(" + num2str(df) + ")=" + num2str(t_value) ... 
         + " Cohen's d: " + num2str(cohens_d) + ", Correlation: " + num2str(effect_size);
-    subtitle(t, {cluster_stats, peak_stats}, 'FontSize', 8)
+    subtitle(t, {cluster_stats, peak_stats}, 'FontSize', 10)
     
 
     if contains(experiment_type, 'partitions-2-8')
-        set(gcf,'Position',[100 100 1000 1000])
+        set(gcf,'Position',[100 100 1250 1250])
     else
-        set(gcf,'Position',[100 100 1000 500])
+        set(gcf,'Position',[100 100 1250 750])
     end
 
     exportgraphics(gcf,save_dir,'Resolution',500);
