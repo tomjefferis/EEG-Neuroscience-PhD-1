@@ -8,8 +8,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'onsets-2-8-explicit'};   
-desired_design_mtxs = {'no-factor'}; 
+experiment_types = {'partitions-2-8'};   
+desired_design_mtxs = {'headache'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -20,12 +20,12 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
-generate_erps = 1;
+generate_erps = 0;
 weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain_p1';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -127,8 +127,9 @@ for exp_type = 1:numel(experiment_types)
 
             plot(design_matrix(1:numel(design_matrix)), 'color', 'r', 'LineWidth', 3.5);
             hold on;
-            xlabel('Participants');
-            ylabel('Factor Score');
+            xlabel('Participants', 'FontSize',11);
+            ylabel('Factor Score', 'FontSize',11);
+            
             set(gcf,'Position',[100 100 500 500])
             save_dir = strcat(save_path, '\', 'design_matrix.png');
             exportgraphics(gcf,save_dir,'Resolution',500);
@@ -682,10 +683,46 @@ for exp_type = 1:numel(experiment_types)
             %% make pretty plots
             create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
                 0.05, 'positive', new_save_path)
+
+            %% plot the peak electrode
+            create_viz_peak_electrode(stat, first_pos_peak_level_stats, new_save_path)
+
             create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
                 0.05, 'negative', new_save_path)
         end
     end
+end
+
+%% creates a topographic map highlighting the peak electrode
+function create_viz_peak_electrode(stat, pos_peak_level_stats, save_dir)
+    
+
+    elecs = zeros(size(stat.elec.chanpos,1), 1);
+    peak_electrode = pos_peak_level_stats.electrode;
+    e_idx = find(contains(stat.label,peak_electrode));
+    elecs(e_idx)=1;
+    
+    save_dir = save_dir + "/" + "highlighted_electrode.png";
+
+    cfg = [];
+    cfg.parameter = 'stat';
+    cfg.zlim = [-5, 5];
+    cg.colorbar = 'yes';
+    cfg.marker = 'off';
+    cfg.markersize = 1;
+    cfg.highlight = 'on';
+    cfg.highlightchannel = find(elecs);
+    cfg.highlightcolor = {'r', [0 0 1]};
+    cfg.highlightsize = 10;
+    cfg.comment = 'no';
+    cfg.style = 'blank';
+    
+    ft_topoplotER(cfg, stat);
+
+    set(gcf,'Position',[100 100 250 250])
+    exportgraphics(gcf,save_dir,'Resolution',500);
+    close;
+
 end
 
 %% update design to remove missing participants
