@@ -12,7 +12,7 @@ to_preprocess = {'mean_intercept'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3,4,5,6,7,8
+    2,3; 4,5; 6,7
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);

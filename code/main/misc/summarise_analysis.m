@@ -13,7 +13,7 @@ for i =1:numel(factors)
     pos_num_clusters = NaN(1,100);
     pos_p_value = NaN(1,100);
     pos_sum_t_value = NaN(1,100);
-    pos_electrodes = {};c
+    pos_electrodes = {};
     pos_time = NaN(1,100);
     pos_peak_t = NaN(1,100);
     pos_effect_size_r = NaN(1,100);
@@ -86,7 +86,7 @@ for i =1:numel(factors)
     end
     
     
-    t = tiledlayout(4,1, 'TileSpacing','Compact');
+    t = tiledlayout(5,1, 'TileSpacing','Compact');
     nexttile;
     yyaxis left
     title("Illustration of Cluster Mass and P-values through time")
@@ -117,7 +117,7 @@ for i =1:numel(factors)
     yyaxis left
     title("Illustration of Cohen's d and Pearson's r through time")
     scatter(1:100, pos_effect_size_r, 45, 'filled','LineWidth',3);
-    ylim([0,max_idc])
+    ylim([0,1])
     xlabel('effect size calculations')
     ylabel('effect size r')
     xticks(1:100);
@@ -145,6 +145,28 @@ for i =1:numel(factors)
     grid on;
     
     nexttile;
+
+    cnt = 1;
+    r_through_times = [];
+    for time = 13.5:13.5:1350
+        disp(time)
+        r = pos_effect_size_r(cnt);
+        r_through_time = r/time;
+        r_through_times(cnt) = r_through_time;
+        cnt = cnt + 1;
+    end
+
+
+    ylim([0, max(pos_effect_size_r) + max(pos_effect_size_r)*0.05])
+    scatter(1:100, r_through_times, 45, 'filled', 'LineWidth',3);
+    xticks(1:100);
+    grid on;
+    title("Illustration of R through time")
+    xlabel('number of trials')
+    ylabel('R/time')
+    
+    nexttile;
+    
     unique_elecs = unique(pos_electrodes);
     n = size(pos_electrodes, 2);
     locaiton_vector = [];
