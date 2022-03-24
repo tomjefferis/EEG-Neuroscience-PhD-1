@@ -8,11 +8,11 @@ cd("D:\PhD");
     
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
-to_preprocess = {'mean_intercept'};
-type_of_analysis = 'time_domain'; % or time_domain
+to_preprocess = {'partitions    '};
+type_of_analysis = 'frequency_domain'; % or time_domain
 
 onsets = [
-    2,3; 4,5; 6,7
+    2,3,4,5,6,7,8
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -33,7 +33,7 @@ for k=1:numel(to_preprocess)
     [n_onsets, ~] = size(onsets);
     for i=1:n_onsets
         subset_onsets = onsets(i,:);
-        for participant = 1:n_participants
+        for participant = 14:n_participants
 
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);

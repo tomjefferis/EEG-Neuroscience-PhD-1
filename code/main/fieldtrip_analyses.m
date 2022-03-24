@@ -47,17 +47,17 @@ for exp_type = 1:numel(experiment_types)
         desired_design_mtx = desired_design_mtxs{j};
         %% create the results save path depending on the experiment
         if strcmp(experiment_type, 'partitions-2-8')
-            save_path = strcat(results_dir, '\', 'partitions', '\', desired_design_mtx);
+            save_path = strcat(results_dir, '\', type_of_analysis, '\',  'partitions', '\', desired_design_mtx);
         elseif contains(experiment_type, 'erps-23-45-67')
-            save_path = strcat(results_dir, '\', 'onsets', '\', desired_design_mtx);
+            save_path = strcat(results_dir, '\', type_of_analysis,'\', 'onsets', '\', desired_design_mtx);
         elseif contains(experiment_type,'onsets-2-8-explicit')
-            save_path = strcat(results_dir, '\', 'mean_intercept', '\', desired_design_mtx);
+            save_path = strcat(results_dir, '\', type_of_analysis,'\', 'mean_intercept', '\', desired_design_mtx);
         elseif strcmp(experiment_type, 'partitions_vs_onsets')
-            save_path = strcat(results_dir, '\', 'partitions_vs_onsets', '\', desired_design_mtx);
+            save_path = strcat(results_dir, '\', type_of_analysis,'\', 'partitions_vs_onsets', '\', desired_design_mtx);
         elseif strcmp(experiment_types, 'trial-level-2-8')
-            save_path = strcat(results_dir, '\', 'trial_level_2_8', '\', desired_design_mtx);
+            save_path = strcat(results_dir, '\', type_of_analysis,'\', 'trial_level_2_8', '\', desired_design_mtx);
         elseif strcmp(experiment_types, 'pure-factor-effect')
-            save_path = strcat(results_dir, '\', 'pure-factor-effect', '\', desired_design_mtx);
+            save_path = strcat(results_dir, '\', type_of_analysis, '\', 'pure-factor-effect', '\', desired_design_mtx);
         end
         %% Are we looking at onsets 2-8 or partitions
         % set up the experiment as needed
@@ -552,8 +552,11 @@ for exp_type = 1:numel(experiment_types)
         
         elseif contains(type_of_analysis, 'frequency_domain')
             if strcmp(experiment_type, 'partitions-2-8')
-                analysis = 'preprocess';
+                analysis = 'load';
                 n_participants = 40;
+                regression_type = desired_design_mtx;
+                type_of_effect = 'habituation';
+                regressor = 'ft_statfun_indepsamplesregrT';
 
                 partition1.is_partition = 1; 
                 partition1.partition_number = 1;
@@ -576,18 +579,35 @@ for exp_type = 1:numel(experiment_types)
                     data_file, partition3);  
 
 
-                for f = 1:numel(foi_of_interest)
-                    foi = foi_of_interest(f, :);
-    
-                    p1_freq = to_frequency_data(data1, main_path, 1, ...
-                        participant_order1, analysis, frequency_level, foi);   
-                    
-                    p2_freq = to_frequency_data(data2, main_path, 2, ...
-                        participant_order2, analysis, frequency_level, foi);
-                    
-                    p3_freq = to_frequency_data(data3, main_path, 3, ...
-                        participant_order3, analysis, frequency_level, foi);
+                foi = foi_of_interest(1, :);
+
+                p1_freq = to_frequency_data(data1, main_path, 1, ...
+                    participant_order1, analysis, frequency_level, foi);   
+                
+                p2_freq = to_frequency_data(data2, main_path, 2, ...
+                    participant_order2, analysis, frequency_level, foi);
+                
+                p3_freq = to_frequency_data(data3, main_path, 3, ...
+                    participant_order3, analysis, frequency_level, foi);
+
+
+                [design1, new_participants1] = create_design_matrix_partitions(participant_order1, p1_freq, ...
+                    regression_type, 1, type_of_effect);
+                [design2, new_participants2] = create_design_matrix_partitions(participant_order2, p2_freq, ...
+                    regression_type, 2, type_of_effect);
+                [design3, new_participants3] = create_design_matrix_partitions(participant_order3, p3_freq, ...
+                    regression_type, 3, type_of_effect);
+
+                vector_of_data = [new_participants1, new_participants2, new_participants3]; 
+                
+                all_data = {};
+                for i = 1:numel(vector_of_data)
+                    participant = vector_of_data(i);
+                    all_data{1}{i} = participant{1}.pgi;
                 end
+
+                all_designs{1} = [design1, design2, design3];                
+
             end
         end
         
@@ -1871,7 +1891,8 @@ function [ft_regression_data, participant_order] = ...
 
         if exist(participant_main_path, 'dir')
             cd(participant_main_path);
-            
+
+
             if isfile(filename)
                 load(filename);
             else
