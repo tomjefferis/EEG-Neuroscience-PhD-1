@@ -8,8 +8,8 @@ cd("D:\PhD");
     
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
-to_preprocess = {'partitions'};
-type_of_analysis = 'time_domain'; % or time_domain
+to_preprocess = {'mean_intercept'};
+type_of_analysis = 'frequency_domain'; % or time_domain
 
 onsets = [
     2,3,4,5,6,7,8
@@ -18,16 +18,18 @@ number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
 
 %% main preprocessing loop
-for k=to_preprocess
+for k=1:numel(to_preprocess)
     
-    analysis_type=k{1};
+    analysis_type=to_preprocess{k};
     
-    if strcmp(analysis_type, 'mean_intercept')
+    if strcmp(analysis_type, 'mean_intercept') || strcmp(analysis_type, 'eye_confound')
         n_participants = 40;
-    elseif strcmp(analysis_type, 'partitions')
+    elseif contains(analysis_type, 'partitions')
         n_participants = 40;
     end
     
+    % parfloor
+
     [n_onsets, ~] = size(onsets);
     for i=1:n_onsets
         subset_onsets = onsets(i,:);
@@ -84,6 +86,9 @@ for k=to_preprocess
                 spm_eeg = meeg(D);
                 raw = spm_eeg.ftraw;
 
+                %% label with the trial order (for analysis later)
+                raw = label_data_with_trial_order(raw, D);
+
                 %% setup the FT preprocessing fns
                 % filtering and baselining the data
                 cfg = [];
@@ -91,18 +96,16 @@ for k=to_preprocess
                 cfg.baselinewindow  = baseline_window;
 
                 cfg.bpfilter = 'yes';
-                cfg.bpfilttype = 'fir';
+                cfg.bpfilttype = 'fir';                
                 cfg.bpfreq = filter_freq;
-               
                 data = ft_preprocessing(cfg, raw);
 
                 % Detect artefacts via thresholding -100:100 uV
-                
                 cfg = [];
                 cfg.continious = 'no';
                 cfg.artfctdef.threshold.min = -100;
                 cfg.artfctdef.threshold.max = 100;
-                cfg.artfctdef.threshold.channel = get_eeg_channels(data);
+                cfg.artfctdef.threshold.channel = get_eeg_channels(data, analysis_type);
                 cfg.artfctdef.threshold.bpfilter  = 'no';
 
                 [~, artifact] = ft_artifact_threshold(cfg, data);
@@ -115,8 +118,9 @@ for k=to_preprocess
 
                 % update with the proper trial names after artefact rejection
                 postprocessed = label_data_with_trials(raw, postprocessed);
+                % relabel the relevant conditions after postprocessing
                 postprocessed = relabel_conditions(postprocessed, D);
-                
+
                 % reject based on count of trials per condition
                 reject_participant = reject_particiapnt_based_on_bad_trials(postprocessed, raw);
                 if reject_participant == 1
@@ -138,10 +142,20 @@ for k=to_preprocess
     end
 end
 
+%% label the data with the trial order for analysis later
+function raw = label_data_with_trial_order(raw, D)
+    num_trials = size(raw.sampleinfo, 1);
+
+    for onset =1:num_trials
+        t_order = D.trials(onset).trial_order;
+        raw.sampleinfo(onset, 3) = t_order;
+    end
+end
+
 %% label and create the grand average dataset
 function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, data_type)
 
-    postprocessed = remove_electrodes(postprocessed);
+    postprocessed = remove_electrodes(postprocessed, data_type);
 
     idx_used_for_saving_data = 1; 
     trial_names_and_order = postprocessed.trial_order;
@@ -164,28 +178,41 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
 
         [p1_thin, p1_thick, p1_med, p2_thin, p2_thick, p2_med, ...
             p3_thin, p3_thick, p3_med] = deal([], [], [], [], [], [], [], [], []);
+        [p1_thin_order, p1_thick_order, p1_med_order, p2_thin_order, p2_thick_order, ...
+            p2_med_order, p3_thin_order, p3_thick_order, p3_med_order] ...
+            = deal([], [], [], [], [], [], [], [], []);
 
         for idx=1:n
             trial = trials{idx};
             condition = sample_information(idx, 3);
+            trial_order = sample_information(idx, 4);
             if condition == p1_thin_idx
                 p1_thin(:,:,end+1) = trial;
+                p1_thin_order(:,:,end+1) = trial_order;
             elseif condition == p2_thin_idx
                 p2_thin(:,:,end+1) = trial;
+                p2_thin_order(:,:,end+1) = trial_order;
             elseif condition == p3_thin_idx
                 p3_thin(:,:,end+1) = trial;
+                p3_thin_order(:,:,end+1) = trial_order;
             elseif condition == p1_thick_idx
                 p1_thick(:,:,end+1) = trial;
+                p1_thick_order(:,:,end+1) = trial_order;
             elseif condition == p2_thick_idx
                 p2_thick(:,:,end+1) = trial;
+                p2_thick_order(:,:,end+1) = trial_order;
             elseif condition == p3_thick_idx
                 p3_thick(:,:,end+1) = trial;
+                p3_thick_order(:,:,end+1) = trial_order;
             elseif condition == p1_med_idx
                 p1_med(:,:,end+1) = trial;
+                p1_med_order(:,:,end+1) = trial_order;
             elseif condition == p2_med_idx
                 p2_med(:,:,end+1) = trial;
+                p2_med_order(:,:,end+1) = trial_order;
             elseif condition == p3_med_idx
                 p3_med(:,:,end+1) = trial;
+                p3_med_order(:,:,end+1) = trial_order;
             end
         end
 
@@ -198,6 +225,18 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
         trial_level.p1_thick = convert_to_fieldtrip_format(p1_thick);
         trial_level.p2_thick = convert_to_fieldtrip_format(p2_thick);
         trial_level.p3_thick = convert_to_fieldtrip_format(p3_thick);
+
+        trial_level.p1_med_order = p1_med_order;
+        trial_level.p2_med_order = p2_med_order;
+        trial_level.p3_med_order = p3_med_order;
+        trial_level.p1_thin_order = p1_thin_order;
+        trial_level.p2_thin_order = p2_thin_order;
+        trial_level.p3_thin_order = p3_thin_order;
+        trial_level.p1_thick_order = p1_thick_order;
+        trial_level.p2_thick_order = p2_thick_order;
+        trial_level.p3_thick_order = p3_thick_order;
+
+
         trial_level.elec = postprocessed.elec;
         trial_level.label = postprocessed.label;
         trial_level.time = postprocessed.time(1,1);
@@ -235,7 +274,7 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
         grand_averages.elec = postprocessed.elec;
         grand_averages.dimord = 'chan_time';
         grand_averages.label = postprocessed.label;
-    elseif strcmp(data_type, 'mean_intercept')
+    elseif strcmp(data_type, 'mean_intercept') || strcmp(data_type, 'eye_confound')
         thin_idx = find(contains(trial_names_and_order,'thin'));
         med_idx = find(contains(trial_names_and_order,'medium'));
         thick_idx = find(contains(trial_names_and_order,'thick'));
@@ -244,16 +283,22 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
         [~,n] = size(trials);
         
         [thin, medium, thick] = deal([],[],[]);
+
+        [thin_order, medium_order, thick_order] = deal([],[],[]);
         
         for idx=1:n
             trial = trials{idx};
             condition = sample_information(idx, 3);
+            trial_order = sample_information(idx, 4);
             if condition == thin_idx
-                thin(:,:,end+1) = trial;        
+                thin(:,:,end+1) = trial;  
+                thin_order(:,:,end+1) = trial_order;
             elseif condition == med_idx
-                medium(:,:,end+1) = trial;         
+                medium(:,:,end+1) = trial;
+                medium_order(:,:,end+1) = trial_order;
             elseif condition == thick_idx
                 thick(:,:,end+1) = trial;
+                thick_order(:,:,end+1) = trial_order;
             end
         end
     
@@ -261,6 +306,9 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
         trial_level.thin = convert_to_fieldtrip_format(thin);
         trial_level.med = convert_to_fieldtrip_format(medium);
         trial_level.thick = convert_to_fieldtrip_format(thick);
+        trial_level.thin_order = thin_order;
+        trial_level.thick_order = thick_order;
+        trial_level.med_order = medium_order;
         trial_level.elec = postprocessed.elec;
         trial_level.time = postprocessed.time(1,1);
         trial_level.label = postprocessed.label;
@@ -281,9 +329,27 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
     end
 end
 %% remvoe electrodes
-function postprocessed = remove_electrodes(postprocessed)
-    to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+function postprocessed = remove_electrodes(postprocessed, type)
     
+    if strcmp(type, 'eye_confound')
+        to_remove = {
+    'A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12','A13','A14', ...
+    'A15','A16','A17','A18','A19','A20','A21','A22','A23','A24','A25','A26','A27', ...
+    'A28','A29','A30','A31','A32','B1','B2','B3','B4','B5','B6','B7','B8','B9', ...
+    'B10','B11','B12','B13','B14','B15','B16','B17','B18','B19','B20','B21','B22', ...
+    'B23','B24','B25','B26','B27','B28','B29','B30','B31','B32','C1','C2','C3', ...
+    'C4','C5','C6','C7','C8','C9','C10','C11','C12','C13','C14','C15','C16','C17','C18', ...
+    'C19','C20','C21','C22','C23','C24','C25','C26','C27','C28','C29','C30','C31', ...
+    'C32','D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','D11','D12','D13', ...
+    'D14','D15','D16','D17','D18','D19','D20','D21','D22','D23','D24','D25','D26', ...
+    'D27','D28','D29','D30','D31','D32', 'EXG5', 'EXG6'
+    };
+    else
+        to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+    end
+
+
+
     electorode_information = postprocessed.elec;
     
     trials = postprocessed.trial;
@@ -361,7 +427,9 @@ end
 %% update the samples with trial info
 function postprocessed = label_data_with_trials(raw, postprocessed)
     original_info = raw.sampleinfo;
+    original_labels = raw.sampleinfo(:,3);
     original_info(:,3) = raw.trialinfo';
+    original_info(:,4) = original_labels;
     new_info = postprocessed.sampleinfo;
     
     [row, ~] = size(new_info);
@@ -370,15 +438,23 @@ function postprocessed = label_data_with_trials(raw, postprocessed)
        start_sample = new_info(i,1);
        idx = find(original_info(:,1)==start_sample);
        original_label = original_info(idx,3);
+       original_trial_point_in_time = original_info(idx,4);
        new_info(i,3) = original_label;
+       new_info(i,4) = original_trial_point_in_time;
     end
     
     postprocessed.sampleinfo = new_info;
 end
 %% get the eeg channels excluding EOG etc
-function labels = get_eeg_channels(data)
-    to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
-    to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+function labels = get_eeg_channels(data, type)
+
+    if contains(type, 'partitions') || strcmp(type, 'mean_intercept')
+        to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+        to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+    elseif strcmp(type, 'eye_confound')
+        to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+    end
+    
     labels = setdiff(data.elec.label, to_remove);
 end
 
@@ -428,6 +504,9 @@ function condition_names = label_data(thin, medium, thick, path, fname, analysis
     condition_names = {};
     
     if ~strcmp(analysis_type, 'partitions')
+        med_order = 1;
+        thick_order = 1;
+        thin_order = 1;
         for onset = 1:n_trials                              
             
             events = D.trials(onset).events;
@@ -442,21 +521,31 @@ function condition_names = label_data(thin, medium, thick, path, fname, analysis
 
             if sum(contains(condition, thin))
                 condition = strcat(factor_name, '_thin');
+                D.trials(onset).trial_order = thin_order;  
+                thin_order = thin_order + 1;
             elseif sum(contains(condition, medium))
                 condition = strcat(factor_name, '_medium');
+                D.trials(onset).trial_order = med_order;  
+                med_order = med_order + 1;
             elseif sum(contains(condition, thick))
                 condition = strcat(factor_name, '_thick');
+                D.trials(onset).trial_order = thick_order;  
+                thick_order = thick_order + 1;
             else
                 condition = 'N/A';
+                D.trials(onset).trial_order = -999; 
             end
 
             condition_names{onset} = condition;
-            D.trials(onset).label = condition;        
+            D.trials(onset).label = condition;    
             count = count + 1;
         end      
     else        
         partition_number = 1;
         max_epoch = D.trials(n_trials).events.epoch;
+        med_order = 1;
+        thick_order = 1;
+        thin_order = 1;
         for onset = 1:n_trials
             events = D.trials(onset).events;
             current_epoch = D.trials(onset).events.epoch;
@@ -489,16 +578,23 @@ function condition_names = label_data(thin, medium, thick, path, fname, analysis
                 condition = strcat(description, '_thin');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = thin_order;  
+                thin_order = thin_order + 1;
             elseif sum(contains(condition, medium))
                 condition = strcat(description, '_medium');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = med_order;  
+                med_order = med_order + 1;
             elseif sum(contains(condition, thick))
                 condition = strcat(description, '_thick');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = thick_order; 
+                thick_order = thick_order + 1;
             else
                 condition = 'N/A';     
+                D.trials(onset).trial_order = -999; 
             end
 
             condition_names{onset} = condition;
