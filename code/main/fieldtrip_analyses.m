@@ -8,8 +8,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'headache'}; 
+experiment_types = {'onsets-2-8-explicit'};   
+desired_design_mtxs = {'no-factor'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -41,6 +41,7 @@ elseif strcmp(type_of_analysis, 'time_domain')
 end
     
 %% OFF TO THE RACES WE GO
+
 for exp_type = 1:numel(experiment_types)
     for j = 1:numel(desired_design_mtxs)
         experiment_type = experiment_types{exp_type};
@@ -551,7 +552,7 @@ for exp_type = 1:numel(experiment_types)
             end
         
         elseif contains(type_of_analysis, 'frequency_domain')
-            if strcmp(experiment_type, 'partitions-2-8')
+           if strcmp(experiment_type, 'partitions-2-8')
                 analysis = 'load';
                 n_participants = 40;
                 regression_type = desired_design_mtx;
@@ -580,15 +581,20 @@ for exp_type = 1:numel(experiment_types)
 
 
                 foi = foi_of_interest(1, :);
+                disp('--processing-- Hz')
+                disp(foi)
 
                 p1_freq = to_frequency_data(data1, main_path, 1, ...
-                    participant_order1, analysis, frequency_level, foi);   
+                    participant_order1, analysis, frequency_level, foi, ...
+                    'partition_');   
                 
                 p2_freq = to_frequency_data(data2, main_path, 2, ...
-                    participant_order2, analysis, frequency_level, foi);
+                    participant_order2, analysis, frequency_level, foi, ...
+                    'partition_');
                 
                 p3_freq = to_frequency_data(data3, main_path, 3, ...
-                    participant_order3, analysis, frequency_level, foi);
+                    participant_order3, analysis, frequency_level, foi, ...
+                    'partition_');
 
 
                 [design1, new_participants1] = create_design_matrix_partitions(participant_order1, p1_freq, ...
@@ -606,7 +612,55 @@ for exp_type = 1:numel(experiment_types)
                     all_data{1}{i} = participant{1}.pgi;
                 end
 
+                if region_of_interest == 1
+                    load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                    all_data = create_hacked_roi_freq(all_data, roi);
+                end
+
                 all_designs{1} = [design1, design2, design3];                
+
+            elseif strcmp(experiment_type, 'onsets-2-8-explicit')
+                analysis = 'load';
+                n_participants = 40;
+                regression_type = desired_design_mtx;
+                type_of_effect = 'null';
+                regressor = 'ft_statfun_depsamplesT';
+                start_latency = 0.056;
+                end_latency = 0.256;
+
+
+                if strcmp(analysis, 'load')
+                    data_file = 'frequency_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                elseif strcmp(analysis, 'preprocess')
+                    data_file = 'frequency_domain_mean_intercept_onsets_2_3_4_5_6_7_8_trial-level.mat';
+                end
+   
+                partition.is_partition = 0;
+                partition.partition_number = 0;
+    
+                [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                    data_file, partition);            
+                
+                foi = foi_of_interest(1, :);
+                disp('--processing-- Hz')
+                disp(foi);
+
+                freq = to_frequency_data(data, main_path, 1, ...
+                participant_order_1, analysis, frequency_level, foi, 'mean_intercept');              
+                n_part = numel(data);
+ 
+                null_data = set_values_to_zero_freq(freq);
+
+                for i = 1:numel(freq)
+                    participant = freq(i);
+                    freq{i} = participant{1}.pgi;
+
+                    participant = null_data(i);
+                    null_data{i} = participant{1}.pgi;
+                end   
+
+                all_data{1} = freq;
+                all_designs{1} = [1:n_part 1:n_part; ones(1,n_part) 2*ones(1,n_part)];
 
             end
         end
@@ -634,7 +688,7 @@ for exp_type = 1:numel(experiment_types)
             %% save the number of participants which went into the analysis
             num_part = numel(data);
             save(strcat(new_save_path, '\number_of_participants.mat'), 'num_part') 
-
+    
             %% setup FT analysis
             % we have to switch to SPM8 to use some of the functions in FT
             addpath 'C:\External_Software\spm8';
@@ -656,7 +710,7 @@ for exp_type = 1:numel(experiment_types)
             cfg.correctm = 'cluster';
             cfg.neighbours = neighbours;
             cfg.clusteralpha = 0.025;
-            cfg.numrandomization = 30000;
+            cfg.numrandomization = 100;
             cfg.tail = roi_to_apply; 
             cfg.design = design_matrix;
             cfg.computeprob = 'yes';
@@ -687,11 +741,20 @@ for exp_type = 1:numel(experiment_types)
                     end
                 end
             elseif strcmp(type_of_analysis, 'frequency_domain')
-                cfg.ivar = 1;
-                stat = ft_freqstatistics(cfg, data{:});
-                save(strcat(new_save_path, '\stat.mat'), 'stat')
-                if ~isfield(stat, 'posclusters') || ~isfield(stat, 'negclusters')
-                    continue;
+                if contains(experiment_type, 'onsets-2-8-explicit')
+                    cfg.uvar = 1;
+                    cfg.ivar = 2;
+                    cfg.avgoverfreq = 'yes';
+                    stat = ft_freqstatistics(cfg, data{:}, null_data{:});
+                    save(strcat(new_save_path, '\stat.mat'), 'stat')
+                else
+                    cfg.ivar = 1;
+                    cfg.avgoverfreq = 'yes';
+                    stat = ft_freqstatistics(cfg, data{:});
+                    save(strcat(new_save_path, '\stat.mat'), 'stat')
+                    if ~isfield(stat, 'posclusters') || ~isfield(stat, 'negclusters')
+                        continue;
+                    end
                 end
             end
 
@@ -769,6 +832,17 @@ for exp_type = 1:numel(experiment_types)
             create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
                 0.05, 'negative', new_save_path)
         end
+    end
+end
+
+%% used to set frequency data values to 0
+function data = set_values_to_zero(data)
+    for idx = 1:numel(data)
+        participant_data = data{1,idx};
+        spectrum = participant_data.powspctrm;
+        spectrum(:) = 0;
+        participant_data.powspctrm = spectrum;
+        data{1,idx} = participant_data;
     end
 end
 
@@ -1149,6 +1223,46 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
     close;
 end
 
+%% Create a hacked ROI for freq data
+function new_data = create_hacked_roi_freq(data, roi)
+    roi_clusters = roi.clusters;
+    roi_time = roi.time;
+
+    data = data{1};
+    num_participants = numel(data);
+
+    start_latency = NaN;
+    end_latency = NaN;
+    new_data = {};
+    for i = 1:num_participants
+        each_participant = data{i};
+        participant_data = each_participant.powspctrm;
+        participant_time = each_participant.time;
+
+        [electrodes, freq, time] = size(participant_data);
+        new_participant_data = NaN(electrodes, freq, time);
+        time_x = 1:1:time;
+        time_x = time_x * 2;
+
+        for roi_idx = 1:numel(roi_time)
+            t = roi_time(roi_idx)*1000;
+            [~,idx]=min(abs(time_x-t));
+            idx = idx + 100; % for baselining period
+            clusters_at_t = roi_clusters(:,roi_idx);
+            
+            if isnan(start_latency) && sum(clusters_at_t)>=1
+                start_latency =t;
+            elseif roi_idx == numel(roi_time)
+                end_latency = t; 
+            end
+        end
+
+    end
+
+    new_data{1} = new_data;
+
+end
+
 %% Create a hacked ROI in the data
 function new_data = create_hacked_roi(data, roi, weight_roi)
     roi_clusters = roi.clusters;
@@ -1353,8 +1467,8 @@ function [peak_level_electrode, all_electrode_stats] = get_peak_level_stats(stat
         cluster_matrix_locations = stat.negclusterslabelmat;
     end
     
+ 
     [rows, columns] = size(cluster_matrix_locations);
-    
     for col = 1:columns
         for row = 1:rows
             
@@ -1379,6 +1493,8 @@ function [peak_level_electrode, all_electrode_stats] = get_peak_level_stats(stat
             end
         end 
     end
+
+
     peak_level_electrode = get_most_significant_electrode(peak_level_stats, type);
     all_electrode_stats = get_all_electrode_stats(peak_level_stats, type);
 end
@@ -1513,12 +1629,10 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
 end
 
 %% set all my values to 0 to hack a T test
-function data = set_values_to_zero(data)
+function data = set_values_to_zero_freq(data)
     for idx = 1:numel(data)
         participant_data = data{idx};
-        series = participant_data.avg;
-        series(:) = 0;
-        participant_data.avg = series;
+        participant_data.pgi.powspctrm(:) = 0;
         data{idx} = participant_data;
     end
 end
@@ -1935,11 +2049,12 @@ function [ft_regression_data, participant_order] = ...
                     thick = data.thick;  
                end
             elseif ~partition.is_partition
-                pgi = data.med - (data.thin + data.thick)/2;
+                %pgi = data.med - (data.thin + data.thick)/2;
+                %ft.avg = pgi;
                 thin = data.thin;
                 med = data.med;
                 thick = data.thick;
-                ft.avg = pgi;
+                
             end
             
             if isfield(data, 'p1_pgi') || isfield(data, 'p2_pgi') || isfield(data, 'p3_pgi') 
@@ -3136,7 +3251,7 @@ end
 
 %% applies the wavelett decomposition to the data
 function dataset = to_frequency_data(data, save_dir, partition, ...
-    participant_order, type, participant_level, foi)
+    participant_order, type, participant_level, foi, analysis_type)
 
     cfg              = [];
     cfg.output       = 'pow';
@@ -3154,7 +3269,7 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
         
         disp(strcat('Loading/Processing Participant ', int2str(i)));
         participant_number = participant_order{i};
-        save_path = strcat(save_dir, int2str(participant_number), '\', 'partition_', int2str(partition), '_');      
+        save_path = strcat(save_dir, int2str(participant_number), '\', analysis_type, int2str(partition), '_');      
 
         full_save_dir = save_path + "trial_level_" + ...
             int2str(foi(1)) + "_" + int2str(foi(2)) + "_Hz.mat";  
