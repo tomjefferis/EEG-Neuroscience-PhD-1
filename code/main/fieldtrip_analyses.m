@@ -20,6 +20,7 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
+create_topographic_maps = 0;
 generate_erps = 1;
 weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
@@ -34,7 +35,8 @@ if strcmp(type_of_analysis, 'frequency_domain')
     frequency_level = 'trial-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
     toi = [0.090, 0.250];
-    foi_of_interest = [[8, 13]; [20, 35]; [35, 45]; [45, 60]; [60, 80]];
+    %foi_of_interest = [[8, 13]; [20, 35]; [35, 45]; [45, 60]; [60, 80]];
+    foi_of_interest = [[60, 80]];
     analysis = 'preprocess'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
@@ -710,7 +712,7 @@ for exp_type = 1:numel(experiment_types)
             cfg.correctm = 'cluster';
             cfg.neighbours = neighbours;
             cfg.clusteralpha = 0.025;
-            cfg.numrandomization = 100;
+            cfg.numrandomization = 2500;
             cfg.tail = roi_to_apply; 
             cfg.design = design_matrix;
             cfg.computeprob = 'yes';
@@ -823,14 +825,16 @@ for exp_type = 1:numel(experiment_types)
             end
             
             %% make pretty plots
-            create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
-                0.05, 'positive', new_save_path)
-
-            %% plot the peak electrode
-            create_viz_peak_electrode(stat, first_pos_peak_level_stats, new_save_path)
-
-            create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
-                0.05, 'negative', new_save_path)
+            if create_topographic_maps == 1
+                create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
+                    0.05, 'positive', new_save_path)
+    
+                %% plot the peak electrode
+                create_viz_peak_electrode(stat, first_pos_peak_level_stats, new_save_path)
+    
+                create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
+                    0.05, 'negative', new_save_path)
+            end
         end
     end
 end
@@ -1417,7 +1421,14 @@ function calculate_cluster_size(stat, ptitle, type, save_dir)
     legend_to_use = {};
 
     ylim_max = 0;
-    for k=1:numel(number_of_formed_clusters)
+
+    if numel(number_of_formed_clusters) > 5
+        n = 5;
+    else
+        n = numel(number_of_formed_clusters);
+    end
+
+    for k=1:n
         desired_cluster = number_of_formed_clusters(k);
         c = colours(k);
 
