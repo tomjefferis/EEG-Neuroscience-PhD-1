@@ -8,8 +8,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'onsets-2-8-explicit'};   
-desired_design_mtxs = {'no-factor'}; 
+experiment_types = {'partitions-2-8'};   
+desired_design_mtxs = {'headache'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -20,6 +20,7 @@ weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
+create_topographic_maps = 1;
 generate_erps = 1;
 weight_erps = 1; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
@@ -34,10 +35,12 @@ if strcmp(type_of_analysis, 'frequency_domain')
     frequency_level = 'trial-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
     toi = [0.090, 0.250];
-    foi_of_interest = [[8, 13]; [20, 35]; [35, 45]; [45, 60]; [60, 80]];
+    %foi_of_interest = [[8, 13]; [20, 35]; [35, 45]; [45, 60]; [60, 80]];
+    foi = [60, 80];
     analysis = 'preprocess'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
+    foi = [[-999, -999]];
 end
     
 %% OFF TO THE RACES WE GO
@@ -60,6 +63,19 @@ for exp_type = 1:numel(experiment_types)
         elseif strcmp(experiment_types, 'pure-factor-effect')
             save_path = strcat(results_dir, '\', type_of_analysis, '\', 'pure-factor-effect', '\', desired_design_mtx);
         end
+
+        % check if its a frequency experiment 
+        if strcmp(type_of_analysis, 'frequency_domain')
+           start_freq = int2str(foi(1));
+           end_freq = int2str(foi(2));
+           save_path = save_path + "_" + start_freq + "_" + end_freq;
+        end
+
+        % check if the folder exists, else make it
+        if ~exist(save_path, 'dir')
+            mkdir(save_path);
+        end
+
         %% Are we looking at onsets 2-8 or partitions
         % set up the experiment as needed
         if contains(type_of_analysis, 'time_domain')
@@ -553,7 +569,7 @@ for exp_type = 1:numel(experiment_types)
         
         elseif contains(type_of_analysis, 'frequency_domain')
            if strcmp(experiment_type, 'partitions-2-8')
-                analysis = 'load';
+                analysis = 'preprocess';
                 n_participants = 40;
                 regression_type = desired_design_mtx;
                 type_of_effect = 'habituation';
@@ -579,8 +595,6 @@ for exp_type = 1:numel(experiment_types)
                 [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition3);  
 
-
-                foi = foi_of_interest(1, :);
                 disp('--processing-- Hz')
                 disp(foi)
 
@@ -595,7 +609,6 @@ for exp_type = 1:numel(experiment_types)
                 p3_freq = to_frequency_data(data3, main_path, 3, ...
                     participant_order3, analysis, frequency_level, foi, ...
                     'partition_');
-
 
                 [design1, new_participants1] = create_design_matrix_partitions(participant_order1, p1_freq, ...
                     regression_type, 1, type_of_effect);
@@ -626,7 +639,7 @@ for exp_type = 1:numel(experiment_types)
                 type_of_effect = 'null';
                 regressor = 'ft_statfun_depsamplesT';
                 start_latency = 0.056;
-                end_latency = 0.256;
+                end_latency = 0.800;
 
 
                 if strcmp(analysis, 'load')
@@ -641,9 +654,12 @@ for exp_type = 1:numel(experiment_types)
                 [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
                     data_file, partition);            
                 
-                foi = foi_of_interest(1, :);
                 disp('--processing-- Hz')
                 disp(foi);
+
+                freq = to_frequency_data(data, main_path, 1, ...
+                participant_order_1, analysis, frequency_level, foi, 'mean_intercept');              
+                n_part = numel(data);
 
                 freq = to_frequency_data(data, main_path, 1, ...
                 participant_order_1, analysis, frequency_level, foi, 'mean_intercept');              
@@ -710,7 +726,7 @@ for exp_type = 1:numel(experiment_types)
             cfg.correctm = 'cluster';
             cfg.neighbours = neighbours;
             cfg.clusteralpha = 0.025;
-            cfg.numrandomization = 100;
+            cfg.numrandomization = 1000;
             cfg.tail = roi_to_apply; 
             cfg.design = design_matrix;
             cfg.computeprob = 'yes';
@@ -801,12 +817,14 @@ for exp_type = 1:numel(experiment_types)
                 if numel(stat.posclusters) > 0
                     generate_peak_erps(master_dir, main_path, experiment_type, ...
                         stat, first_pos_peak_level_stats, 'positive', desired_design_mtx, 1, ...
-                        new_save_path, weight_erps, weighting_factor);
+                        new_save_path, weight_erps, weighting_factor, ...
+                        type_of_analysis, foi);
                 end
                 if numel(stat.negclusters) > 0
                     generate_peak_erps(master_dir, main_path, experiment_type, ...
                         stat, first_neg_peak_level_stats, 'negative', desired_design_mtx, 1, ...
-                        new_save_path, weight_erps, weighting_factor);
+                        new_save_path, weight_erps, weighting_factor, ...
+                        type_of_analysis, foi);
                 end
             end
             
@@ -823,14 +841,16 @@ for exp_type = 1:numel(experiment_types)
             end
             
             %% make pretty plots
-            create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
-                0.05, 'positive', new_save_path)
-
-            %% plot the peak electrode
-            create_viz_peak_electrode(stat, first_pos_peak_level_stats, new_save_path)
-
-            create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
-                0.05, 'negative', new_save_path)
+            if create_topographic_maps == 1
+                create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
+                    0.05, 'positive', new_save_path, type_of_analysis)
+    
+                %% plot the peak electrode
+                create_viz_peak_electrode(stat, first_pos_peak_level_stats, new_save_path)
+    
+                create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
+                    0.05, 'negative', new_save_path, type_of_analysis)
+            end
         end
     end
 end
@@ -1176,7 +1196,7 @@ end
 %% generate ERPs
 function generate_peak_erps(master_dir, main_path, experiment_type, ...
     stat, peak_information, effect_type, regression_type, desired_cluster, ...
-    save_dir, weight_erps, weighting_factor)
+    save_dir, weight_erps, weighting_factor, type_of_analysis, foi)
     
     df = stat.df;
     time = stat.time;
@@ -1199,7 +1219,6 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
             return ; 
         end
         
-        
         labels = stat.negclusterslabelmat;
         peak_t_value = abs(peak_t_value);
         labels(labels>desired_cluster) =0;
@@ -1218,7 +1237,8 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
     
     generate_plots(master_dir, main_path, experiment_type, start_of_effect,...
         end_of_effect, peak_electrode, peak_time, peak_t_value, df, ...
-        regression_type, pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor)
+        regression_type, pvalue, cluster_size, save_dir, effect_type, ...
+        weight_erps, weighting_factor, type_of_analysis, foi)
     
     close;
 end
@@ -1417,7 +1437,14 @@ function calculate_cluster_size(stat, ptitle, type, save_dir)
     legend_to_use = {};
 
     ylim_max = 0;
-    for k=1:numel(number_of_formed_clusters)
+
+    if numel(number_of_formed_clusters) > 5
+        n = 5;
+    else
+        n = numel(number_of_formed_clusters);
+    end
+
+    for k=1:n
         desired_cluster = number_of_formed_clusters(k);
         c = colours(k);
 
@@ -1548,7 +1575,8 @@ function most_significant = get_most_significant_electrode(peak_level_stats, typ
 end
 %% used to create the topographic maps
 function create_viz_topographic_maps(data1, stat, start_latency, ... 
-    end_latency, alpha, type, save_dir)
+    end_latency, alpha, type, save_dir, analysis_type)
+
 
     if numel(stat.negclusters) < 1 && strcmp(type, 'negative')
         return;
@@ -1558,71 +1586,130 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
 
     % fixes the interpolation issue of NaNs
     stat.stat(isnan(stat.stat))=0;
+
+    if strcmp(analysis_type, 'frequency_domain')
+        %fixes the interpolation issue of NaNs
+        stat.stat(isnan(stat.stat))=0;
+    
+        timestep = 0.075; % in seconds (50ms)
+        sampling_rate = 512;
+        sample_count  = length(stat.time);
+    
+        j = [start_latency:timestep:end_latency]; % Temporal endpoints (in seconds) of the ERP average computed in each subplot
+        [i1,i2] = match_str(data1{1}.label, stat.label);
         
+        if strcmp(type,'positive')
+            pos_cluster_pvals = [stat.posclusters(:).prob];
+            pos_clust = find(pos_cluster_pvals < 0.05);
+            pos = ismember(stat.posclusterslabelmat, pos_clust);
+            save_dir = strcat(save_dir, '\', 'positive_topographic.png');
+            if isempty(pos_clust)
+                clust = zeros(118,1,401); %401 before
+            else
+                clust = pos;
+            end
+        elseif strcmp(type,'negative') 
+            neg_cluster_pvals = [stat.negclusters(:).prob];
+            neg_clust = find(neg_cluster_pvals < 0.05);
+            neg = ismember(stat.negclusterslabelmat, neg_clust);
+            if isempty(neg_clust)
+                clust = zeros(118,1,401); %401 before
+            else
+                clust = neg;
+            end
+            save_dir = strcat(save_dir, '\', 'negative_topographic.png');
+        end
     
-    cfg = [];
-    cfg.channel   = 'all';
-    cfg.latency   = 'all';
-    cfg.parameter = 'avg';
+        max_iter = numel(j)-1;
+        for k = 1:max_iter
+             subplot(3,4,k);
+             cfg = [];
+             cfg.parameter = 'stat';
+             cfg.xlim = [j(k) j(k+1)];
+             cfg.zlim = [-6 6];
+             clust_int = zeros(118,1);
+             t_idx = find(stat.time>=j(k) & stat.time<=j(k+1));
+             clust_int(i1) = all(clust(i2,1,t_idx),3);
+             cfg.marker ='on';
+             cfg.markersize = 1;
+             cfg.highlight = 'on';
+             cfg.highlightchannel = find(clust_int);
+             cfg.highlightcolor = {'r',[0 0 1]};
+             cfg.highlightsize = 2;
+             cfg.comment = 'xlim';
+             cfg.commentpos = 'title';
+             ft_topoplotTFR(cfg, stat);
+        end
+    else
+        cfg = [];
+        cfg.channel   = 'all';
+        cfg.latency   = 'all';
+        cfg.parameter = 'avg';
+        
+        cfg = [];
+        cfg.foilim = [30 80];
+        cfg.toilim = [-0.2 0.8];
+        cfg.parameter = 'powspctrm';
+        ft_freqgrandaverage(cfg, data1{:});
     
-    grand_avg1 = ft_timelockgrandaverage(cfg, data1{:});
-    grand_avg1.elec = data1{1}.elec;
-    [i1,i2] = match_str(grand_avg1.label, stat.label);
+        grand_avg1 = ft_timelockgrandaverage(cfg, data1{:});
+        grand_avg1.elec = data1{1}.elec;
+        [i1,i2] = match_str(grand_avg1.label, stat.label);
+        
+        figure;
+        timestep = 0.025; % 25ms
+        sampling_rate = 512;
+        sample_count  = length(stat.time);
+        
+        j = [start_latency:timestep:end_latency]; % Temporal endpoints (in seconds) of the ERP average computed in each subplot
+        
+        %$m = zeros(1,size(j,2));
+        %for ith = 1:size(j,2)    
+        %end
+       
+        m = [1:timestep*sampling_rate:sample_count];  % temporal endpoints in M/EEG samples
+        m(end+1) = sample_count;
     
-    figure;
-    timestep = 0.025; % 25ms
-    sampling_rate = 512;
-    sample_count  = length(stat.time);
+        if contains(type, 'positive')
+            pos_cluster_pvals = [stat.posclusters(:).prob];
+            pos_clust = find(pos_cluster_pvals < alpha);
+            clust = ismember(stat.posclusterslabelmat, pos_clust);
+            save_dir = strcat(save_dir, '\', 'positive_topographic.png');
+        elseif contains(type, 'negative')
+            neg_cluster_pvals = [stat.negclusters(:).prob];
+            neg_clust = find(neg_cluster_pvals < alpha);
+            clust = ismember(stat.negclusterslabelmat, neg_clust);    
+            save_dir = strcat(save_dir, '\', 'negative_topographic.png');
+        end
+        max_iter = numel(m)-1;
+        
+        max_t = max(stat.stat, [], 'all');
+        max_t = round(max_t, 2);
     
-    j = [start_latency:timestep:end_latency]; % Temporal endpoints (in seconds) of the ERP average computed in each subplot
-    
-    %$m = zeros(1,size(j,2));
-    %for ith = 1:size(j,2)    
-    %end
-   
-    m = [1:timestep*sampling_rate:sample_count];  % temporal endpoints in M/EEG samples
-    m(end+1) = sample_count;
-
-    if contains(type, 'positive')
-        pos_cluster_pvals = [stat.posclusters(:).prob];
-        pos_clust = find(pos_cluster_pvals < alpha);
-        clust = ismember(stat.posclusterslabelmat, pos_clust);
-        save_dir = strcat(save_dir, '\', 'positive_topographic.png');
-    elseif contains(type, 'negative')
-        neg_cluster_pvals = [stat.negclusters(:).prob];
-        neg_clust = find(neg_cluster_pvals < alpha);
-        clust = ismember(stat.negclusterslabelmat, neg_clust);    
-        save_dir = strcat(save_dir, '\', 'negative_topographic.png');
+        for k = 1:max_iter
+             subplot(2,4,k);
+             cfg = [];
+             cfg.xlim = [j(k) j(k+1)];
+             cfg.zlim = [-5e-14 5e-14];
+             pos_int = zeros(numel(grand_avg1.label),1);
+             pos_int(i1) = all(clust(i2, m(k):m(k+1)), 2);
+             cfg.highlight = 'on';
+             cfg.highlightchannel = find(pos_int);
+             cfg.highlightcolor = {'r',[0 0 1]};
+             cfg.comment = 'xlim';
+             cfg.commentpos = 'title';
+             cfg.parameter = 'stat';
+             cfg.zlim=[-max_t,max_t];
+             cfg.colorbar = 'SouthOutside';  
+             cfg.fontsize = 14;
+             cfg.markerfontsize = 14;
+             cfg.highlightfontsize = 14;
+             cfg.style = 'straight';
+             %cfg.layout = 'biosemi128.lay';
+             ft_topoplotER(cfg, stat);
+             %ft_clusterplot(cfg, stat)
+        end
     end
-    max_iter = numel(m)-1;
-    
-    max_t = max(stat.stat, [], 'all');
-    max_t = round(max_t, 2);
-
-    for k = 1:max_iter
-         subplot(2,4,k);
-         cfg = [];
-         cfg.xlim = [j(k) j(k+1)];
-         cfg.zlim = [-5e-14 5e-14];
-         pos_int = zeros(numel(grand_avg1.label),1);
-         pos_int(i1) = all(clust(i2, m(k):m(k+1)), 2);
-         cfg.highlight = 'on';
-         cfg.highlightchannel = find(pos_int);
-         cfg.highlightcolor = {'r',[0 0 1]};
-         cfg.comment = 'xlim';
-         cfg.commentpos = 'title';
-         cfg.parameter = 'stat';
-         cfg.zlim=[-max_t,max_t];
-         cfg.colorbar = 'SouthOutside';  
-         cfg.fontsize = 14;
-         cfg.markerfontsize = 14;
-         cfg.highlightfontsize = 14;
-         cfg.style = 'straight';
-         %cfg.layout = 'biosemi128.lay';
-         ft_topoplotER(cfg, stat);
-         %ft_clusterplot(cfg, stat)
-    end
-
     set(gcf,'Position',[100 100 1000 750])
     exportgraphics(gcf,save_dir,'Resolution',500);
     close;
@@ -2082,7 +2169,8 @@ end
 %% generate erp plots
 function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     end_peak, peak_electrode, peak_effect, t_value, df, regression_type, ...
-    pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor);
+    pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor, ...
+    type_of_analysis, foi)
 
     
     plotting_window = [-100, 300];
@@ -2098,12 +2186,23 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         partition.is_partition = 0;
         partition.partition_number = 0;
 
+       if strcmp(type_of_analysis, 'time_domain')
+           data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+           [data, ~] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition);
+            e_idx = find(contains(data{1}.label,peak_electrode));
+       elseif strcmp(type_of_analysis, 'frequency_domain')
+           data_file = 'frequency_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+           [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                    data_file, partition); 
+           freq = to_frequency_data(data, main_path, 1, ...
+                participant_order_1, 'load', 'trial-level', ...
+                foi, 'mean_intercept');  
+           e_idx = find(contains(freq{1}.pgi.label,peak_electrode));
+           data = format_for_plotting_functions(freq);
+       end
 
-       data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
-       [data, ~] = load_postprocessed_data(main_path, n_participants, ...
-            data_file, partition);
-        e_idx = find(contains(data{1}.label,peak_electrode));
-        ci = bootstrap_erps(data, e_idx);
+       ci = bootstrap_erps(data, e_idx);
      
     elseif strcmp(experiment_type, 'pure-factor-effect') 
         data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
@@ -2112,7 +2211,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
         partition.is_partition = 0;
         partition.partition_number = 999;
-
+        
 
         [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
             data_file, partition);     
@@ -2149,30 +2248,71 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         partition3.is_partition = 1; 
         partition3.partition_number = 3;
 
-        data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
-        [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-            data_file, partition1);
-        e_idx = find(contains(data1{1}.label,peak_electrode));
-        [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
-            data_file, partition2);
-        [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
-            data_file, partition3);
-        
-        data = [data1,data2,data3];
-        
-        type_of_effect = 'habituation';
-        [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
-        ci1_h = bootstrap_erps(data1_h, e_idx);
-        ci1_l = bootstrap_erps(data1_l, e_idx);
-        [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 2, type_of_effect, weight_erps, weighting_factor);
-        ci2_h = bootstrap_erps(data2_h, e_idx);
-        ci2_l = bootstrap_erps(data2_l, e_idx);
-        [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 3, type_of_effect, weight_erps, weighting_factor);
-        ci3_h = bootstrap_erps(data3_h, e_idx);
-        ci3_l = bootstrap_erps(data3_l, e_idx);
+
+        if strcmp(type_of_analysis, 'time_domain')
+            data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+            [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition1);
+            e_idx = find(contains(data1{1}.label,peak_electrode));
+            [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition2);
+            [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition3);
+            
+            data = [data1,data2,data3];
+            
+            type_of_effect = 'habituation';
+            [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
+                regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            ci1_h = bootstrap_erps(data1_h, e_idx);
+            ci1_l = bootstrap_erps(data1_l, e_idx);
+            [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
+                regression_type, 2, type_of_effect, weight_erps, weighting_factor);
+            ci2_h = bootstrap_erps(data2_h, e_idx);
+            ci2_l = bootstrap_erps(data2_l, e_idx);
+            [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
+                regression_type, 3, type_of_effect, weight_erps, weighting_factor);
+            ci3_h = bootstrap_erps(data3_h, e_idx);
+            ci3_l = bootstrap_erps(data3_l, e_idx);
+       elseif strcmp(type_of_analysis, 'frequency_domain')
+           data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
+            [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition1);
+            e_idx = find(contains(data1{1}.label,peak_electrode));
+            [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition2);
+            [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
+                data_file, partition3);
+           
+            p1_freq = to_frequency_data(data1, main_path, 1, ...
+                participant_order1, analysis, frequency_level, foi, ...
+                'partition_');   
+            data1 = format_for_plotting_functions(p1_freq);
+            
+            p2_freq = to_frequency_data(data2, main_path, 2, ...
+                participant_order2, analysis, frequency_level, foi, ...
+                'partition_');
+            data2 = format_for_plotting_functions(p2_freq);
+
+            p3_freq = to_frequency_data(data3, main_path, 3, ...
+                participant_order3, analysis, frequency_level, foi, ...
+                'partition_');
+            data3 = format_for_plotting_functions(p3_freq);
+            
+            [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
+                regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            ci1_h = bootstrap_erps(data1_h, e_idx);
+            ci1_l = bootstrap_erps(data1_l, e_idx);
+            [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
+                regression_type, 2, type_of_effect, weight_erps, weighting_factor);
+            ci2_h = bootstrap_erps(data2_h, e_idx);
+            ci2_l = bootstrap_erps(data2_l, e_idx);
+            [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
+                regression_type, 3, type_of_effect, weight_erps, weighting_factor);
+            ci3_h = bootstrap_erps(data3_h, e_idx);
+            ci3_l = bootstrap_erps(data3_l, e_idx);
+           
+       end
 
         
     elseif strcmp(experiment_type, 'erps-23-45-67') || strcmp(experiment_type, 'erps-23-45-67-no-factor') 
@@ -2272,7 +2412,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        h = fill(x2, inBetween, 'b' , 'LineStyle','none');
        set(h,'facealpha',.10)
        xlim(plotting_window);
-       ylim([-6, 8])
+       ylim([min(ci.dist_pgi_low)-0.5, max(ci.dist_pgi_high)+0.5])
        grid on
        xline(start_peak, '-', "LineWidth", 1.5);
        xline(end_peak, '-', "LineWidth", 1.5);
@@ -2322,7 +2462,13 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        xlim(plotting_window);
-       ylim([-6, 10])
+       
+       min_y = min([min(ci.dist_thick_low), min(ci.dist_thin_low), min(ci.dist_med_low)])-0.5;
+       max_y = max([max(ci.dist_thick_high), max(ci.dist_thin_high), max(ci.dist_med_high)])+0.5;
+       ylim([min_y, max_y])
+       
+       
+       
        xlabel("Milliseconds", "FontSize",labels_text_size)
        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
        grid on
@@ -2572,7 +2718,12 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('Low Group: Partitions: PGI','FontSize', labels_text_size);
-       ylim([-6, 8])
+       
+       
+       min_y = min([min(ci1_l.dist_pgi_low), min(ci2_l.dist_pgi_low), min(ci3_l.dist_pgi_low)])-0.5;
+       max_y = max([max(ci3_l.dist_pgi_high), max(ci2_l.dist_pgi_high), max(ci1_l.dist_pgi_high)])+0.5;
+       ylim([min_y, max_y])
+       
        grid on;
        hold off;
        
@@ -2625,6 +2776,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('High Group: Partitions: PGI','FontSize', labels_text_size);
+
+       min_y = min([min(ci1_h.dist_pgi_low), min(ci2_h.dist_pgi_low), min(ci3_h.dist_pgi_low)])-0.5;
+       max_y = max([max(ci3_h.dist_pgi_high), max(ci2_h.dist_pgi_high), max(ci1_h.dist_pgi_high)])+0.5;
+       ylim([min_y, max_y])
+
        ylim([-6, 8])
        grid on;
        hold off;
@@ -2657,7 +2813,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('Low Group: Medium Through the Partitions','FontSize', labels_text_size);
-       ylim([-6, 10])
+
+       min_y = min([min(ci1_l.dist_med_avg), min(ci2_l.dist_med_avg), min(ci3_l.dist_med_avg)])-0.5;
+       max_y = max([max(ci1_l.dist_med_avg), max(ci2_l.dist_med_avg), max(ci3_l.dist_med_avg)])+0.5;
+       ylim([min_y, max_y])
+
        grid on;
        hold off;
        
@@ -2686,7 +2846,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('High Group: Medium Through the Partitions','FontSize', labels_text_size);
-       ylim([-6, 10])
+       
+       min_y = min([min(ci1_h.dist_med_avg), min(ci2_h.dist_med_avg), min(ci3_h.dist_med_avg)])-0.5;
+       max_y = max([max(ci1_h.dist_med_avg), max(ci2_h.dist_med_avg), max(ci3_h.dist_med_avg)])+0.5;
+       ylim([min_y, max_y])
+       
        grid on;
        hold off;
        
@@ -2734,7 +2898,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('Low Group P1','FontSize', labels_text_size);
-       ylim([-6, 12])
+       
+       min_y = min([min(ci1_l.dist_thin_low), min(ci1_l.dist_med_low), min(ci1_l.dist_thick_low)])-0.5;
+       max_y = max([max(ci1_l.dist_thick_high), max(ci1_l.dist_med_high), max(ci1_l.dist_thin_high)])+0.5;
+       ylim([min_y, max_y])
+       
        grid on;
        hold off;
        
@@ -2781,7 +2949,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('High Group P1','FontSize', labels_text_size);
-       ylim([-6, 12])
+
+       min_y = min([min(ci1_h.dist_thick_low), min(ci1_h.dist_med_low), min(ci1_h.dist_thin_low)])-0.5;
+       max_y = max([max(ci1_h.dist_thin_high), max(ci1_h.dist_med_high), max(ci1_h.dist_thick_high)])+0.5;
+       ylim([min_y, max_y])
+
        grid on;
        hold off;
        
@@ -2828,7 +3000,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('Low Group P2','FontSize', labels_text_size);
-       ylim([-6, 10])
+       
+       min_y = min([min(ci2_l.dist_thin_low), min(ci2_l.dist_med_low), min(ci2_l.dist_thick_low)])-0.5;
+       max_y = max([max(ci2_l.dist_thick_high), max(ci2_l.dist_med_high), max(ci2_l.dist_thin_high)])+0.5;
+       ylim([min_y, max_y])
+       
        grid on;
        hold off;
        
@@ -2876,7 +3052,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('High Group P2','FontSize', labels_text_size);
-       ylim([-6, 10])
+       
+       min_y = min([min(ci2_h.dist_thin_low), min(ci2_h.dist_med_low), min(ci2_h.dist_thick_low)])-0.5;
+       max_y = max([max(ci2_h.dist_thick_high), max(ci2_h.dist_med_high), max(ci2_h.dist_thin_high)])+0.5;
+       ylim([min_y, max_y])
+       
        grid on;
        hold off;
        
@@ -2924,7 +3104,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('Low Group P3','FontSize', labels_text_size);
-       ylim([-6, 10])
+       
+       min_y = min([min(ci3_l.dist_thin_low), min(ci3_l.dist_med_low), min(ci3_l.dist_thick_low)])-0.5;
+       max_y = max([max(ci3_l.dist_thick_high), max(ci3_l.dist_med_high), max(ci3_l.dist_thin_high)])+0.5;
+       ylim([min_y, max_y])
+       
        grid on;
        hold off;
        
@@ -2972,7 +3156,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        xlim(plotting_window);
        title('High Group P3','FontSize', labels_text_size);
-       ylim([-6, 10])
+
+       min_y = min([min(ci3_h.dist_thick_low), min(ci3_h.dist_med_low), min(ci3_h.dist_thin_low)])-0.5;
+       max_y = max([max(ci3_h.dist_thin_high), max(ci3_h.dist_med_high), max(ci3_h.dist_thick_high)])+0.5;
+       ylim([min_y, max_y])
+
        grid on;
        hold off;
        
@@ -3260,7 +3448,7 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
     cfg.width = 3;
     cfg.foi =   foi(1):foi(2);
     cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
-    cfg.toi          = -0.2:0.002:0.5;
+    cfg.toi          = -0.2:0.002:1;
     cfg.channel      = 'all';
 
     dataset = {};
@@ -3728,4 +3916,27 @@ end
        participant_data(i, 1) = avg_pgi;
        participant_data(i,2) = participant_number;
     end
+ end
+
+ %% used to format the frequency data for plotting functions
+ function freq = format_for_plotting_functions(freq)
+    num_participants = numel(freq);
+    for i=1:num_participants
+        participant = freq{i};
+
+        thin = squeeze(mean(participant.thin.powspctrm,2));
+        thick = squeeze(mean(participant.thick.powspctrm,2));
+        medium = squeeze(mean(participant.med.powspctrm,2));
+        pgi = squeeze(mean(participant.pgi.powspctrm,2));
+        time = participant.pgi.time;
+
+        new_struct.thin = thin;
+        new_struct.thick = thick;
+        new_struct.medium = medium;
+        new_struct.pgi = pgi;
+        new_struct.time = time;
+
+        freq{i} = new_struct;
+    end
+
  end
