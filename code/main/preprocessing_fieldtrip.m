@@ -12,7 +12,7 @@ to_preprocess = {'mean_intercept'};
 type_of_analysis = 'frequency_domain'; % or time_domain
 
 onsets = [
-    2,3,4,5,6,7,8
+    2,3; 4,5; 6,7
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -60,7 +60,6 @@ for k=1:numel(to_preprocess)
                     data_fname = strcat(data_structure, '_075_80Hz_rejected.dat');
                     data_structure = strcat(data_structure, '_075_80Hz_rejected.mat');
                     filter_freq = [0.1, 80];
-                    baseline_window = [-0.5 0];
                 elseif strcmp(type_of_analysis, 'time_domain')
                     data_fname = strcat(data_structure, '_075_80Hz.dat');
                     data_structure = strcat(data_structure, '_075_80Hz.mat');  
@@ -92,8 +91,11 @@ for k=1:numel(to_preprocess)
                 %% setup the FT preprocessing fns
                 % filtering and baselining the data
                 cfg = [];
-                cfg.demean = 'yes';
-                cfg.baselinewindow  = baseline_window;
+                
+                if strcmp(type_of_analysis, 'time_domain')
+                    cfg.demean = 'yes';
+                    cfg.baselinewindow  = baseline_window;
+                end
 
                 cfg.bpfilter = 'yes';
                 cfg.bpfilttype = 'fir';                
