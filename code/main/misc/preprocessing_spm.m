@@ -1,3 +1,10 @@
+%% preprocessing pipeline for SPM *** Author; Cihan Dogan
+clear all
+cd("D:\PhD");
+addpath('C:\External_Software\fieldtrip-20210807');
+addpath('C:\External_Software\spm12')
+
+%% Change these variables depending on what you would like to do.
 %% preprocessing pipeline for FieldTrip *** Author; Cihan Dogan
 clear all;
 restoredefaultpath;
@@ -17,6 +24,7 @@ onsets = [
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
 
+
 %% main preprocessing loop
 for k=1:numel(to_preprocess)
     
@@ -33,14 +41,14 @@ for k=1:numel(to_preprocess)
     [n_onsets, ~] = size(onsets);
     for i=1:n_onsets
         subset_onsets = onsets(i,:);
-        for participant = 1:n_participants
+        for participant = 13:n_participants
 
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);
             full_description = strcat(analysis_type, '_', description{1});
             full_description = strcat(type_of_analysis, {'_'}, full_description);
             full_description = full_description{1};
-            
+
             %% works out where to load the data
             participant_main_path = strcat(main_path, int2str(participant));    
 
@@ -55,94 +63,104 @@ for k=1:numel(to_preprocess)
                 end
 
                 data_structure = strcat(data_structure, p);
-                
-                if contains(type_of_analysis, 'frequency_domain')
-                    data_fname = strcat(data_structure, '_075_80Hz_rejected.dat');
-                    data_structure = strcat(data_structure, '_075_80Hz_rejected.mat');
-                    filter_freq = [0.1, 80];
-                elseif strcmp(type_of_analysis, 'time_domain')
-                    data_fname = strcat(data_structure, '_075_80Hz.dat');
-                    data_structure = strcat(data_structure, '_075_80Hz.mat');  
-                    filter_freq = [0.1, 30];
-                    baseline_window = [-0.2 0];
-                end
-                
+                data_structure = strcat(data_structure, '_075_80Hz_rejected.mat');   
                 file_main_path = strcat(participant_main_path, data_structure);
-                
-                if ~isfile(file_main_path)
+                save_path = strcat(participant_main_path, 'SPM_ARCHIVE\');
+                cd(participant_main_path);
+
+                if ~isfile(data_structure)
                     continue;
                 end
-                
-                cd(participant_main_path);
 
                 %% this function updates the trial information so that you only
                 % analyse the conditions of interest
                 condition_names = label_data(thin, med, thick, participant_main_path,  data_structure, analysis_type);
 
-                %% load and convert from SPM > FieldTrip
+                %% sort out paths
                 load(file_main_path);
-                D.data.fname = strcat(participant_main_path, data_fname);
+                D.data.fname = convertStringsToChars(strrep(file_main_path, "mat", "dat"));
+                save(file_main_path, 'D')
+
+
+                %% filter
+                matlabbatch{1}.spm.meeg.preproc.filter.D = {file_main_path};
+                matlabbatch{1}.spm.meeg.preproc.filter.type = 'butterworth';
+                matlabbatch{1}.spm.meeg.preproc.filter.band = 'bandpass';
+                matlabbatch{1}.spm.meeg.preproc.filter.freq = [0.5 80];
+                matlabbatch{1}.spm.meeg.preproc.filter.dir = 'twopass';
+                matlabbatch{1}.spm.meeg.preproc.filter.order = 5;
+                matlabbatch{1}.spm.meeg.preproc.filter.prefix = strcat(save_path, 'f1');
+                spm_jobman('run',matlabbatch)
+                clear matlabbatch
+
+                %% baseline
+                %data_structure = strcat('f1', data_structure);
+                %file_main_path = strcat(save_path, data_structure);
+                %matlabbatch{1}.spm.meeg.preproc.bc.D = {file_main_path};
+                %matlabbatch{1}.spm.meeg.preproc.bc.timewin = [-200 0];
+                %matlabbatch{1}.spm.meeg.preproc.bc.prefix = 'b1';
+                %spm_jobman('run',matlabbatch)
+                %clear matlabbatch
+
+                %% threshold
+                data_structure = strcat('f1', data_structure);
+                file_main_path = strcat(save_path, data_structure);
+                matlabbatch{1}.spm.meeg.preproc.artefact.D = {file_main_path};
+                matlabbatch{1}.spm.meeg.preproc.artefact.mode = 'reject';
+                matlabbatch{1}.spm.meeg.preproc.artefact.badchanthresh = 0.5;
+                matlabbatch{1}.spm.meeg.preproc.artefact.append = true;
+                matlabbatch{1}.spm.meeg.preproc.artefact.methods.channels{1}.type = 'EEG';
+                matlabbatch{1}.spm.meeg.preproc.artefact.methods.fun.threshchan.threshold = 100;
+                matlabbatch{1}.spm.meeg.preproc.artefact.methods.fun.threshchan.excwin = 1000;
+                matlabbatch{1}.spm.meeg.preproc.artefact.prefix = strcat(save_path, 't1');
+                spm_jobman('run',matlabbatch)
+                clear matlabbatch
+
+
+                %% determine whether we need to reject an entire particiapnt
+                data_structure = strcat('t1', data_structure);
+                dir = strcat(save_path, data_structure);
+                reject_participant = reject_particiapnt_based_on_bad_trials(dir);
+                 
+                 if reject_participant == 1
+                     disp('Rejected participant not enough trials after 100 uv rejection');
+                     delete(dir);
+                     delete(replace(dir, '.mat', '.dat'));
+                     continue;
+                 end
+
+                %% load and convert from SPM > FieldTrip
+                load(dir);
                 spm_eeg = meeg(D);
                 raw = spm_eeg.ftraw;
+
 
                 %% label with the trial order (for analysis later)
                 raw = label_data_with_trial_order(raw, D);
 
-                %% setup the FT preprocessing fns
-                % filtering and baselining the data
-                cfg = [];
-                
-                if strcmp(type_of_analysis, 'time_domain')
-                    cfg.demean = 'yes';
-                    cfg.baselinewindow  = baseline_window;
-                end
+                %% label with the trial order (duplicate)
+                raw = label_data_with_trials(raw, raw);
 
-                cfg.bpfilter = 'yes';
-                cfg.bpfilttype = 'but';                
-                cfg.bpfreq = filter_freq;
-                data = ft_preprocessing(cfg, raw);
 
-                % Detect artefacts via thresholding -100:100 uV
-                cfg = [];
-                cfg.continious = 'no';
-                cfg.artfctdef.threshold.min = -100;
-                cfg.artfctdef.threshold.max = 100;
-                cfg.artfctdef.threshold.channel = get_eeg_channels(data, analysis_type);
-                cfg.artfctdef.threshold.bpfilter  = 'no';
-
-                [~, artifact] = ft_artifact_threshold(cfg, data);
-
-                % reject the detected artefacts
-                cfg = [];
-                cfg.artfctdef.reject = 'complete';
-                cfg.artfctdef.zvalue.artifact = artifact;
-                postprocessed = ft_rejectartifact(cfg, data);
-
-                % update with the proper trial names after artefact rejection
-                postprocessed = label_data_with_trials(raw, postprocessed);
                 % relabel the relevant conditions after postprocessing
-                postprocessed = relabel_conditions(postprocessed, D);
-
-                % reject based on count of trials per condition
-                reject_participant = reject_particiapnt_based_on_bad_trials(postprocessed, raw);
-                if reject_participant == 1
-                    disp(strcat('REJECTED PARTICIPANT...',int2str(participant)));
-                    continue;
-                end
+                raw = relabel_conditions(raw, D);
 
                 % get the data ready for FT analysis
-                [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, analysis_type);
+                [trial_level, grand_averages] = data_ready_for_analysis(raw, analysis_type);
                 
                 % saves the grand average data (easier to load rather than
                 % trial level. Also saves trial level if needed.
+                participant_main_path = strcat(participant_main_path, "SPM_ARCHIVE\");
                 save_data(grand_averages, participant_main_path, full_description, '_grand-average')
                 save_data(trial_level, participant_main_path, full_description, '_trial-level')
 
                 disp(strcat('PROCESSED PARTICIPANT..',int2str(participant))); 
+
             end
         end
     end
 end
+
 
 %% label the data with the trial order for analysis later
 function raw = label_data_with_trial_order(raw, D)
@@ -610,8 +628,68 @@ function condition_names = label_data(thin, medium, thick, path, fname, analysis
     save(file, 'D') 
 end
 
+%% ensure there is 20% of stim per bucket
 %% ensure there is atleast 20% of stimulus type per bucket
-function reject_participant = reject_particiapnt_based_on_bad_trials(postprocessed, raw)
+function reject_participant = reject_particiapnt_based_on_bad_trials(file)
+    thin_onsets = {'65411'; '65412'; '65413'; '65414'; '65415'; '65416';'65417'; '65418'; '65419'};
+    med_onsets = {'65401'; '65402'; '65403'; '65404'; '65405'; '65406'; '65407'; '65408'; '65409'};
+    thick_onsets = {'65391'; '65392'; '65393'; '65394'; '65395'; '65396'; '65397'; '65398'; '65399'};
+
+    load(file); % loads the D object
+    n_trials = size(D.trials);  
+    n_trials = n_trials(2);
+    
+    thin = [];
+    med = [];
+    thick = [];
+    
+    thin_count = 1;
+    med_count = 1;
+    thick_count = 1;
+    
+    threshold = 0.80;
+    
+    for onset = 1:n_trials
+        
+        is_bad = D.trials(onset).bad;
+        onset_type = D.trials(onset).events.value;
+            
+        if sum(contains(onset_type, thin_onsets))
+            thin(thin_count) = is_bad;
+            thin_count = thin_count + 1;
+        elseif sum(contains(onset_type, med_onsets))
+            med(med_count) = is_bad;
+            med_count = med_count  + 1;
+        elseif sum(contains(onset_type, thick_onsets))
+            thick(thick_count) = is_bad;
+            thick_count = thick_count + 1;
+        end
+        
+    end
+    
+    percentage_thin = sum(thin)/thin_count;
+    percentage_med = sum(med)/med_count;    
+    percentage_thick = sum(thick)/thick_count;
+    
+    reject_participant = 0;
+    
+    if percentage_thin > threshold
+        reject_participant = 1;
+    end
+    
+    if percentage_thin > threshold
+        reject_participant = 1;
+    end
+   
+    if percentage_thin > threshold
+        reject_participant = 1;
+    end
+    
+end
+
+
+%% ensure there is atleast 20% of stimulus type per bucket
+function ft_reject_participant = ft_reject_particiapnt_based_on_bad_trials(postprocessed, raw)
     trial_info = raw.trialinfo;
     [original_n_occurence, original_conditions] = hist(trial_info,unique(trial_info));
     
