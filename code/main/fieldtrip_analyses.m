@@ -8,8 +8,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'erps-23-45-67'};   
-desired_design_mtxs = {'discomfort', 'visual_stress'}; 
+experiment_types = {'partitions-2-8'};   
+desired_design_mtxs = {'visual_stress', 'headache', 'discomfort'}; 
 start_latency = 0.056;
 end_latency = 0.800;
 
@@ -35,8 +35,8 @@ if strcmp(type_of_analysis, 'frequency_domain')
     frequency_level = 'trial-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
     toi = [0.090, 0.250];
-    foi_of_interest = [[8, 13]; [20, 35]; [35, 45]; [45, 60]; [60, 80]];
-    %foi = [60, 80];
+    foi_of_interest = [[8, 13]; [20, 35]; [30, 45]; [45, 60]; [60, 80]];
+    foi_of_interest = [[30, 45]];
     analysis = 'preprocess'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
@@ -695,7 +695,12 @@ for f = 1:numel(foi_of_interest)
                         all_data = create_hacked_roi_freq(all_data, roi);
                     end
     
-                    all_designs{1} = [design1, design2, design3];                
+                    n_part_per_desgin = numel(design1);
+                    design_matrix = [design1, design2, design3];
+                    design_matrix = design_matrix - mean(design_matrix);
+                    save_desgin_matrix(design_matrix, n_part_per_desgin, save_path, 'habituation')
+
+                    all_designs{1} = design_matrix;              
     
                 elseif strcmp(experiment_type, 'onsets-2-8-explicit')
                     analysis = 'load';
@@ -822,6 +827,7 @@ for f = 1:numel(foi_of_interest)
                     stat = ft_freqstatistics(cfg, data{:}, null_data{:});
                     save(strcat(new_save_path, '\stat.mat'), 'stat')
                 else
+                    cfg.frequency = [foi(1) foi(2)];
                     cfg.ivar = 1;
                     cfg.avgoverfreq = 'yes';
                     stat = ft_freqstatistics(cfg, data{:});
@@ -3500,15 +3506,25 @@ end
 function dataset = to_frequency_data(data, save_dir, partition, ...
     participant_order, type, participant_level, foi, analysis_type)
 
-    cfg              = [];
-    cfg.output       = 'pow';
-    cfg.method       = 'wavelet';
-    cfg.taper        = 'hanning';
-    cfg.width = 3;
-    cfg.foi =   foi(1):foi(2);
-    cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
+   % cfg              = [];
+   % cfg.output       = 'pow';
+   % cfg.method       = 'wavelet';
+   % cfg.taper        = 'hanning';
+   % cfg.width = 3;
+   % cfg.foi =   foi(1):foi(2);
+   % cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
+   % cfg.toi          = -0.2:0.002:1;
+   % cfg.channel      = 'all';
+  
+    cfg = [];
+    cfg.channel = 'all';
+    cfg.method = 'wavelet';
+    cfg.width = 5;
+    cfg.output = 'pow';
+    cfg.pad = 'nextpow2';
+    %cfg.foi =   foi(1):foi(2);
+    cfg.foi = 5:80;
     cfg.toi          = -0.2:0.002:1;
-    cfg.channel      = 'all';
 
     dataset = {};
     for i=1:numel(data)
@@ -3518,8 +3534,7 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
         participant_number = participant_order{i};
         save_path = strcat(save_dir, int2str(participant_number), '\', analysis_type, int2str(partition), '_');      
 
-        full_save_dir = save_path + "trial_level_" + ...
-            int2str(foi(1)) + "_" + int2str(foi(2)) + "_Hz.mat";  
+        full_save_dir = save_path + "trial_level_5_80_Hz.mat";  
         
         if strcmp(type, 'preprocess')
             med.label = participant.label;
