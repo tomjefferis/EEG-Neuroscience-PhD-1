@@ -2,18 +2,16 @@
 clear all
 clc
 master_dir = "C:\Users\marga\Desktop\Research Project\scripts";
-main_path = 'C:\Users\marga\Desktop\Research Project\participants_Austyn\participant_';
-cd("C:\Users\marga\Documents\MATLAB");
-rmpath spm8;
-addpath spm12;
-addpath fieldtrip-20210311;
+main_path = 'D:\PhD\participant_';
+addpath('C:\External_Software\fieldtrip-20210807');
+addpath('C:\External_Software\spm12')
 ft_defaults
-cd(master_dir);
+%cd(master_dir);
 experiment_type = 'onsets-2-8';
 time_period = 1; % 0 = whole period, 1 = up to 800ms
 %experiment_type = 'onsets-factor';
 %experiment_type = 'partitions';
-partitions_interaction_only = 1;
+partitions_interaction_only = 0;
 mean_centering = 1;
 tails = 0;
 region_of_interest = 0;
@@ -34,8 +32,18 @@ if contains(experiment_type, 'onsets-2-8')
     partition.is_partition = 0;
     partition.partition_number = 0;
     
-%     [thin,med,thick,data_agg,data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
-    cd("C:\Users\marga\Desktop\Research Project\participants_Austyn")
+    [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
+    
+    frequency_data.thin1 = thin_data;
+    frequency_data.med1 = med_data;
+    frequency_data.thick1 = thick_data;
+    frequency_data.data1 = fieldtrip_data_agg;
+    frequency_data.participant_order_1 = participant_order;
+    frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI;
+
+    save("D:\PhD\margarita_data\frequency_data_mi.mat", 'frequency_data', '-v7.3')
+    clear frequency_data;
+
     if time_period == 1
         load data_PGI
         load pax_order
@@ -56,8 +64,21 @@ elseif contains(experiment_type, 'onsets-factor')
     partition.is_partition = 0;
     partition.partition_number = 0;
     
-    %[data_agg, data_PGI, participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
-    cd("C:\Users\marga\Desktop\Research Project\participants_Austyn")
+    
+    
+    [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
+    
+    frequency_data.thin1 = thin_data;
+    frequency_data.med1 = med_data;
+    frequency_data.thick1 = thick_data;
+    frequency_data.data1 = fieldtrip_data_agg;
+    frequency_data.participant_order_1 = participant_order;
+    frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI;
+
+    save("D:\PhD\margarita_data\frequency_data_mi.mat", 'frequency_data', '-v7.3')
+    clear frequency_data;
+
+
     if time_period == 1
         %load data_PGI
         load data_partition1
@@ -100,25 +121,67 @@ elseif contains(experiment_type, 'partitions')
     partition3.is_partition = 1; % partition 3
     partition3.partition_number = '3';
     
-%     [thin1, med1, thick1, data1, participant_order_1] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition1);
-%     cd(master_dir);
-%     [thin2, med2, thick2, data2, participant_order_2] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition2);
-%     cd(master_dir);
-%     [thin3, med3, thick3, data3, participant_order_3] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition3);
-%     cd(master_dir);
-    cd("C:\Users\marga\Desktop\Research Project\participants_Austyn")
-    load data_partition1
-    load data_partition2
-    load data_partition3
-    load pax_order
-    participant_order_1 = participant_order;
-    participant_order_2 = participant_order_1;
-    participant_order_3 = participant_order_1;
-    cd(master_dir)
+     [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition1);
+
+    frequency_data.thin1 = thin_data;
+    frequency_data.med1 = med_data;
+    frequency_data.thick1 = thick_data;
+    frequency_data.data1 = fieldtrip_data_agg;
+    frequency_data.participant_order_1 = participant_order;
+    frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI;
+
+    save("D:\PhD\margarita_data\frequency_data.mat", 'frequency_data', '-v7.3')
+    clear frequency_data;
+% 
+% 
+%     [thin_data2,med_data2,thick_data2,fieldtrip_data_agg2,fieldtrip_data_PGI2,participant_order2]  = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition2);
+% 
+%     frequency_data.thin1 = thin_data2;
+%     frequency_data.med1 = med_data2;
+%     frequency_data.thick1 = thick_data2;
+%     frequency_data.data1 = fieldtrip_data_agg2;
+%     frequency_data.participant_order_1 = participant_order2;
+%     frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI2;
+% 
+%     save("D:\PhD\margarita_data\frequency_data2.mat", 'frequency_data', '-v7.3')
+%     clear frequency_data;
+% 
+%     [thin_data3,med_data3,thick_data3,fieldtrip_data_agg3,fieldtrip_data_PGI3,participant_order3]  = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition3);
+% 
+% 
+%     frequency_data.thin1 = thin_data3;
+%     frequency_data.med1 = med_data3;
+%     frequency_data.thick1 = thick_data3;
+%     frequency_data.data1 = fieldtrip_data_agg3;
+%     frequency_data.participant_order_1 = participant_order3;
+%     frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI3;
+% 
+%     save("D:\PhD\margarita_data\frequency_data3.mat", 'frequency_data', '-v7.3')
+%     clear frequency_data;
+% 
+%     cd("C:\Users\marga\Desktop\Research Project\participants_Austyn")
+    load D:\PhD\margarita_data\frequency_data.mat
+    participant_order_1 = frequency_data.participant_order_1;
+    data1 = frequency_data.fieldtrip_data_PGI;
+    disp("loaded p1")
+    clear frequency_data;
+
+    load D:\PhD\margarita_data\frequency_data2.mat
+    participant_order_2 = frequency_data.participant_order_1;
+    data2 = frequency_data.fieldtrip_data_PGI;
+    disp("loaded p2")
+    clear frequency_data;
+
+    load D:\PhD\margarita_data\frequency_data3.mat
+    participant_order_3 = frequency_data.participant_order_1;
+    data3 = frequency_data.fieldtrip_data_PGI;
+    disp("loaded p3")
+    clear frequency_data;
+    
     
     if partitions_interaction_only == 0
         % choose from 'headache', 'visual stress', 'discomfort'
-        regression_type = 'discomfort'; 
+        regression_type = 'visual stress'; 
         partition = 1;
         [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, ...
                 regression_type, partition);
@@ -148,7 +211,7 @@ elseif contains(experiment_type, 'partitions')
             design_matrix = design_matrix - mean(design_matrix);
         end
     end
-    plot_design_matrix(design_matrix, n_part)
+    %plot_design_matrix(design_matrix, n_part)
 end
 
 
@@ -157,34 +220,35 @@ end
 % load data_agg
 % cd(master_dir);
 % 
-cfg = [];
-cfg.foilim = [30 80];
-cfg.toilim = [-0.2 0.8];
-cfg.parameter = 'powspctrm';
-grand_avg = ft_freqgrandaverage(cfg, thick{:});
-grand_avg.elec = data_agg{1}.elec;
-
-cfg = [];
-%cfg.layout = data_agg{1}.elec;
-cfg.channel = 'A23';
-cfg.baseline = [-0.1 0];
-cfg.baselinetype = 'db';
-cfg.xlim = [-0.1 0.8];
-cfg.zlim = [-18 18];
-cfg.colorbar = 'yes';
-cfg.colormap = 'jet';
-cfg.showlabels = 'yes';
-cfg.parameter = 'powspctrm';
-ft_singleplotTFR(cfg, grand_avg);
-% ft_topoplotTFR(cfg, grand_avg);
+% cfg = [];
+% cfg.foilim = [30 80];
+% cfg.toilim = [-0.2 0.8];
+% cfg.parameter = 'powspctrm';
+% grand_avg = ft_freqgrandaverage(cfg, thick{:});
+% grand_avg.elec = data_agg{1}.elec;
+% 
+% cfg = [];
+% %cfg.layout = data_agg{1}.elec;
+% cfg.channel = 'A23';
+% cfg.baseline = [-0.1 0];
+% cfg.baselinetype = 'db';
+% cfg.xlim = [-0.1 0.8];
+% cfg.zlim = [-18 18];
+% cfg.colorbar = 'yes';
+% cfg.colormap = 'jet';
+% cfg.showlabels = 'yes';
+% cfg.parameter = 'powspctrm';
+% ft_singleplotTFR(cfg, grand_avg);
+% % ft_topoplotTFR(cfg, grand_avg);
 
 %% setup FT analysis
 % we have to switch to SPM8 to use some of the functions in FT
-cd("C:\Users\marga\Documents\MATLAB");
-rmpath spm12;
-addpath spm8;
-cd(master_dir);
-data=data_PGI;
+%cd("C:\Users\marga\Documents\MATLAB");
+%rmpath spm12;
+%addpath spm8;
+%cd(master_dir);
+%data=data_PGI;
+%data=old_data;
 
 % we need to tell fieldtrip how our electrodes are structured
 cfg = [];
@@ -205,7 +269,7 @@ cfg.method = 'montecarlo';
 cfg.correctm = 'cluster';
 cfg.neighbours = neighbours;
 cfg.clusteralpha = 0.025;
-cfg.numrandomization = 10000;
+cfg.numrandomization = 1000;
 cfg.alpha = 0.05;
 cfg.tail = tails; % 0 = two-tailed, 1 = one-tailed
 cfg.correcttail = 'alpha';
@@ -215,19 +279,19 @@ cfg.computeprob = 'yes';
 %% run the fieldtrip analyses
 if contains(experiment_type, 'onsets-2-8')
     % set values to 0 for viz and other things
-    null_data = set_values_to_zero(data_PGI); % create null data to hack a t-test
+    null_data = set_values_to_zero(data); % create null data to hack a t-test
     cfg.uvar = 1;
     cfg.ivar = 2;
     cfg.frequency = [8 13];
-    stat_a = ft_freqstatistics(cfg, data_PGI{:}, null_data{:});
+    stat_a = ft_freqstatistics(cfg, data{:}, null_data{:});
     cfg.frequency = [20 35];
-    stat_b = ft_freqstatistics(cfg, data_PGI{:}, null_data{:});
+    stat_b = ft_freqstatistics(cfg, data{:}, null_data{:});
     cfg.frequency = [30 45];
-    stat_lg = ft_freqstatistics(cfg, data_PGI{:}, null_data{:});
+    stat_lg = ft_freqstatistics(cfg, data{:}, null_data{:});
     cfg.frequency = [45 60];
-    stat_mg = ft_freqstatistics(cfg, data_PGI{:}, null_data{:});
+    stat_mg = ft_freqstatistics(cfg, data{:}, null_data{:});
     cfg.frequency = [60 80];
-    stat_hg = ft_freqstatistics(cfg, data_PGI{:}, null_data{:});
+    stat_hg = ft_freqstatistics(cfg, data{:}, null_data{:});
 elseif contains(experiment_type, 'onsets-factor')
     cfg.ivar = 1;
     if region_of_interest == 1
@@ -282,14 +346,14 @@ if tails==1
     % 1 for the most positive going cluster
     [peak_stats_a_pos, all_electrode_stata_pos] = get_peak_level_stats(stat_a, 1, 'positive');
     [peak_stats_b_pos, all_electrode_statb_pos] = get_peak_level_stats(stat_b, 1, 'positive');
-    [peak_stats_lg_pos, all_electrode_statlg_pos] = get_peak_level_stats(stat_lg, 5, 'positive');
+    [peak_stats_lg_pos, all_electrode_statlg_pos] = get_peak_level_stats(stat_lg, 1, 'positive');
     [peak_stats_mg_pos, all_electrode_statmg_pos] = get_peak_level_stats(stat_mg, 1, 'positive');
     [peak_stats_hg_pos, all_electrode_stathg_pos] = get_peak_level_stats(stat_hg, 1, 'positive');
 else
     % 1 for the most positive going cluster
     [peak_stats_a_pos, all_electrode_stata_pos] = get_peak_level_stats(stat_a, 1, 'positive');
     [peak_stats_b_pos, all_electrode_statb_pos] = get_peak_level_stats(stat_b, 1, 'positive');
-    [peak_stats_lg_pos, all_electrode_statlg_pos] = get_peak_level_stats(stat_lg, 5, 'positive');
+    [peak_stats_lg_pos, all_electrode_statlg_pos] = get_peak_level_stats(stat_lg, 1, 'positive');
     [peak_stats_mg_pos, all_electrode_statmg_pos] = get_peak_level_stats(stat_mg, 1, 'positive');
     [peak_stats_hg_pos, all_electrode_stathg_pos] = get_peak_level_stats(stat_hg, 1, 'positive');
     
@@ -339,30 +403,30 @@ end
 tail = 'positive';
 figure(1)
 create_topoplots(data,stat_a,tail);
-% figure(2)
-% create_topoplots(data,stat_b,tail);
-% figure(3)
-% create_topoplots(data,stat_lg,tail);
-% figure(4)
-% create_topoplots(data,stat_mg,tail);
-% figure(5)
-% create_topoplots(data,stat_hg,tail);
+figure(2)
+create_topoplots(data,stat_b,tail);
+figure(3)
+create_topoplots(data,stat_lg,tail);
+figure(4)
+create_topoplots(data,stat_mg,tail);
+figure(5)
+create_topoplots(data,stat_hg,tail);
 
 %% get cluster size through time
 make_plots = 'yes';
 xlim = end_latency*1000;
 if tails == 1
-    title = 'Most negative going cluster through time as a % of entire volume';
-%     figure(1)
-%     calculate_cluster_size(stat_a, 1, make_plots, title, xlim, 'positive');
+    title = 'Most positive going cluster through time as a % of entire volume';
     figure(6)
-    calculate_cluster_size(stat_b, 1, make_plots, title, xlim, 'negative');
+    calculate_cluster_size(stat_a, 1, make_plots, title, xlim, 'positive');
     figure(7)
-    calculate_cluster_size(stat_lg, 1, make_plots, title, xlim, 'negative');
+    calculate_cluster_size(stat_b, 1, make_plots, title, xlim, 'positive');
     figure(8)
-    calculate_cluster_size(stat_mg, 1, make_plots, title, xlim, 'negative');
+    calculate_cluster_size(stat_lg, 1, make_plots, title, xlim, 'positive');
     figure(9)
-    calculate_cluster_size(stat_hg, 1, make_plots, title, xlim, 'negative');
+    calculate_cluster_size(stat_mg, 1, make_plots, title, xlim, 'positive');
+    figure(10)
+    calculate_cluster_size(stat_hg, 1, make_plots, title, xlim, 'positive');
 else
     %title = 'Most positive (up) and negative (down) going clusters through time as a % of entire volume';
     title = '';
@@ -2111,8 +2175,8 @@ function create_topoplots(data_PGI,stat,tail)
          cfg.highlightchannel = find(clust_int);
          cfg.highlightcolor = {'r',[0 0 1]};
          cfg.highlightsize = 2;
-         cfg.comment = 'xlim';
-         cfg.commentpos = 'title';
+         cfg.comment = 'no';
+         %cfg.commentpos = 'title';
          ft_topoplotTFR(cfg, stat);
     end
 end
@@ -2732,13 +2796,13 @@ function scores = return_scores(regression_type)
 end
 
 %% return the SPM data in a fieldtrip format
-function [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants, main_path, filename, partition)
+ function [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants, main_path, filename, partition)
     fieldtrip_data_agg = {};
     fieldtrip_data_PGI = {};
     thin_data = {}; med_data = {}; thick_data = {};
     participant_order = [];
     cnt = 1;
-    for participant = 24:n_participants
+    for participant = 24:26
         disp(participant)
         
         participant_main_path = strcat(main_path, int2str(participant));
@@ -2754,6 +2818,7 @@ function [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,pa
             data_structure = strcat(data_structure, '_075_80hz_rejected_tempesta.mat');
             data_structure = strcat(filename, data_structure); 
             cd(participant_main_path); 
+            cd("SPM_ARCHIVE")
 
             if isfile(data_structure)
                 load(data_structure);
@@ -2770,24 +2835,24 @@ function [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,pa
             for index_i = 1:n_trials
                 label = D.trials(index_i).label;
                 if partition.is_partition
-                    if contains(label, partition.partition_number) && contains(label, '_9')
+                    if contains(label, partition.partition_number) && contains(label, 'medium')
                         med(mt) = fieldtrip_raw.trial(index_i);
                         mt=mt+1;
-                    elseif contains(label, partition.partition_number) && contains(label, '_8')
+                    elseif contains(label, partition.partition_number) && contains(label, 'thin')
                         thin(tht) = fieldtrip_raw.trial(index_i);
                         tht=tht+1;
-                    elseif contains(label, partition.partition_number) && contains(label, '_10')
+                    elseif contains(label, partition.partition_number) && contains(label, 'thick')
                         thick(tt) = fieldtrip_raw.trial(index_i);
                         tt=tt+1;
                     end
                 else
-                     if contains(label, '_9')
+                     if contains(label, 'medium')
                         med(mt) = fieldtrip_raw.trial(index_i);
                         mt=mt+1;
-                    elseif contains(label, '_8')
+                    elseif contains(label, 'thin')
                         thin(tht) = fieldtrip_raw.trial(index_i);
                         tht=tht+1;
-                    elseif contains(label, '_10')
+                    elseif contains(label, 'thick')
                         thick(tt) = fieldtrip_raw.trial(index_i);
                         tt=tt+1;
                      end
@@ -2853,7 +2918,7 @@ function [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,pa
             %crop the epoch
             TFRwave_med.time = TFRwave_med.time(200:end); %200 before, 46 after
             TFRwave_med.powspctrm = TFRwave_med.powspctrm(:,:,:,200:end);
-            TFRwave_thin.time = TFRwave_thin.time(200:end);
+            TFRwave_thin.time = TFRwave_thin.time(200:end); 
             TFRwave_thin.powspctrm = TFRwave_thin.powspctrm(:,:,:,200:end);
             TFRwave_thick.time = TFRwave_thick.time(200:end);
             TFRwave_thick.powspctrm = TFRwave_thick.powspctrm(:,:,:,200:end);

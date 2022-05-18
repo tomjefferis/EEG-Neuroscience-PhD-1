@@ -15,7 +15,7 @@ cd("D:\PhD");
     
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
-to_preprocess = {'partitions'};
+to_preprocess = {'partitions', 'mean_intercept'};
 type_of_analysis = 'frequency_domain'; % or time_domain
 
 onsets = [
@@ -41,7 +41,7 @@ for k=1:numel(to_preprocess)
     [n_onsets, ~] = size(onsets);
     for i=1:n_onsets
         subset_onsets = onsets(i,:);
-        for participant = 13:n_participants
+        for participant = 1:40
 
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);
@@ -63,9 +63,15 @@ for k=1:numel(to_preprocess)
                 end
 
                 data_structure = strcat(data_structure, p);
-                data_structure = strcat(data_structure, '_075_80Hz_rejected.mat');   
+                data_structure = strcat(data_structure, '_075_80Hz_rejected_tempesta.mat');   
                 file_main_path = strcat(participant_main_path, data_structure);
                 save_path = strcat(participant_main_path, 'SPM_ARCHIVE\');
+
+                if ~exist(save_path, 'dir')
+                    mkdir(save_path);
+                end
+
+
                 cd(participant_main_path);
 
                 if ~isfile(data_structure)
@@ -86,21 +92,13 @@ for k=1:numel(to_preprocess)
                 matlabbatch{1}.spm.meeg.preproc.filter.D = {file_main_path};
                 matlabbatch{1}.spm.meeg.preproc.filter.type = 'butterworth';
                 matlabbatch{1}.spm.meeg.preproc.filter.band = 'bandpass';
-                matlabbatch{1}.spm.meeg.preproc.filter.freq = [0.5 80];
+                matlabbatch{1}.spm.meeg.preproc.filter.freq = [0.1 80];
                 matlabbatch{1}.spm.meeg.preproc.filter.dir = 'twopass';
-                matlabbatch{1}.spm.meeg.preproc.filter.order = 5;
+                matlabbatch{1}.spm.meeg.preproc.filter.order = 2;
                 matlabbatch{1}.spm.meeg.preproc.filter.prefix = strcat(save_path, 'f1');
                 spm_jobman('run',matlabbatch)
                 clear matlabbatch
 
-                %% baseline
-                %data_structure = strcat('f1', data_structure);
-                %file_main_path = strcat(save_path, data_structure);
-                %matlabbatch{1}.spm.meeg.preproc.bc.D = {file_main_path};
-                %matlabbatch{1}.spm.meeg.preproc.bc.timewin = [-200 0];
-                %matlabbatch{1}.spm.meeg.preproc.bc.prefix = 'b1';
-                %spm_jobman('run',matlabbatch)
-                %clear matlabbatch
 
                 %% threshold
                 data_structure = strcat('f1', data_structure);
@@ -151,10 +149,10 @@ for k=1:numel(to_preprocess)
                 % saves the grand average data (easier to load rather than
                 % trial level. Also saves trial level if needed.
                 participant_main_path = strcat(participant_main_path, "SPM_ARCHIVE\");
-                save_data(grand_averages, participant_main_path, full_description, '_grand-average')
-                save_data(trial_level, participant_main_path, full_description, '_trial-level')
-
-                disp(strcat('PROCESSED PARTICIPANT..',int2str(participant))); 
+                save_data(grand_averages, participant_main_path, full_description, '_grand-average_w_eyes')
+                save_data(trial_level, participant_main_path, full_description, '_trial-level_w_eyes')
+% 
+                 disp(strcat('PROCESSED PARTICIPANT..',int2str(participant))); 
 
             end
         end
@@ -175,7 +173,7 @@ end
 %% label and create the grand average dataset
 function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, data_type)
 
-    postprocessed = remove_electrodes(postprocessed, data_type);
+    %postprocessed = remove_electrodes(postprocessed, data_type);
 
     idx_used_for_saving_data = 1; 
     trial_names_and_order = postprocessed.trial_order;
@@ -202,37 +200,56 @@ function [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, 
             p2_med_order, p3_thin_order, p3_thick_order, p3_med_order] ...
             = deal([], [], [], [], [], [], [], [], []);
 
+        p1_thin_id = 1;
+        p2_thin_id = 1;
+        p3_thin_id = 1;
+        p1_thick_id = 1;
+        p2_thick_id = 1;
+        p3_thick_id = 1;
+        p1_med_id = 1;
+        p2_med_id = 1;
+        p3_med_id = 1;
+
         for idx=1:n
             trial = trials{idx};
             condition = sample_information(idx, 3);
             trial_order = sample_information(idx, 4);
             if condition == p1_thin_idx
-                p1_thin(:,:,end+1) = trial;
-                p1_thin_order(:,:,end+1) = trial_order;
+                p1_thin(:,:,p1_thin_id) = trial;
+                p1_thin_order(:,:,p1_thin_id) = trial_order;
+                p1_thin_id = p1_thin_id + 1;
             elseif condition == p2_thin_idx
-                p2_thin(:,:,end+1) = trial;
-                p2_thin_order(:,:,end+1) = trial_order;
+                p2_thin(:,:,p2_thin_id) = trial;
+                p2_thin_order(:,:,p2_thin_id) = trial_order;
+                p2_thin_id = p2_thin_id + 1;
             elseif condition == p3_thin_idx
-                p3_thin(:,:,end+1) = trial;
-                p3_thin_order(:,:,end+1) = trial_order;
+                p3_thin(:,:,p3_thin_id) = trial;
+                p3_thin_order(:,:,p3_thin_id) = trial_order;
+                p3_thin_id = p3_thin_id + 1;
             elseif condition == p1_thick_idx
-                p1_thick(:,:,end+1) = trial;
-                p1_thick_order(:,:,end+1) = trial_order;
+                p1_thick(:,:,p1_thick_id) = trial;
+                p1_thick_order(:,:,p1_thick_id) = trial_order;
+                p1_thick_id = p1_thick_id + 1;
             elseif condition == p2_thick_idx
-                p2_thick(:,:,end+1) = trial;
-                p2_thick_order(:,:,end+1) = trial_order;
+                p2_thick(:,:,p2_thick_id) = trial;
+                p2_thick_order(:,:,p2_thick_id) = trial_order;
+                p2_thick_id = p2_thick_id + 1;
             elseif condition == p3_thick_idx
-                p3_thick(:,:,end+1) = trial;
-                p3_thick_order(:,:,end+1) = trial_order;
+                p3_thick(:,:,p3_thick_id) = trial;
+                p3_thick_order(:,:,p3_thick_id) = trial_order;
+                p3_thick_id = p3_thick_id + 1;
             elseif condition == p1_med_idx
-                p1_med(:,:,end+1) = trial;
-                p1_med_order(:,:,end+1) = trial_order;
+                p1_med(:,:,p1_med_id) = trial;
+                p1_med_order(:,:,p1_med_id) = trial_order;
+                p1_med_id = p1_med_id + 1;
             elseif condition == p2_med_idx
-                p2_med(:,:,end+1) = trial;
-                p2_med_order(:,:,end+1) = trial_order;
+                p2_med(:,:,p2_med_id) = trial;
+                p2_med_order(:,:,p2_med_id) = trial_order;
+                p2_med_id = p2_med_id + 1;
             elseif condition == p3_med_idx
-                p3_med(:,:,end+1) = trial;
-                p3_med_order(:,:,end+1) = trial_order;
+                p3_med(:,:,p3_med_id) = trial;
+                p3_med_order(:,:,p3_med_id) = trial_order;
+                p3_med_id = p3_med_id + 1;
             end
         end
 

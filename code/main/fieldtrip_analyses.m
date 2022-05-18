@@ -4,13 +4,14 @@ master_dir = 'D:\PhD\fieldtrip';
 main_path = 'D:\PhD\participant_';
 results_dir = 'D:\PhD\results';
 addpath 'C:\External_Software\fieldtrip-20210807';
+addpath('C:\External_Software\spm12')
 ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'visual_stress', 'headache', 'discomfort'}; 
-start_latency = 0.056;
+experiment_types = {'erps-23-45-67'};   
+desired_design_mtxs = {'visual_stress', 'discomfort', 'headache'}; 
+start_latency = 0.000;
 end_latency = 0.800;
 
 %% SHALL WE APPLY A ROI, IF SO HOW?
@@ -36,8 +37,7 @@ if strcmp(type_of_analysis, 'frequency_domain')
     extract_timeseries_values = 0;
     toi = [0.090, 0.250];
     foi_of_interest = [[8, 13]; [20, 35]; [30, 45]; [45, 60]; [60, 80]];
-    foi_of_interest = [[30, 45]];
-    analysis = 'preprocess'; % 'load' or 'preprocess'
+    analysis = 'load'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
     foi = [[-999, -999]];
@@ -570,7 +570,6 @@ for f = 1:numel(foi_of_interest)
             
             elseif contains(type_of_analysis, 'frequency_domain')
                 if strcmp(experiment_type, 'erps-23-45-67')
-                    analysis = 'load';
                     n_participants = 40;
                     regression_type = desired_design_mtx;
                     type_of_effect = 'sensitization';
@@ -588,26 +587,27 @@ for f = 1:numel(foi_of_interest)
                         data_file67 = 'frequency_domain_mean_intercept_onsets_6_7_trial-level.mat';
                     end
 
-                    
-                    [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
-                        data_file23, partitions);
-                    [data2, participant_order2] = load_postprocessed_data(main_path, n_participants, ...
-                        data_file45, partitions);
-                    [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
-                        data_file67, partitions);
-
-
-                    p1_freq = to_frequency_data(data1, main_path, 1, ...
-                        participant_order1, analysis, frequency_level, foi, ...
-                        'erp23');   
-                    
-                    p2_freq = to_frequency_data(data2, main_path, 2, ...
-                        participant_order2, analysis, frequency_level, foi, ...
-                        'erp45');
-                    
-                    p3_freq = to_frequency_data(data3, main_path, 3, ...
-                        participant_order3, analysis, frequency_level, foi, ...
-                        'erp67');
+                    if f == 1
+                        [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file23, partitions);
+                        [data2, participant_order2] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file45, partitions);
+                        [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file67, partitions);
+    
+    
+                        p1_freq = to_frequency_data(data1, main_path, 1, ...
+                            participant_order1, analysis, frequency_level, foi, ...
+                            'erp23_');   
+                        
+                        p2_freq = to_frequency_data(data2, main_path, 2, ...
+                            participant_order2, analysis, frequency_level, foi, ...
+                            'erp45_');
+                        
+                        p3_freq = to_frequency_data(data3, main_path, 3, ...
+                            participant_order3, analysis, frequency_level, foi, ...
+                            'erp67_');
+                    end
 
                     [design1, new_participants1] = create_design_matrix_partitions(participant_order1, p1_freq, ...
                         regression_type, 1, type_of_effect);
@@ -632,7 +632,6 @@ for f = 1:numel(foi_of_interest)
                     all_designs{1} = [design1, design2, design3];      
 
                 elseif strcmp(experiment_type, 'partitions-2-8')
-                    analysis = 'load';
                     n_participants = 40;
                     regression_type = desired_design_mtx;
                     type_of_effect = 'habituation';
@@ -651,29 +650,32 @@ for f = 1:numel(foi_of_interest)
                     elseif strcmp(analysis, 'preprocess')
                         data_file = 'frequency_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_trial-level.mat';
                     end
-    
-                    [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
-                        data_file, partition1);
-                    [data2, participant_order2] = load_postprocessed_data(main_path, n_participants, ...
-                        data_file, partition2);
-                    [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
-                        data_file, partition3);  
-    
-                    disp('--processing-- Hz')
-                    disp(foi)
 
+                    if f == 1
+                        [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition1);
+                        [data2, participant_order2] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition2);
+                        [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition3);  
 
-                    p1_freq = to_frequency_data(data1, main_path, 1, ...
-                        participant_order1, analysis, frequency_level, foi, ...
-                        'partition_');   
-                    
-                    p2_freq = to_frequency_data(data2, main_path, 2, ...
-                        participant_order2, analysis, frequency_level, foi, ...
-                        'partition_');
-                    
-                    p3_freq = to_frequency_data(data3, main_path, 3, ...
-                        participant_order3, analysis, frequency_level, foi, ...
-                        'partition_');
+        
+                        disp('--processing-- Hz')
+                        disp(foi)
+    
+    
+                        p1_freq = to_frequency_data(data1, main_path, 1, ...
+                            participant_order1, analysis, frequency_level, foi, ...
+                            'partition_');   
+                        
+                        p2_freq = to_frequency_data(data2, main_path, 2, ...
+                            participant_order2, analysis, frequency_level, foi, ...
+                            'partition_');
+                        
+                        p3_freq = to_frequency_data(data3, main_path, 3, ...
+                            participant_order3, analysis, frequency_level, foi, ...
+                            'partition_');
+                    end
     
                     [design1, new_participants1] = create_design_matrix_partitions(participant_order1, p1_freq, ...
                         regression_type, 1, type_of_effect);
@@ -703,7 +705,6 @@ for f = 1:numel(foi_of_interest)
                     all_designs{1} = design_matrix;              
     
                 elseif strcmp(experiment_type, 'onsets-2-8-explicit')
-                    analysis = 'load';
                     n_participants = 40;
                     regression_type = desired_design_mtx;
                     type_of_effect = 'null';
@@ -718,15 +719,17 @@ for f = 1:numel(foi_of_interest)
                     partition.is_partition = 0;
                     partition.partition_number = 0;
         
-                    [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-                        data_file, partition);            
-                    
-                    disp('--processing-- Hz')
-                    disp(foi);
-
-                    freq = to_frequency_data(data, main_path, 1, ...
-                    participant_order_1, analysis, frequency_level, foi, 'mean_intercept');              
-                    n_part = numel(data);
+                    if f == 1
+                        [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition);            
+                        
+                        disp('--processing-- Hz')
+                        disp(foi);
+    
+                        freq = to_frequency_data(data, main_path, 1, ...
+                        participant_order_1, analysis, frequency_level, foi, 'mean_intercept');              
+                        n_part = numel(data);
+                    end
          
                     null_data = set_values_to_zero_freq(freq);
     
@@ -781,21 +784,21 @@ for f = 1:numel(foi_of_interest)
                 neighbours = ft_prepare_neighbours(cfg);
         
                 % all experiment configuraitons:
-            cfg = [];
-            cfg.latency = [start_latency, end_latency];
-            cfg.channel = 'eeg';
-            cfg.statistic = regressor;
-            cfg.method = 'montecarlo';
-            cfg.correctm = 'cluster';
-            cfg.neighbours = neighbours;
-            cfg.clusteralpha = 0.025;
-            cfg.numrandomization = 1000;
-            cfg.tail = roi_to_apply; 
-            cfg.design = design_matrix;
-            cfg.computeprob = 'yes';
-            cfg.alpha = 0.05; 
-            cfg.correcttail = 'alpha'; 
-            
+                cfg = [];
+                cfg.latency = [start_latency, end_latency];
+                cfg.channel = 'eeg';
+                cfg.statistic = regressor;
+                cfg.method = 'montecarlo';
+                cfg.correctm = 'cluster';
+                cfg.neighbours = neighbours;
+                cfg.clusteralpha = 0.025;
+                cfg.numrandomization = 1000;
+                cfg.tail = roi_to_apply; 
+                cfg.design = design_matrix;
+                cfg.computeprob = 'yes';
+                cfg.alpha = 0.05; 
+                cfg.correcttail = 'alpha'; 
+                
             
             %% run the fieldtrip analyses
             if strcmp(type_of_analysis, 'time_domain')
@@ -824,6 +827,7 @@ for f = 1:numel(foi_of_interest)
                     cfg.uvar = 1;
                     cfg.ivar = 2;
                     cfg.avgoverfreq = 'yes';
+                    cfg.frequency = [foi(1) foi(2)];
                     stat = ft_freqstatistics(cfg, data{:}, null_data{:});
                     save(strcat(new_save_path, '\stat.mat'), 'stat')
                 else
@@ -1980,6 +1984,14 @@ function scores = return_scores(regression_type, type_of_effect)
             40, 2.26667;
         ];
 
+%         dataset = [
+%         1,0.323;2,-0.109;3,-0.51;4,1.134;5,-0.639;6,-1.215;7,-0.33;8,0.752;
+%         9,-0.39;10,-0.722;11,-0.769;12,-1.063;13,-0.899;14,-1.467;16,-1.199;
+%         17,0.154;20,0.587;21,1.001;22,-0.117;23,1.721;24,0.141;25,0.622;
+%         26,-0.748;28,0.674;29,-0.024;30,0.036;31,0.7;32,-0.3;33,-0.65;
+%         34,0.026;37,0.799;38,-0.588;39,2.333;40,2.267;
+%         ];
+
         scores.one = dataset;
         scores.two = dataset;
         scores.three = dataset;
@@ -2154,10 +2166,10 @@ function [ft_regression_data, participant_order] = ...
     for i=1:n_participants        
         disp(strcat('LOADING PARTICIPANT...', int2str(i)));
         participant_main_path = strcat(main_path, int2str(i));
+      
 
         if exist(participant_main_path, 'dir')
             cd(participant_main_path);
-
 
             if isfile(filename)
                 load(filename);
@@ -2224,8 +2236,109 @@ function [ft_regression_data, participant_order] = ...
                 ft.med_order = data.med_order;
             end
             
+            ft = rmfield(ft, "trialinfo");
+
             ft_regression_data{idx_used_for_saving_data} = ft;
             participant_order{idx_used_for_saving_data} = i;
+            idx_used_for_saving_data = idx_used_for_saving_data + 1;
+        end
+    end
+end
+
+%% spm loading fn
+%% load post-processed fildtrip data
+%% return the SPM data in a fieldtrip format
+function [ft_regression_data, participant_order] = ...
+    load_postprocessed_spm_data(main_path, n_participants, filename, partition)
+   
+    ft_regression_data = {};  
+    participant_order = {};
+
+    partition.partition_number = int2str(partition.partition_number);
+
+
+    idx_used_for_saving_data = 1;
+    for participant = 1:n_participants
+
+
+        disp(strcat('LOADING PARTICIPANT...', int2str(participant)));
+        
+        participant_main_path = strcat(main_path, int2str(participant));
+        
+        if exist(participant_main_path, 'dir')
+            cd(participant_main_path);
+            
+
+            med = {};
+            thin = {};
+            thick = {};
+
+
+            if participant < 10
+               p = strcat('0', int2str(participant));
+            else
+               p = int2str(participant);
+            end
+
+            cd("SPM_ARCHIVE\")
+
+            data_structure = strcat('spmeeg_P', p);  
+            data_structure = strcat(data_structure, '_075_80hz_rejected_tempesta.mat');
+            data_structure = strcat(filename, data_structure); 
+
+            if isfile(data_structure)
+                load(data_structure);
+            else
+                continue;
+            end
+
+            spm_eeg = meeg(D);
+            fieldtrip_raw = spm_eeg.ftraw;
+
+            n_trials = size(D.trials);
+            n_trials = n_trials(2);
+            mt=1; tht=1; tt=1;
+            for index_i = 1:n_trials
+                label = D.trials(index_i).label;
+                if partition.is_partition
+                    if contains(label, partition.partition_number) && contains(label, 'medium')
+                        med(mt) = fieldtrip_raw.trial(index_i);
+                        mt=mt+1;
+                    elseif contains(label, partition.partition_number) && contains(label, 'thin')
+                        thin(tht) = fieldtrip_raw.trial(index_i);
+                        tht=tht+1;
+                    elseif contains(label, partition.partition_number) && contains(label, 'thick')
+                        thick(tt) = fieldtrip_raw.trial(index_i);
+                        tt=tt+1;
+                    end
+                else
+                     if contains(label, 'medium')
+                        med(mt) = fieldtrip_raw.trial(index_i);
+                        mt=mt+1;
+                    elseif contains(label, 'thin')
+                        thin(tht) = fieldtrip_raw.trial(index_i);
+                        tht=tht+1;
+                    elseif contains(label, 'thick')
+                        thick(tt) = fieldtrip_raw.trial(index_i);
+                        tt=tt+1;
+                     end
+                end
+            end
+
+            if isempty(med) || isempty(thin) || isempty(thick)
+                continue;
+            end
+
+            ft.label = fieldtrip_raw.label;
+            ft.elec = fieldtrip_raw.elec;
+            ft.med = med;
+            ft.thick = thick;
+            ft.thin = thin;
+            ft.time = fieldtrip_raw.time{1};
+            ft.dimord = 'chan_time';
+
+            ft_regression_data{idx_used_for_saving_data} = ft;
+            participant_order{idx_used_for_saving_data} = participant;
             idx_used_for_saving_data = idx_used_for_saving_data + 1;
         end
     end
@@ -2383,38 +2496,90 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
         
     elseif strcmp(experiment_type, 'erps-23-45-67') || strcmp(experiment_type, 'erps-23-45-67-no-factor') 
-        type_of_effect = 'sensitization';
-        data_file23 = 'time_domain_mean_intercept_onsets_2_3_grand-average.mat';
-        data_file45 = 'time_domain_mean_intercept_onsets_4_5_grand-average.mat';
-        data_file67 = 'time_domain_mean_intercept_onsets_6_7_grand-average.mat';
+        if strcmp(type_of_analysis, 'time_domain')
+            type_of_effect = 'sensitization';
+            data_file23 = 'time_domain_mean_intercept_onsets_2_3_grand-average.mat';
+            data_file45 = 'time_domain_mean_intercept_onsets_4_5_grand-average.mat';
+            data_file67 = 'time_domain_mean_intercept_onsets_6_7_grand-average.mat';
+                
+            n_participants = 40;
+            partition.is_partition = 0;
+            partition.partition_number = 0;
+    
+            [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                data_file23, partition);
+            e_idx = find(contains(data1{1}.label,peak_electrode));
+            [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
+                data_file45, partition);
+            [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
+                data_file67, partition);
+    
             
-        n_participants = 40;
-        partition.is_partition = 0;
-        partition.partition_number = 0;
+            [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
+                regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            ci1_h = bootstrap_erps(data1_h,e_idx);
+            ci1_l = bootstrap_erps(data1_l,e_idx);
+            [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
+                regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            ci2_h = bootstrap_erps(data2_h,e_idx);
+            ci2_l = bootstrap_erps(data2_l,e_idx);
+            [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
+                regression_type, 1,  type_of_effect, weight_erps, weighting_factor);
+            ci3_h = bootstrap_erps(data3_h,e_idx);
+            ci3_l = bootstrap_erps(data3_l,e_idx);
+            
+            data = [data1, data2, data3];
 
-        [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-            data_file23, partition);
-        e_idx = find(contains(data1{1}.label,peak_electrode));
-        [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
-            data_file45, partition);
-        [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
-            data_file67, partition);
 
-        
-        [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order_1,...
-            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
-        ci1_h = bootstrap_erps(data1_h,e_idx);
-        ci1_l = bootstrap_erps(data1_l,e_idx);
-        [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
-        ci2_h = bootstrap_erps(data2_h,e_idx);
-        ci2_l = bootstrap_erps(data2_l,e_idx);
-        [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-            regression_type, 1,  type_of_effect, weight_erps, weighting_factor);
-        ci3_h = bootstrap_erps(data3_h,e_idx);
-        ci3_l = bootstrap_erps(data3_l,e_idx);
-        
-        data = [data1, data2, data3];
+        elseif strcmp(type_of_analysis, 'frequency_domain')
+            type_of_effect = 'sensitization';
+            data_file23 = 'time_domain_mean_intercept_onsets_2_3_grand-average.mat';
+            data_file45 = 'time_domain_mean_intercept_onsets_4_5_grand-average.mat';
+            data_file67 = 'time_domain_mean_intercept_onsets_6_7_grand-average.mat';
+                
+            n_participants = 40;
+            partition.is_partition = 0;
+            partition.partition_number = 0;
+
+            [data1, participant_order1] = load_postprocessed_data(main_path, n_participants, ...
+                data_file23, partition);
+            e_idx = find(contains(data1{1}.label,peak_electrode));
+            [data2, participant_order2] = load_postprocessed_data(main_path, n_participants, ...
+                data_file45, partition);
+            [data3, participant_order3] = load_postprocessed_data(main_path, n_participants, ...
+                data_file67, partition);
+
+            p1_freq = to_frequency_data(data1, main_path, 1, ...
+                participant_order1, analysis, frequency_level, foi, ...
+                'erp23_');   
+            data1 = format_for_plotting_functions(p1_freq);
+            
+            p2_freq = to_frequency_data(data2, main_path, 2, ...
+                participant_order2, analysis, frequency_level, foi, ...
+                'erp45_');
+            data2 = format_for_plotting_functions(p2_freq);
+
+            p3_freq = to_frequency_data(data3, main_path, 3, ...
+                participant_order3, analysis, frequency_level, foi, ...
+                'erp67_');
+            data3 = format_for_plotting_functions(p3_freq);
+
+            [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order1,...
+                regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+            ci1_h = bootstrap_erps(data1_h, e_idx);
+            ci1_l = bootstrap_erps(data1_l, e_idx);
+            [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order2,...
+                regression_type, 2, type_of_effect, weight_erps, weighting_factor);
+            ci2_h = bootstrap_erps(data2_h, e_idx);
+            ci2_l = bootstrap_erps(data2_l, e_idx);
+            [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order3,...
+                regression_type, 3, type_of_effect, weight_erps, weighting_factor);
+            ci3_h = bootstrap_erps(data3_h, e_idx);
+            ci3_l = bootstrap_erps(data3_l, e_idx);
+           
+            data = [data1, data2, data3];
+
+        end
     end
     %% generate_supplementary information and indices used to plot
     if strcmp(experiment_type, 'partitions-2-8') && ~contains(regression_type, 'p1')
@@ -3515,16 +3680,17 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
    % cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
    % cfg.toi          = -0.2:0.002:1;
    % cfg.channel      = 'all';
-  
+ 
     cfg = [];
     cfg.channel = 'all';
     cfg.method = 'wavelet';
     cfg.width = 5;
     cfg.output = 'pow';
     cfg.pad = 'nextpow2';
-    %cfg.foi =   foi(1):foi(2);
     cfg.foi = 5:80;
-    cfg.toi          = -0.2:0.002:1;
+    cfg.toi = -0.5:0.002:1.2;
+    cfg.keeptrials = 'yes';
+
 
     dataset = {};
     for i=1:numel(data)
@@ -3532,9 +3698,11 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
         
         disp(strcat('Loading/Processing Participant ', int2str(i)));
         participant_number = participant_order{i};
+        
         save_path = strcat(save_dir, int2str(participant_number), '\', analysis_type, int2str(partition), '_');      
 
-        full_save_dir = save_path + "trial_level_5_80_Hz.mat";  
+
+        full_save_dir = save_path + "trial_level_5_80_Hz.mat";
         
         if strcmp(type, 'preprocess')
             med.label = participant.label;
@@ -3562,41 +3730,54 @@ function dataset = to_frequency_data(data, save_dir, partition, ...
                 thin.time = participant.time;
             end
             
+            
+            % to freq domain
             TFRwave_med = ft_freqanalysis(cfg, med);
-            TFRwave_med.info = 'medium';
-            TFRwave_thick = ft_freqanalysis(cfg, thick);
-            TFRwave_thick.info = 'thick';
             TFRwave_thin = ft_freqanalysis(cfg, thin);
+            TFRwave_thick = ft_freqanalysis(cfg, thick);
+
+            TFRwave_med.info = 'medium';
+            TFRwave_thick.info = 'thick';
             TFRwave_thin.info = 'thin';
 
+            %crop the epoch
+            TFRwave_med.time = TFRwave_med.time(200:end); %200 before, 46 after
+            TFRwave_med.powspctrm = TFRwave_med.powspctrm(:,:,:,200:end);
+            TFRwave_thin.time = TFRwave_thin.time(200:end);
+            TFRwave_thin.powspctrm = TFRwave_thin.powspctrm(:,:,:,200:end);
+            TFRwave_thick.time = TFRwave_thick.time(200:end);
+            TFRwave_thick.powspctrm = TFRwave_thick.powspctrm(:,:,:,200:end);
+
+            %average across trials
+            newcfg = [];
+            avg_TFRwave_med = ft_freqdescriptives(newcfg, TFRwave_med);
+            avg_TFRwave_thin = ft_freqdescriptives(newcfg, TFRwave_thin);
+            avg_TFRwave_thick = ft_freqdescriptives(newcfg, TFRwave_thick);
+
+            % baseline rescale
             newcfg = [];
             newcfg.baselinetype = 'db'; 
             newcfg.baseline = [-0.1 0];
-            TFRwave_med = ft_freqbaseline(newcfg, TFRwave_med);
-            TFRwave_thick = ft_freqbaseline(newcfg, TFRwave_thick);
-            TFRwave_thin = ft_freqbaseline(newcfg, TFRwave_thin);
+            avg_TFRwave_med = ft_freqbaseline(newcfg,avg_TFRwave_med);
+            avg_TFRwave_thin = ft_freqbaseline(newcfg,avg_TFRwave_thin);
+            avg_TFRwave_thick = ft_freqbaseline(newcfg,avg_TFRwave_thick);
             
-            med_tfr = TFRwave_med.powspctrm;
-            thick_tfr = TFRwave_thick.powspctrm;
-            thin_tfr = TFRwave_thin.powspctrm;
-            pgi = med_tfr - ((thick_tfr+thin_tfr)/2);
+            
+            disp(sum(sum(sum(avg_TFRwave_med.powspctrm)), 'omitnan'))
+            
+            TFRwave_pgi = avg_TFRwave_med;
+            TFRwave_pgi.info = 'PGI'; 
+            TFRwave_pgi.powspctrm = avg_TFRwave_med.powspctrm-(avg_TFRwave_thin.powspctrm+avg_TFRwave_thick.powspctrm)/2; %%!!!!%%%
+            TFRwave_pgi.elec = med.elec;
 
-            TFRwave_pgi.label = TFRwave_med.label;
-            TFRwave_pgi.dimord = 'chan_freq_time';
-            TFRwave_pgi.freq = TFRwave_med.freq;
-            TFRwave_pgi.time = TFRwave_med.time;
-            TFRwave_pgi.powspctrm = pgi;
-            TFRwave_pgi.elec = TFRwave_med.elec;
-            TFRwave_pgi.cfg = TFRwave_med.cfg;
-            TFRwave_pgi.info = 'pgi';
-
-
-            frequency_data.med = TFRwave_med;
-            frequency_data.thick = TFRwave_thick;
-            frequency_data.thin = TFRwave_thin;
+            frequency_data.med = avg_TFRwave_med;
+            frequency_data.thick = avg_TFRwave_thick;
+            frequency_data.thin = avg_TFRwave_thin;
             frequency_data.pgi = TFRwave_pgi;
             frequency_data.participant_number = participant_number;
                 
+            
+
             save(full_save_dir, 'frequency_data', '-v7.3')
             dataset{end+1} = frequency_data;
             clear frequency_data;
