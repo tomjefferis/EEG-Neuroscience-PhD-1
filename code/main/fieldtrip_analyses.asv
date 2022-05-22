@@ -9,8 +9,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'factor_effect'};   
-desired_design_mtxs = {'discomfort', 'headache', 'visual_stress'}; 
+experiment_types = {'erps-23-45-67'};   
+desired_design_mtxs = {'no-factor', 'discomfort', 'headache', 'visual_stress'}; 
 start_latency = 0.000;
 end_latency = 0.800;
 
@@ -22,7 +22,7 @@ roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
 create_topographic_maps = 1;
-generate_erps = 0;
+generate_erps = 1;
 weight_erps = 0; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
@@ -63,8 +63,6 @@ for f = 1:numel(foi_of_interest)
                 save_path = strcat(results_dir, '\', type_of_analysis,'\', 'trial_level_2_8', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'pure-factor-effect')
                 save_path = strcat(results_dir, '\', type_of_analysis, '\', 'pure-factor-effect', '\', desired_design_mtx);
-            elseif strcmp(experiment_types, 'factor_effect')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\', 'factor-effect', '\', desired_design_mtx);
             end
     
             % check if its a frequency experiment 
@@ -647,7 +645,7 @@ for f = 1:numel(foi_of_interest)
                     n_participants = 40;
                     regression_type = desired_design_mtx;
                     type_of_effect = 'null';
-                    regressor = 'ft_statfun_indepsamplesregrT';
+                    regressor = 'ft_statfun_depsamplesT';
     
                     if strcmp(analysis, 'load')
                         data_file = 'frequency_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
@@ -665,10 +663,10 @@ for f = 1:numel(foi_of_interest)
                         freq = to_frequency_data(data, main_path, 1, ...
                         participant_order_1, analysis, frequency_level, foi, 'mean_intercept');              
                         n_part = numel(data);
-                    end
 
-                    [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, freq, ...
-                    regression_type, 1, type_of_effect);
+                        [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, freq, ...
+                        regression_type, 1, type_of_effect);
+                    end
 
                     vector_of_data = [new_participants1]; 
                     
