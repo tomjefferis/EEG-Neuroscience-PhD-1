@@ -11,7 +11,7 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'visual_stress-orthog'}; 
+desired_design_mtxs = {'headache', 'visual_stress', 'discomfort'}; 
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -39,7 +39,7 @@ if strcmp(type_of_analysis, 'frequency_domain')
     toi = [0.090, 0.250];
     foi_of_interest = [[8, 13]; [20, 35]; [30, 45]; [45, 60]; [60, 80]];
     analysis = 'load'; % 'load' or 'preprocess'
-elseif strcmp(type_of_analysis, 'time_domain') || strcmp(type_of_analysis, 'time_domain_p1')
+elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
     foi_of_interest = [[-999, -999]];
 end
@@ -88,7 +88,7 @@ for f = 1:numel(foi_of_interest)
                     if contains(desired_design_mtxs, 'eye')
                         data_file = 'time_domain_eye_confound_onsets_2_3_4_5_6_7_8_grand-average.mat';
                     else
-                        data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                        data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
                     end
         
                     
@@ -117,7 +117,7 @@ for f = 1:numel(foi_of_interest)
                     all_designs{1} = design_matrix;
         
                 elseif strcmp(experiment_type, 'pure-factor-effect') 
-                    data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                    data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
                     regressor = 'ft_statfun_indepsamplesregrT';
                     type_of_effect = 'null';
                     regression_type = desired_design_mtx;
@@ -201,12 +201,12 @@ for f = 1:numel(foi_of_interest)
                         data_file = 'time_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
                         
                         if f == 1
-                            [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-                                data_file, partition1);
-                            [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
-                                data_file, partition2);
-                            [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
-                                data_file, partition3);
+                        [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition1);
+                        [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition2);
+                        [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition3);
                         end
 
                         partition = 1;
@@ -249,13 +249,14 @@ for f = 1:numel(foi_of_interest)
                         all_data{1} = data;
                         all_designs{1} = design_matrix;
                     elseif strcmp(type_of_analysis, 'time_domain_p1')
-                        data_file = 'time_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                        data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
                         partition1.is_partition = 1; % partition 1
                         partition1.partition_number = 1;
                         [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
                             data_file, partition1);
                         partition = 1;
-                        [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, regression_type, partition, type_of_effect);
+                        [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, ...
+                                regression_type, partition, type_of_effect);
                         design_matrix = design1;
                         design_matrix = design_matrix - mean(design_matrix);
                         data = data1;
@@ -856,7 +857,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 5000;
+                cfg.numrandomization = 1000;
                 cfg.tail = roi_to_apply; 
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -865,7 +866,7 @@ for f = 1:numel(foi_of_interest)
                 
             
             %% run the fieldtrip analyses
-            if contains(type_of_analysis, 'time_domain')
+            if strcmp(type_of_analysis, 'time_domain')
                 if contains(experiment_type, 'onsets-2-8-explicit') && strcmp(regression_type, 'no-factor') || contains(regression_type, 'eye')
                     cfg.uvar = 1;
                     cfg.ivar = 2;
@@ -873,7 +874,7 @@ for f = 1:numel(foi_of_interest)
                     stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
                     save(strcat(new_save_path, '\stat.mat'), 'stat')
                     desired_cluster =1;
-                    %get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
+                    get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
                 elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
                         || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
                         || contains(experiment_type, 'coarse-vs-fine-granularity') || contains(experiment_type, 'Partitions') ...
@@ -987,19 +988,9 @@ for f = 1:numel(foi_of_interest)
     end
 end
 end
-%% used to set frequency data values to 0 for time
-function data = set_values_to_zero(data)
-    for idx = 1:numel(data)
-        participant_data = data{1,idx};
-        avg = participant_data.avg;
-        avg(:) = 0;
-        participant_data.avg = avg;
-        data{1,idx} = participant_data;
-    end
-end
 
-%% used to set frequency data values to 0 for freq
-function data = set_values_to_zero_frequency(data)
+%% used to set frequency data values to 0
+function data = set_values_to_zero(data)
     for idx = 1:numel(data)
         participant_data = data{1,idx};
         spectrum = participant_data.powspctrm;
@@ -1613,8 +1604,8 @@ function calculate_cluster_size(stat, ptitle, type, save_dir)
     grid on;
     xlabel('Time (ms)', 'FontSize', 14);
     ylabel('Percentage of cluster', 'FontSize', 14);
-    xlim([0,260])
-    %xlim([56,800])
+    %xlim([0,260])
+    xlim([56,800])
     title(ptitle, 'FontSize', 14); 
     legend(legend_to_use, 'Location', 'northwest', 'FontSize',14);
 
@@ -1791,6 +1782,11 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
         cfg.channel   = 'all';
         cfg.latency   = 'all';
         cfg.parameter = 'avg';
+        
+        cfg = [];
+        cfg.foilim = [30 80];
+        cfg.toilim = [-0.2 0.8];
+        cfg.parameter = 'powspctrm';
     
         grand_avg1 = ft_timelockgrandaverage(cfg, data1{:});
         grand_avg1.elec = data1{1}.elec;
@@ -1973,18 +1969,7 @@ function scores = return_scores(regression_type, type_of_effect)
     elseif strcmp(regression_type, 'discomfort-orthog')
     
     if strcmp(type_of_effect, 'habituation')
-        load D:\PhD\misc\orthog_ds_habituation.mat
-        scores.one = factor_of_interest(1:39,:);
-        scores.two = factor_of_interest(40:78,:);
-        scores.three = factor_of_interest(79:117,:);
-    else
-        load D:\PhD\misc\orthog_discomfort_sensitization.mat
-    end
-    
-    elseif strcmp(regression_type, 'visual_stress-orthog')
-    
-    if strcmp(type_of_effect, 'habituation')
-        load D:\PhD\misc\orthog_vs_habituation.mat
+        load D:\PhD\misc\orthog_discomfort.mat 
         scores.one = factor_of_interest(1:39,:);
         scores.two = factor_of_interest(40:78,:);
         scores.three = factor_of_interest(79:117,:);
@@ -2296,8 +2281,8 @@ function [ft_regression_data, participant_order] = ...
                     thick = data.thick;  
                end
             elseif ~partition.is_partition
-                pgi = data.med - (data.thin + data.thick)/2;
-                ft.avg = pgi;
+                %pgi = data.med - (data.thin + data.thick)/2;
+                %ft.avg = pgi;
                 thin = data.thin;
                 med = data.med;
                 thick = data.thick;
@@ -2434,21 +2419,21 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     type_of_analysis, foi)
 
     
-    plotting_window = [-100, 300];
+    plotting_window = [-100, 800];
     rmpath C:\ProgramFiles\spm8;
     addpath C:\ProgramFiles\spm12;
     cd(master_dir);
 
     %% Are we looking at onsets 2-8 or partitions
     % set up the experiment as needed
-    if strcmp(experiment_type, 'onsets-2-8-explicit') || strcmp(experiment_type, 'pure-factor-effect') 
+    if strcmp(experiment_type, 'onsets-2-8-explicit')
         n_participants = 40;
 
         partition.is_partition = 0;
         partition.partition_number = 0;
 
        if strcmp(type_of_analysis, 'time_domain')
-           data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+           data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
            [data, ~] = load_postprocessed_data(main_path, n_participants, ...
                 data_file, partition);
             e_idx = find(contains(data{1}.label,peak_electrode));
@@ -2465,11 +2450,29 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
        ci = bootstrap_erps(data, e_idx);
      
+    elseif strcmp(experiment_type, 'pure-factor-effect') 
+        data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+        n_participants = 40;
+        type_of_effect = 'none';
+
+        partition.is_partition = 0;
+        partition.partition_number = 999;
+        
+
+        [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+            data_file, partition);     
+        e_idx = find(contains(data{1}.label,peak_electrode));
+        n_part = numel(data);
+        [data1_h, data1_l] = get_partitions_medium_split(data, participant_order_1,...
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+        ci1_h = bootstrap_erps(data1_h, e_idx);
+        ci1_l = bootstrap_erps(data1_l, e_idx);
+
     elseif strcmp(experiment_type, 'partitions-2-8') && contains(regression_type, 'p1')
         n_participants = 40;
         partition1.is_partition = 1; % partition 1
         partition1.partition_number = 1; 
-        data_file = 'time_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+        data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
         type_of_effect = 'habituation';
         
         [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
@@ -2702,7 +2705,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         ax_label = "Microvolts (uV)";
     end
 
-    if contains(experiment_type, 'onsets-2-8') || strcmp(experiment_type, 'pure-factor-effect') 
+    if contains(experiment_type, 'onsets-2-8')
        t = tiledlayout(2,1, 'TileSpacing','Compact');
        time = data{1}.time * 1000;
        nexttile

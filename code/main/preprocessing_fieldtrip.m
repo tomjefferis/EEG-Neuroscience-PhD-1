@@ -9,10 +9,10 @@ cd("D:\PhD");
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
 to_preprocess = {'mean_intercept'};
-type_of_analysis = 'frequency_domain'; % or time_domain
+type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3; 4,5; 6,7
+    2,3,4,5,6,7,8
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -63,7 +63,7 @@ for k=1:numel(to_preprocess)
                 elseif strcmp(type_of_analysis, 'time_domain')
                     data_fname = strcat(data_structure, '_075_80Hz.dat');
                     data_structure = strcat(data_structure, '_075_80Hz.mat');  
-                    filter_freq = [0.1, 30];
+                    filter_freq = [0.3, 30];
                     baseline_window = [-0.2 0];
                 end
                 

@@ -1,8 +1,9 @@
 n_participants = 40;
-main_path = 'C:\ProgramFiles\PhD\participant_';
+addpath('C:\External_Software\spm12')
+main_path = 'D:\PhD\participant_';
 clear matlabbatch
 
-for participant = 1:40
+for participant = 38:n_participants
     %% get the correct file path
     clear matlabbatch
     disp(strcat('Procesisng participant..',int2str(participant)));

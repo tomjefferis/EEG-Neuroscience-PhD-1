@@ -1,6 +1,5 @@
 %% PATHS AND SETTING UP FIELDTRIP AND PATHS 
 clear classes;
-clear all;
 master_dir = 'D:\PhD\fieldtrip';
 main_path = 'D:\PhD\participant_';
 results_dir = 'D:\PhD\results';
@@ -10,25 +9,25 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'visual_stress-orthog'}; 
-start_latency = 0.056;
-end_latency = 0.256;
+experiment_types = {'erps-23-45-67'};   
+desired_design_mtxs = {'discomfort'}; 
+start_latency = 0.000;
+end_latency = 0.800;
 
 %% SHALL WE APPLY A ROI, IF SO HOW?
-region_of_interest = 1;
+region_of_interest = 0;
 roi_applied = 'two-tailed';
 weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
 create_topographic_maps = 1;
-generate_erps = 1;
+generate_erps = 0;
 weight_erps = 0; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -37,11 +36,11 @@ if strcmp(type_of_analysis, 'frequency_domain')
     frequency_level = 'trial-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
     toi = [0.090, 0.250];
-    foi_of_interest = [[8, 13]; [20, 35]; [30, 45]; [45, 60]; [60, 80]];
+    foi_of_interest = [[45, 60]];
     analysis = 'load'; % 'load' or 'preprocess'
-elseif strcmp(type_of_analysis, 'time_domain') || strcmp(type_of_analysis, 'time_domain_p1')
+elseif strcmp(type_of_analysis, 'time_domain')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
-    foi_of_interest = [[-999, -999]];
+    foi = [[-999, -999]];
 end
     
 %% OFF TO THE RACES WE GO
@@ -88,7 +87,7 @@ for f = 1:numel(foi_of_interest)
                     if contains(desired_design_mtxs, 'eye')
                         data_file = 'time_domain_eye_confound_onsets_2_3_4_5_6_7_8_grand-average.mat';
                     else
-                        data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                        data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
                     end
         
                     
@@ -117,7 +116,7 @@ for f = 1:numel(foi_of_interest)
                     all_designs{1} = design_matrix;
         
                 elseif strcmp(experiment_type, 'pure-factor-effect') 
-                    data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                    data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
                     regressor = 'ft_statfun_indepsamplesregrT';
                     type_of_effect = 'null';
                     regression_type = desired_design_mtx;
@@ -198,17 +197,15 @@ for f = 1:numel(foi_of_interest)
                     n_participants = 40;
                     
                     if strcmp(type_of_analysis,'time_domain')
-                        data_file = 'time_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                        data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
                         
-                        if f == 1
-                            [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-                                data_file, partition1);
-                            [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
-                                data_file, partition2);
-                            [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
-                                data_file, partition3);
-                        end
-
+                        [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition1);
+                        [data2, participant_order_2] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition2);
+                        [data3, participant_order_3] = load_postprocessed_data(main_path, n_participants, ...
+                            data_file, partition3);
+                        
                         partition = 1;
                         [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, ...
                                 regression_type, partition, type_of_effect);
@@ -249,13 +246,14 @@ for f = 1:numel(foi_of_interest)
                         all_data{1} = data;
                         all_designs{1} = design_matrix;
                     elseif strcmp(type_of_analysis, 'time_domain_p1')
-                        data_file = 'time_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+                        data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
                         partition1.is_partition = 1; % partition 1
                         partition1.partition_number = 1;
                         [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
                             data_file, partition1);
                         partition = 1;
-                        [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, regression_type, partition, type_of_effect);
+                        [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, ...
+                                regression_type, partition, type_of_effect);
                         design_matrix = design1;
                         design_matrix = design_matrix - mean(design_matrix);
                         data = data1;
@@ -643,7 +641,7 @@ for f = 1:numel(foi_of_interest)
                     end
 
                     design_matrix = design_matrix - mean(design_matrix);
-                    all_designs{1} = design_matrix;
+                    all_designs{1} = [design1, design2, design3];      
 
                 elseif strcmp(experiment_type, 'factor_effect')
                     n_participants = 40;
@@ -682,7 +680,7 @@ for f = 1:numel(foi_of_interest)
 
                     n_part_per_desgin = numel(design1);        
                     design_matrix = design1 - mean(design1);
-                    %save_desgin_matrix(design1, n_part_per_desgin, save_path, 'habituation')
+                    save_desgin_matrix(design1, n_part_per_desgin, save_path, 'habituation')
                     all_designs{1} = design1;    
 
                 elseif strcmp(experiment_type, 'partitions-2-8')
@@ -856,7 +854,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 5000;
+                cfg.numrandomization = 1000;
                 cfg.tail = roi_to_apply; 
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -865,7 +863,7 @@ for f = 1:numel(foi_of_interest)
                 
             
             %% run the fieldtrip analyses
-            if contains(type_of_analysis, 'time_domain')
+            if strcmp(type_of_analysis, 'time_domain')
                 if contains(experiment_type, 'onsets-2-8-explicit') && strcmp(regression_type, 'no-factor') || contains(regression_type, 'eye')
                     cfg.uvar = 1;
                     cfg.ivar = 2;
@@ -873,7 +871,7 @@ for f = 1:numel(foi_of_interest)
                     stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
                     save(strcat(new_save_path, '\stat.mat'), 'stat')
                     desired_cluster =1;
-                    %get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
+                    get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
                 elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
                         || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
                         || contains(experiment_type, 'coarse-vs-fine-granularity') || contains(experiment_type, 'Partitions') ...
@@ -987,19 +985,9 @@ for f = 1:numel(foi_of_interest)
     end
 end
 end
-%% used to set frequency data values to 0 for time
-function data = set_values_to_zero(data)
-    for idx = 1:numel(data)
-        participant_data = data{1,idx};
-        avg = participant_data.avg;
-        avg(:) = 0;
-        participant_data.avg = avg;
-        data{1,idx} = participant_data;
-    end
-end
 
-%% used to set frequency data values to 0 for freq
-function data = set_values_to_zero_frequency(data)
+%% used to set frequency data values to 0
+function data = set_values_to_zero(data)
     for idx = 1:numel(data)
         participant_data = data{1,idx};
         spectrum = participant_data.powspctrm;
@@ -1613,8 +1601,8 @@ function calculate_cluster_size(stat, ptitle, type, save_dir)
     grid on;
     xlabel('Time (ms)', 'FontSize', 14);
     ylabel('Percentage of cluster', 'FontSize', 14);
-    xlim([0,260])
-    %xlim([56,800])
+    %xlim([0,260])
+    xlim([56,800])
     title(ptitle, 'FontSize', 14); 
     legend(legend_to_use, 'Location', 'northwest', 'FontSize',14);
 
@@ -1762,9 +1750,6 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
             end
             save_dir = strcat(save_dir, '\', 'negative_topographic.png');
         end
-
-        max_t = max(stat.stat, [], 'all');
-        max_t = round(max_t, 2);
     
         max_iter = numel(j)-1;
         for k = 1:max_iter
@@ -1772,7 +1757,7 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
              cfg = [];
              cfg.parameter = 'stat';
              cfg.xlim = [j(k) j(k+1)];
-             cfg.zlim = [-max_t, max_t];
+             cfg.zlim = [-6 6];
              clust_int = zeros(118,1);
              t_idx = find(stat.time>=j(k) & stat.time<=j(k+1));
              clust_int(i1) = all(clust(i2,1,t_idx),3);
@@ -1791,6 +1776,12 @@ function create_viz_topographic_maps(data1, stat, start_latency, ...
         cfg.channel   = 'all';
         cfg.latency   = 'all';
         cfg.parameter = 'avg';
+        
+        cfg = [];
+        cfg.foilim = [30 80];
+        cfg.toilim = [-0.2 0.8];
+        cfg.parameter = 'powspctrm';
+        ft_freqgrandaverage(cfg, data1{:});
     
         grand_avg1 = ft_timelockgrandaverage(cfg, data1{:});
         grand_avg1.elec = data1{1}.elec;
@@ -1973,18 +1964,7 @@ function scores = return_scores(regression_type, type_of_effect)
     elseif strcmp(regression_type, 'discomfort-orthog')
     
     if strcmp(type_of_effect, 'habituation')
-        load D:\PhD\misc\orthog_ds_habituation.mat
-        scores.one = factor_of_interest(1:39,:);
-        scores.two = factor_of_interest(40:78,:);
-        scores.three = factor_of_interest(79:117,:);
-    else
-        load D:\PhD\misc\orthog_discomfort_sensitization.mat
-    end
-    
-    elseif strcmp(regression_type, 'visual_stress-orthog')
-    
-    if strcmp(type_of_effect, 'habituation')
-        load D:\PhD\misc\orthog_vs_habituation.mat
+        load D:\PhD\misc\orthog_discomfort.mat 
         scores.one = factor_of_interest(1:39,:);
         scores.two = factor_of_interest(40:78,:);
         scores.three = factor_of_interest(79:117,:);
@@ -2146,7 +2126,6 @@ function scores = return_scores(regression_type, type_of_effect)
         else
             error('Type of experiment not properly specified');
         end
-
         
         [n_participants, ~] = size(dataset);
         
@@ -2296,8 +2275,8 @@ function [ft_regression_data, participant_order] = ...
                     thick = data.thick;  
                end
             elseif ~partition.is_partition
-                pgi = data.med - (data.thin + data.thick)/2;
-                ft.avg = pgi;
+                %pgi = data.med - (data.thin + data.thick)/2;
+                %ft.avg = pgi;
                 thin = data.thin;
                 med = data.med;
                 thick = data.thick;
@@ -2434,21 +2413,21 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     type_of_analysis, foi)
 
     
-    plotting_window = [-100, 300];
+    plotting_window = [-100, 800];
     rmpath C:\ProgramFiles\spm8;
     addpath C:\ProgramFiles\spm12;
     cd(master_dir);
 
     %% Are we looking at onsets 2-8 or partitions
     % set up the experiment as needed
-    if strcmp(experiment_type, 'onsets-2-8-explicit') || strcmp(experiment_type, 'pure-factor-effect') 
+    if strcmp(experiment_type, 'onsets-2-8-explicit')
         n_participants = 40;
 
         partition.is_partition = 0;
         partition.partition_number = 0;
 
        if strcmp(type_of_analysis, 'time_domain')
-           data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+           data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
            [data, ~] = load_postprocessed_data(main_path, n_participants, ...
                 data_file, partition);
             e_idx = find(contains(data{1}.label,peak_electrode));
@@ -2465,11 +2444,29 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
        ci = bootstrap_erps(data, e_idx);
      
+    elseif strcmp(experiment_type, 'pure-factor-effect') 
+        data_file = 'mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+        n_participants = 40;
+        type_of_effect = 'none';
+
+        partition.is_partition = 0;
+        partition.partition_number = 999;
+        
+
+        [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
+            data_file, partition);     
+        e_idx = find(contains(data{1}.label,peak_electrode));
+        n_part = numel(data);
+        [data1_h, data1_l] = get_partitions_medium_split(data, participant_order_1,...
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+        ci1_h = bootstrap_erps(data1_h, e_idx);
+        ci1_l = bootstrap_erps(data1_l, e_idx);
+
     elseif strcmp(experiment_type, 'partitions-2-8') && contains(regression_type, 'p1')
         n_participants = 40;
         partition1.is_partition = 1; % partition 1
         partition1.partition_number = 1; 
-        data_file = 'time_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+        data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
         type_of_effect = 'habituation';
         
         [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
@@ -2493,7 +2490,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
 
         if strcmp(type_of_analysis, 'time_domain')
-            data_file = 'time_domain_partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
+            data_file = 'partitions_partitioned_onsets_2_3_4_5_6_7_8_grand-average.mat';
             [data1, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
                 data_file, partition1);
             e_idx = find(contains(data1{1}.label,peak_electrode));
@@ -2648,17 +2645,17 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     end
     %% generate_supplementary information and indices used to plot
     if strcmp(experiment_type, 'partitions-2-8') && ~contains(regression_type, 'p1')
-        experiment_name = "Illustration of Onsets 2:8 {factor} x Habituation for Partitions";
+        experiment_name = "Illustration of Onsets 2:8 Partitions";
     elseif strcmp(experiment_type, 'partitions-2-8') && contains(regression_type, 'p1')
-        experiment_name = "Illustration of Onsets 2:8 First Partition {factor}";
+        experiment_name = "Illustration of Onsets 2:8 First Partition";
     elseif strcmp(experiment_type, 'erps-23-45-67')
-        experiment_name = 'Illustration of Onsets (2,3; 4,5; 6,7) {factor} x Sensitization';
+        experiment_name = 'Onsets (2,3; 4,5; 6,7)';
     elseif strcmp(experiment_type, 'erps-23-45-67-no-factor')
-        experiment_name = 'ERPs 2,3; 4,5; 6,7 (No Factor) {factor}';
+        experiment_name = 'ERPs 2,3; 4,5; 6,7 (No Factor)';
     elseif strcmp(experiment_type, 'onsets-2-8-explicit')
         experiment_name = "Illustration of Onsets 2:8 Mean/Intercept";
     elseif strcmp(experiment_type, 'pure-factor-effect')
-        experiment_name = "Illustration of Onsets 2:8 Factor {factor}";
+        experiment_name = "Illustration of Onsets 2:8 Factor";
     else
        experiment_name = experiment_type;
     end
@@ -2681,8 +2678,8 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
     regression_type = regexprep(regression_type,"(\<[a-z])","${upper($1)}");
     effect_type = strcat(regexprep(effect_type,'(\<[a-z])','${upper($1)}'), ' Tail');
-    experiment_name = strrep(experiment_name,'{factor}',regression_type);
-    m_title = experiment_name + ", " + "Electrode " + peak_electrode; 
+    m_title = experiment_name + " " + label + " " + regression_type + ", " + "Electrode " + peak_electrode;
+
 
     start_peak = start_peak*1000;
     end_peak = end_peak*1000;
@@ -2696,13 +2693,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     
     labels_text_size = 14;
 
-    if strcmp(type_of_analysis, 'frequency_domain')
-        ax_label = "dB";
-    else
-        ax_label = "Microvolts (uV)";
-    end
-
-    if contains(experiment_type, 'onsets-2-8') || strcmp(experiment_type, 'pure-factor-effect') 
+    if contains(experiment_type, 'onsets-2-8')
        t = tiledlayout(2,1, 'TileSpacing','Compact');
        time = data{1}.time * 1000;
        nexttile
@@ -2724,7 +2715,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
        xlabel("Milliseconds", "FontSize",labels_text_size)
-       ylabel(ax_label, "FontSize",labels_text_size)
+       ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
         nexttile
         hold on;
@@ -2773,7 +2764,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        
        
        xlabel("Milliseconds", "FontSize",labels_text_size)
-       ylabel(ax_label, "FontSize",labels_text_size)
+       ylabel("Microvolts (uV)", "FontSize",labels_text_size)
        grid on
      
 
@@ -2821,7 +2812,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        end
 
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
        % PGI HIGH
        nexttile;
@@ -2861,7 +2852,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        end
 
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
        
@@ -2918,7 +2909,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        end
 
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
        % P1 HIGH
@@ -2974,7 +2965,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        end
 
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
     elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erps-23-45-67')
@@ -2990,33 +2981,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'g');
        plot(NaN(1),  'color','#4DBEEE');
        if contains(experiment_type, 'partitions-2-8')
-
             legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', labels_text_size)
-            pgi_low = "Low Group: Partitions PGI";
-            pgi_high = "High Group: Partitions: PGI";
-            med_low = "Low Group: Medium Through the Partitions";
-            med_high = "High Group: Medium Through the Partitions";
-            low_p1 = "Low Group P1";
-            high_p1 = "High Group P1";
-            low_p2 = "Low Group P2";
-            high_p2 = "High Group P2";
-            low_p3 = "Low Group P3";
-            high_p3 = "High Group P3";
-
        elseif strcmp(experiment_type, 'erps-23-45-67')
-           
            legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', labels_text_size)
-            pgi_low = "Low Group: Onsets PGI";
-            pgi_high = "High Group: Onsets: PGI";
-            med_low = "Low Group: Medium Through the Onsets";
-            med_high = "High Group: Medium Through the Onsets";
-            low_p1 = "Low Group Onsets 2,3";
-            high_p1 = "High Group Onsets 2,3";
-            low_p2 = "Low Group Onsets 4,5";
-            high_p2 = "High Group Onsets 4,5";
-            low_p3 = "Low Group Onsets 6,7";
-            high_p3 = "High Group Onsets 6,7";
-
        end
        
        plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3044,19 +3011,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.10)
        
        xlim(plotting_window);
-       title(pgi_low,'FontSize', labels_text_size);
+       title('Low Group: Partitions: PGI','FontSize', labels_text_size);
        
-
        
-       min_yl = min([min(ci1_l.dist_pgi_low), min(ci2_l.dist_pgi_low), min(ci3_l.dist_pgi_low)])-0.5;
-       max_yl = max([max(ci3_l.dist_pgi_high), max(ci2_l.dist_pgi_high), max(ci1_l.dist_pgi_high)])+0.5;
-
-       min_yh = min([min(ci1_h.dist_pgi_low), min(ci2_h.dist_pgi_low), min(ci3_h.dist_pgi_low)])-0.5;
-       max_yh = max([max(ci3_h.dist_pgi_high), max(ci2_h.dist_pgi_high), max(ci1_h.dist_pgi_high)])+0.5;
-
-       min_y = min([min_yl, min_yh]);
-       max_y = max([max_yl, max_yh]);
-
+       min_y = min([min(ci1_l.dist_pgi_low), min(ci2_l.dist_pgi_low), min(ci3_l.dist_pgi_low)])-0.5;
+       max_y = max([max(ci3_l.dist_pgi_high), max(ci2_l.dist_pgi_high), max(ci1_l.dist_pgi_high)])+0.5;
        ylim([min_y, max_y])
        
        grid on;
@@ -3069,7 +3028,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
 
@@ -3110,9 +3069,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.10)
        
        xlim(plotting_window);
-       title(pgi_high,'FontSize', labels_text_size);
+       title('High Group: Partitions: PGI','FontSize', labels_text_size);
 
-
+       min_y = min([min(ci1_h.dist_pgi_low), min(ci2_h.dist_pgi_low), min(ci3_h.dist_pgi_low)])-0.5;
+       max_y = max([max(ci3_h.dist_pgi_high), max(ci2_h.dist_pgi_high), max(ci1_h.dist_pgi_high)])+0.5;
        ylim([min_y, max_y])
        grid on;
        hold off;
@@ -3124,7 +3084,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
        
        % MED LOW
@@ -3144,18 +3104,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(time, ci3_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
        
        xlim(plotting_window);
-       title(med_low,'FontSize', labels_text_size);
+       title('Low Group: Medium Through the Partitions','FontSize', labels_text_size);
 
-        min_y_low = min([min(ci1_l.dist_med_avg), min(ci2_l.dist_med_avg), min(ci3_l.dist_med_avg)])-0.5;
-        max_y_low = max([max(ci1_l.dist_med_avg), max(ci2_l.dist_med_avg), max(ci3_l.dist_med_avg)])+0.5;
-       
-        min_y_high = min([min(ci1_h.dist_med_avg), min(ci2_h.dist_med_avg), min(ci3_h.dist_med_avg)])-0.5;
-        max_y_high = max([max(ci1_h.dist_med_avg), max(ci2_h.dist_med_avg), max(ci3_h.dist_med_avg)])+0.5;
-
-        min_y = min([min_y_low, min_y_high]);
-        max_y = max([max_y_low, max_y_high]);
-       
-        ylim([min_y, max_y])
+       min_y = min([min(ci1_l.dist_med_avg), min(ci2_l.dist_med_avg), min(ci3_l.dist_med_avg)])-0.5;
+       max_y = max([max(ci1_l.dist_med_avg), max(ci2_l.dist_med_avg), max(ci3_l.dist_med_avg)])+0.5;
+       ylim([min_y, max_y])
 
        grid on;
        hold off;
@@ -3166,9 +3119,6 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
-        xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
-
         % MED HIGH
        nexttile
        hold on;
@@ -3187,8 +3137,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(time, ci3_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
        
        xlim(plotting_window);
-       title(med_high,'FontSize', labels_text_size);
+       title('High Group: Medium Through the Partitions','FontSize', labels_text_size);
        
+       min_y = min([min(ci1_h.dist_med_avg), min(ci2_h.dist_med_avg), min(ci3_h.dist_med_avg)])-0.5;
+       max_y = max([max(ci1_h.dist_med_avg), max(ci2_h.dist_med_avg), max(ci3_h.dist_med_avg)])+0.5;
        ylim([min_y, max_y])
        
        grid on;
@@ -3201,7 +3153,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
        % P1 LOW
@@ -3237,19 +3189,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title(low_p1,'FontSize', labels_text_size);
+       title('Low Group P1','FontSize', labels_text_size);
        
-
-       min_yl = min([min(ci1_h.dist_thick_low), min(ci1_h.dist_med_low), min(ci1_h.dist_thin_low)])-0.5;
-       max_yl = max([max(ci1_h.dist_thin_high), max(ci1_h.dist_med_high), max(ci1_h.dist_thick_high)])+0.5;
-
-       min_yh = min([min(ci1_l.dist_thin_low), min(ci1_l.dist_med_low), min(ci1_l.dist_thick_low)])-0.5;
-       max_yh = max([max(ci1_l.dist_thick_high), max(ci1_l.dist_med_high), max(ci1_l.dist_thin_high)])+0.5;
-        
-       min_y = min([min_yl, min_yh]);
-        max_y = max([max_yl, max_yh]);
-       
-        ylim([min_y, max_y])
+       min_y = min([min(ci1_l.dist_thin_low), min(ci1_l.dist_med_low), min(ci1_l.dist_thick_low)])-0.5;
+       max_y = max([max(ci1_l.dist_thick_high), max(ci1_l.dist_med_high), max(ci1_l.dist_thin_high)])+0.5;
+       ylim([min_y, max_y])
        
        grid on;
        hold off;
@@ -3260,7 +3204,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
 % P1 HIGH
@@ -3296,8 +3240,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title(high_p1,'FontSize', labels_text_size);
+       title('High Group P1','FontSize', labels_text_size);
 
+       min_y = min([min(ci1_h.dist_thick_low), min(ci1_h.dist_med_low), min(ci1_h.dist_thin_low)])-0.5;
+       max_y = max([max(ci1_h.dist_thin_high), max(ci1_h.dist_med_high), max(ci1_h.dist_thick_high)])+0.5;
        ylim([min_y, max_y])
 
        grid on;
@@ -3309,7 +3255,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
        % P2 LOW
@@ -3345,19 +3291,12 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title(low_p2,'FontSize', labels_text_size);
+       title('Low Group P2','FontSize', labels_text_size);
        
-       min_yl = min([min(ci2_l.dist_thin_low), min(ci2_l.dist_med_low), min(ci2_l.dist_thick_low)])-0.5;
-       max_yl = max([max(ci2_l.dist_thick_high), max(ci2_l.dist_med_high), max(ci2_l.dist_thin_high)])+0.5;
-
-       min_yh = min([min(ci2_h.dist_thin_low), min(ci2_h.dist_med_low), min(ci2_h.dist_thick_low)])-0.5;
-       max_yh = max([max(ci2_h.dist_thick_high), max(ci2_h.dist_med_high), max(ci2_h.dist_thin_high)])+0.5;
+       min_y = min([min(ci2_l.dist_thin_low), min(ci2_l.dist_med_low), min(ci2_l.dist_thick_low)])-0.5;
+       max_y = max([max(ci2_l.dist_thick_high), max(ci2_l.dist_med_high), max(ci2_l.dist_thin_high)])+0.5;
+       ylim([min_y, max_y])
        
-        min_y = min([min_yl, min_yh]);
-        max_y = max([max_yl, max_yh]);
-       
-        ylim([min_y, max_y])
-
        grid on;
        hold off;
        
@@ -3368,7 +3307,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
         % P2 HIGH
@@ -3404,9 +3343,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title(high_p2,'FontSize', labels_text_size);
+       title('High Group P2','FontSize', labels_text_size);
        
-
+       min_y = min([min(ci2_h.dist_thin_low), min(ci2_h.dist_med_low), min(ci2_h.dist_thick_low)])-0.5;
+       max_y = max([max(ci2_h.dist_thick_high), max(ci2_h.dist_med_high), max(ci2_h.dist_thin_high)])+0.5;
        ylim([min_y, max_y])
        
        grid on;
@@ -3419,7 +3359,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
        % P3 LOW
@@ -3455,18 +3395,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title(low_p3,'FontSize', labels_text_size);
+       title('Low Group P3','FontSize', labels_text_size);
        
-       min_yl = min([min(ci3_l.dist_thin_low), min(ci3_l.dist_med_low), min(ci3_l.dist_thick_low)])-0.5;
-       max_yl = max([max(ci3_l.dist_thick_high), max(ci3_l.dist_med_high), max(ci3_l.dist_thin_high)])+0.5;
-
-       min_yh = min([min(ci3_h.dist_thick_low), min(ci3_h.dist_med_low), min(ci3_h.dist_thin_low)])-0.5;
-       max_yh = max([max(ci3_h.dist_thin_high), max(ci3_h.dist_med_high), max(ci3_h.dist_thick_high)])+0.5;
-
-        min_y = min([min_yl, min_yh]);
-        max_y = max([max_yl, max_yh]);
-       
-        ylim([min_y, max_y])
+       min_y = min([min(ci3_l.dist_thin_low), min(ci3_l.dist_med_low), min(ci3_l.dist_thick_low)])-0.5;
+       max_y = max([max(ci3_l.dist_thick_high), max(ci3_l.dist_med_high), max(ci3_l.dist_thin_high)])+0.5;
+       ylim([min_y, max_y])
        
        grid on;
        hold off;
@@ -3478,7 +3411,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
         % P3 HIGH 
@@ -3514,9 +3447,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-       title(high_p3,'FontSize', labels_text_size);
+       title('High Group P3','FontSize', labels_text_size);
 
-
+       min_y = min([min(ci3_h.dist_thick_low), min(ci3_h.dist_med_low), min(ci3_h.dist_thin_low)])-0.5;
+       max_y = max([max(ci3_h.dist_thin_high), max(ci3_h.dist_med_high), max(ci3_h.dist_thick_high)])+0.5;
        ylim([min_y, max_y])
 
        grid on;
@@ -3529,7 +3463,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
        
         xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
+        ylabel("Microvolts (uV)", "FontSize",labels_text_size)
 
 
     end
