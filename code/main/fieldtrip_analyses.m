@@ -11,8 +11,8 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'discomfort-orthog', 'headache-orthog'}; 
-type_of_interaction = 'habituation';
+desired_design_mtxs = {'visual_stress_p1', 'discomfort_p1', 'headache_p1'}; 
+type_of_interaction = 'null';
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -29,7 +29,7 @@ weight_erps = 0; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'time_domain_p1';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -58,15 +58,15 @@ for f = 1:numel(foi_of_interest)
             elseif contains(experiment_type, 'erps-23-45-67')
                 save_path = strcat(results_dir, '\', type_of_analysis,'\', type_of_interaction, '\ ', 'onsets', '\', desired_design_mtx);
             elseif contains(experiment_type,'onsets-2-8-explicit')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', type_of_interaction, '\ ', 'mean_intercept', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis,'\', 'mean_intercept', '\', desired_design_mtx);
             elseif strcmp(experiment_type, 'partitions_vs_onsets')
                 save_path = strcat(results_dir, '\', type_of_analysis,'\', type_of_interaction, '\ ', 'partitions_vs_onsets', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'trial-level-2-8')
                 save_path = strcat(results_dir, '\', type_of_analysis,'\', type_of_interaction, '\ ', 'trial_level_2_8', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'pure-factor-effect')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\', type_of_interaction, '\ ', 'pure-factor-effect', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis, '\' , 'pure-factor-effect', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'factor_effect')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\', type_of_interaction, '\ ', 'factor-effect', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis, '\ ', 'factor-effect', '\', desired_design_mtx);
             end
     
             % check if its a frequency experiment 
@@ -221,7 +221,7 @@ for f = 1:numel(foi_of_interest)
         
                         
                         data = [new_participants1, new_participants2, new_participants3];
-                        design_matrix = [design1, design2, design3];
+                        design_matrix = [design1;design2;design3];
                         n_part = numel(data);
                         n_part_per_desgin = numel(design1);
         
@@ -316,7 +316,7 @@ for f = 1:numel(foi_of_interest)
                         regression_type, partition, type_of_interaction);
     
                 data = [new_participants1, new_participants2, new_participants3];
-                design_matrix = [design1, design2, design3];
+                design_matrix = [design1;design2;design3];
                 n_part = numel(data);
                 n_part_per_desgin = numel(design1);
     
@@ -696,6 +696,7 @@ for f = 1:numel(foi_of_interest)
             end
     
             %% get peak level stats
+            pos_cluster_peak_level_data = {};
             if numel(stat.posclusters) > 0
                 for i=1:numel(stat.posclusters)
                     [pos_peak_level_stats, pos_all_stats] = get_peak_level_stats(stat, i, 'positive');
@@ -705,9 +706,11 @@ for f = 1:numel(foi_of_interest)
                         first_pos_peak_level_stats = pos_peak_level_stats;
                         first_pos_all_stats = pos_all_stats;
                     end
+                    pos_cluster_peak_level_data{i} = pos_peak_level_stats;
                 end
             end
-    
+            
+            neg_cluster_peak_level_data = {};
             if numel(stat.negclusters) > 0
                 for i=1:numel(stat.negclusters)
                     [neg_peak_level_stats, neg_all_stats] = get_peak_level_stats(stat, i, 'negative');
@@ -717,6 +720,7 @@ for f = 1:numel(foi_of_interest)
                         first_neg_peak_level_stats = neg_peak_level_stats;
                         first_neg_all_stats = neg_all_stats;
                     end
+                    neg_cluster_peak_level_data{i} = neg_peak_level_stats;
                 end
             end
     
@@ -729,18 +733,29 @@ for f = 1:numel(foi_of_interest)
             end
             
             %% generate ERPs using the stat information
+            number_of_clusters_to_plot = 2; % plots top k clusters
             if generate_erps == 1
-                if numel(stat.posclusters) > 0
-                    generate_peak_erps(master_dir, main_path, experiment_type, ...
-                        stat, first_pos_peak_level_stats, 'positive', desired_design_mtx, 1, ...
-                        new_save_path, weight_erps, weighting_factor, ...
-                        type_of_analysis, foi);
+                num_pos_clusters = numel(stat.posclusters);
+                if num_pos_clusters > 0
+                    for i = 1:num_pos_clusters
+                        if i <= number_of_clusters_to_plot
+                            generate_peak_erps(master_dir, main_path, experiment_type, ...
+                                stat, pos_cluster_peak_level_data{i}, 'positive', desired_design_mtx, i, ...
+                                new_save_path, weight_erps, weighting_factor, ...
+                                type_of_analysis, foi);
+                        end
+                    end
                 end
-                if numel(stat.negclusters) > 0
-                    generate_peak_erps(master_dir, main_path, experiment_type, ...
-                        stat, first_neg_peak_level_stats, 'negative', desired_design_mtx, 1, ...
-                        new_save_path, weight_erps, weighting_factor, ...
-                        type_of_analysis, foi);
+                num_neg_clusters = numel(stat.negclusters);
+                if num_neg_clusters > 0
+                    for i = 1:num_neg_clusters
+                        if i <= number_of_clusters_to_plot
+                            generate_peak_erps(master_dir, main_path, experiment_type, ...
+                                stat, neg_cluster_peak_level_data{i}, 'negative', desired_design_mtx, i, ...
+                                new_save_path, weight_erps, weighting_factor, ...
+                                type_of_analysis, foi);
+                        end
+                    end
                 end
             end
             
@@ -1140,7 +1155,7 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
         labels(labels>desired_cluster) =0;
         pvalue = round(stat.posclusters(desired_cluster).prob,4);
         cluster_size = stat.posclusters(desired_cluster).clusterstat;
-        plot_desc = 'positive_peak_erp.png';
+        plot_desc = "positive_peak_erp_" + num2str(desired_cluster) + ".png";
     else
         if numel(stat.negclusters) < 1 || strcmp(peak_electrode, '')
             return ; 
@@ -1151,7 +1166,7 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
         labels(labels>desired_cluster) =0;
         pvalue = round(stat.negclusters(desired_cluster).prob,4);
         cluster_size = stat.negclusters(desired_cluster).clusterstat;
-        plot_desc = 'negative_peak_erp.png';
+        plot_desc = "negative_peak_erp_" + num2str(desired_cluster) + ".png";
     end
 
     through_time = sum(labels);
@@ -1165,7 +1180,7 @@ function generate_peak_erps(master_dir, main_path, experiment_type, ...
     generate_plots(master_dir, main_path, experiment_type, start_of_effect,...
         end_of_effect, peak_electrode, peak_time, peak_t_value, df, ...
         regression_type, pvalue, cluster_size, save_dir, effect_type, ...
-        weight_erps, weighting_factor, type_of_analysis, foi)
+        weight_erps, weighting_factor, type_of_analysis, foi, desired_cluster)
     
     close;
 end
@@ -1647,25 +1662,169 @@ function data = set_values_to_zero_freq(data)
         data{idx} = participant_data;
     end
 end
+
+%% a function to remove and update the design matrix for more complex operations
+function [scores,new_participants] = tweak_design_matrix(dataset, participant_order, participants, type_of_effect)
+    % since not all participants have factor scores this part lines up and discards participants with no scores
+    score = dataset;
+    calc(:, 1) = score(:, 2);
+    calc(:, 2) = score(:, 1);
+    calc = sortrows(calc);
+    [rows, ~] = size(calc);
+    ratings(:, 1) = calc(:, 2);
+    ratings(:, 2) = calc(:, 1);
+
+    new_participants = {};
+    cnt = 1;
+
+    for j = 1:numel(participant_order)
+        participant = participant_order(j);
+        score = ratings(find(ratings(:, 1) == participant{1}), 2);
+
+        if numel(score) > 0
+            datas(cnt, 2) = score;
+            datas(cnt, 1) = participant{1};
+            new_participants{cnt} = participants{j};
+            cnt = cnt + 1;
+        end
+
+    end
+
+    
+    scores.one = datas;
+    scores.two = datas;
+    scores.three = datas;
+
+    min_n = min(scores.one);
+    scores.one(:,2) = scores.one(:,2) - min_n(2);
+    scores.two(:,2) = scores.two(:,2) - min_n(2);
+    scores.three(:,2) = scores.three(:,2) - min_n(2);
+    
+    if strcmp(type_of_effect, 'habituation')
+        scores.one(:,2) = scores.one(:,2) * 2.72;
+        scores.two(:,2) = scores.two(:,2) * 1.65;
+        scores.three(:,2) = scores.three(:,2) * 1.00;
+    elseif strcmp(type_of_effect, 'sensitization')
+        scores.one(:,2) = scores.one(:,2) * 1.00;
+        scores.two(:,2) = scores.two(:,2) * 1.65;
+        scores.three(:,2) = scores.three(:,2) * 2.72;
+    else
+        error('Type of experiment not properly specified');
+    end
+    
+    [n_participants, ~] = size(datas);
+    
+    for k=1:n_participants
+        p1 = scores.one(k,1);
+        p2 = scores.two(k,1);
+        p3 = scores.three(k,1);
+        
+        if p1 == p2 && p2 == p3                
+            if strcmp(type_of_effect, 'habituation')
+                to_remove = scores.three(k,2);
+            elseif strcmp(type_of_effect, 'sensitization')
+                to_remove = scores.one(k,2);
+            end
+            
+            scores.one(k,2) = scores.one(k,2) - to_remove;
+            scores.two(k,2) = scores.two(k,2) - to_remove;
+            scores.three(k,2) = scores.three(k,2) - to_remove;
+        else
+            error('Participants do not align...')
+        end
+    end
+end
+
+%% gram schmitt algorithm
+%% gram-schitt process for orthoganilzation
+function y = gschmidt(x,v)            
+
+    [~,n]=size(x);
+    y=x(:,1);
+    for k = 2:n  % orthogonalization process
+       z=0;
+       for j=1:k-1
+          p=y(:,j);
+          z=z+((p'*x(:,k))/(p'*p))*p;
+       end
+       y=[y x(:,k)-z];
+    end
+    
+    if nargin == 1
+       for j=1:n, y(:,j) = y(:,j)/norm(y(:,j));end % normalizing
+    end
+end
+
+
+
+%% function orthog data
+function scores = orthog_data(VS, DS, HD, type_of_effect)
+    num_per_partition = size(VS.one, 1);
+    VS_combined = [VS.one(:,2); VS.two(:,2); VS.three(:,2)];
+    HD_combined = [HD.one(:,2); HD.two(:,2); HD.three(:,2)];
+    DS_combined = [DS.one(:,2); DS.two(:,2); DS.three(:,2)];
+
+    X1(:,1) = VS_combined;
+    X1(:,2) = HD_combined;
+    X1(:,3) = DS_combined;
+
+    X_orthog = gschmidt(X1, 1);
+
+    if contains(type_of_effect, 'visual_stress')
+        scores = VS;
+    elseif contains(type_of_effect, 'discomfort')
+        ds_o = X_orthog(:,3);
+        ds1(:,1) = DS.one(:,1);
+        ds2(:,1) = DS.two(:,1);
+        ds3(:,1) = DS.three(:,1);
+
+        ds1(:,2) = ds_o(1:num_per_partition);
+        ds2(:,2) = ds_o(num_per_partition+1:num_per_partition*2);
+        ds3(:,2) = ds_o((num_per_partition*2)+1:num_per_partition*3);
+
+        scores.one = ds1;
+        scores.two = ds2;
+        scores.three = ds3;
+    elseif contains(type_of_effect, 'headache')
+        hd_o = X_orthog(:,2);
+        hd1(:,1) = HD.one(:,1);
+        hd2(:,1) = HD.two(:,1);
+        hd3(:,1) = HD.three(:,1);
+
+        hd1(:,2) = hd_o(1:num_per_partition);
+        hd2(:,2) = hd_o(num_per_partition+1:num_per_partition*2);
+        hd3(:,2) = hd_o((num_per_partition*2)+1:num_per_partition*3);
+
+        scores.one = hd1;
+        scores.two = hd2;
+        scores.three = hd3;
+    end
+
+end
+
+
 %% function to create the design matrix for all experiments
 function [design, new_participants] = create_design_matrix_partitions(participant_order, participants, ...
     regression_type, partition, type_of_effect)
 
-    scores = return_scores(regression_type, type_of_effect);
+    dataset = return_scores(regression_type, type_of_effect);
+
+    if ~strcmp(type_of_effect, 'null')
+           
+        [scores, new_participants] = tweak_design_matrix(dataset, participant_order, participants, type_of_effect);
+
+        if contains(regression_type, 'orthog')
+            VS = return_scores('visual_stress', type_of_effect);
+            DS = return_scores('discomfort', type_of_effect);
+            HD = return_scores('headache', type_of_effect);
+
+            [VS, ~] = tweak_design_matrix(VS, participant_order, participants, type_of_effect);
+            [DS, ~] = tweak_design_matrix(DS, participant_order, participants, type_of_effect);
+            [HD, ~] = tweak_design_matrix(HD, participant_order, participants, type_of_effect);
+
+            scores = orthog_data(VS, DS, HD, regression_type);
+        end
     
-    if strcmp(regression_type, 'headache-scores-entire-median-split') ...
-            || strcmp(regression_type, 'discomfort-scores-entire-median-split') ...
-            || strcmp(regression_type, 'vs-scores-entire-median-split')
-        score = scores.one;
-        calc(:,1) = score(:,2);
-        calc(:,2) = score(:,1);
-        calc = sortrows(calc);
-        [rows, ~] = size(calc);
-        calc(1:rows/2,1) = -1;
-        calc(((rows+1)/2):rows,1) =1;
-        ratings(:,1) = calc(:,2);
-        ratings(:,2) = calc(:,1);      
-    else
         if partition == 1
             ratings = scores.one;
         elseif partition == 2
@@ -1675,25 +1834,41 @@ function [design, new_participants] = create_design_matrix_partitions(participan
         elseif partition == 0
             ratings = scores.one;
         end
-    end
     
-    new_participants = {};
-    cnt = 1;
-    for j = 1:numel(participant_order)
-        participant = participant_order{j};
-        score = ratings(find(ratings(:,1)==participant),2);
+        design = ratings(:,2);
+    else
+        design = dataset(:, 2);
 
-        if numel(score) > 0
-            design(1,cnt)=score;
-            new_participants{cnt} = participants{j};
-            cnt = cnt + 1;
-        end
-    end
+        % since not all participants have factor scores this part lines up and discards participants with no scores
+        score = dataset;
+        calc(:, 1) = score(:, 2);
+        calc(:, 2) = score(:, 1);
+        calc = sortrows(calc);
+        [rows, ~] = size(calc);
+        ratings(:, 1) = calc(:, 2);
+        ratings(:, 2) = calc(:, 1);
     
+        new_participants = {};
+        cnt = 1;
+    
+        for j = 1:numel(participant_order)
+            participant = participant_order(j);
+            score = ratings(find(ratings(:, 1) == participant{1}), 2);
+    
+            if numel(score) > 0
+                datas(cnt, 2) = score;
+                datas(cnt, 1) = participant{1};
+                new_participants{cnt} = participants{j};
+                cnt = cnt + 1;
+            end
+    
+        end
+        design = datas(:, 2);
+    end
 end
 
 %% return scores
-function scores = return_scores(regression_type, type_of_effect)
+function dataset = return_scores(regression_type, type_of_effect)
     if strcmp(regression_type, 'no-factor') || contains(regression_type, 'eye')
         dataset = [
             1, 1; 2, 1; 3, 1; 4, 1; 5, 1; 6, 1; 7, 1; 8, 1; 9, 1; 10, 1; 11, 1; 12, 1; 13, 1; 14, 1; 15, 1;
@@ -1701,82 +1876,8 @@ function scores = return_scores(regression_type, type_of_effect)
             29, 1; 30, 1; 31, 1; 32, 1; 33, 1; 34, 1; 35, 1; 36, 1; 37, 1; 38, 1; 39, 1; 40, 1;
                 ];
 
-        scores.one = dataset;
-        scores.two = dataset;
-        scores.three = dataset;
-        
-    elseif strcmp(regression_type, 'headache-mean-intercept')
-        dataset = [
-        1,-0.2574;2,-0.0417;3,-0.6726;4,0.4236;5,1.781;6,-1.0608;7,-0.7657;
-        8,0.1279;9,-0.6553;10,-0.2896;11,-0.5122;12,2.1424;13,-0.1803;
-        14,1.4491;16,0.1157;17,-0.1649;20,-0.4721;21,1.0486;22,-0.554;23,-0.8912;
-        24,-0.4481;25,-0.7581;26,-1.2784;28,0.2989;29,0.0439;30,-0.4732;31,-0.7701;
-        32,-0.7037;33,-0.819;34,-0.7987;37,1.1507;38,-0.2806;39,0.8546;40,-0.3823;   
-        ];
-    
-        scores.one = dataset;
-    
-    elseif strcmp(regression_type, 'discomfort_p1') || strcmp(regression_type, 'discomfort_p2') || strcmp(regression_type, 'discomfort_p3')
-        dataset = [
-            1, -0.264; 2, 0.4459; 3, -0.49781; 4, 1.77666; 5, -0.55638; 6, 0.87174; 7, -0.68504; 8, 0.92835; 9, -0.80581; 10, -0.87505;
-            11, 0.39111; 12, -0.76054; 13, -0.68987; 14, 1.60776; 15, -0.19637; 16, 1.13956; 17, 1.53606; 19, -0.08254; 20, 0.12186;
-            21, 0.08428; 22, 0.61663; 23, -1.47958; 24, 2.28422; 25, -0.80891; 26, -0.55738; 27, 0.2238; 28, -0.93291; 29, 0.3791; 30, -0.63074;
-            31, 2.14683; 32, -1.49948; 33, 1.21954; 34, -0.79734; 35, -0.51303; 36, -1.0687; 37, -0.61345; 38, -1.02592; 39, -0.87653; 40, 0.444;
-        ];
-        scores.one = dataset;
 
-    elseif strcmp(regression_type, 'headache_p1') || strcmp(regression_type, 'headache_p2') || strcmp(regression_type, 'headache_p3')
-        dataset = [
-            1, -0.22667; 2, -0.05198; 3, -0.72116; 4, 0.53139; 5, 1.72021; 6, -1.17636; 7, -0.79706; 8, 0.19942; 9, -0.6924;
-            10, -0.35826; 11, -0.58533; 12, 2.04136; 13, -0.26573; 14, 1.30963; 15, 3.4497; 16, 0.00172; 17, -0.15026; 19, -0.55639;
-            20, -0.41626; 21, 1.14373; 22, -0.56513; 23, -0.72755; 24, -0.43472; 25, -0.69897; 26, -1.34952; 27, 1.40986; 28, 0.36296; 29, 0.04162;
-            30, -0.4697; 31, -0.70362; 32, -0.73219; 33, -0.88081; 34, -0.79623; 35, -0.75114; 36, 0.09594; 37, 1.22665; 38, -0.3365; 39, 1.07651;
-            40, -0.16678; 
-        ];
-        
-        scores.one = dataset;
-    elseif strcmp(regression_type, 'visual_stress_p1') || strcmp(regression_type, 'visual_stress_p2') || strcmp(regression_type, 'visual_stress_p3')
-        dataset = [
-            1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
-            11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
-            21, 1.0008; 22, -0.11689; 23, 1.72091; 24, 0.14105; 25, 0.62214; 26, -0.74829; 27, 2.02421; 28, 0.67386; 29, -0.02367;
-            30, 0.03638; 31, 0.6996; 32, -0.29977; 33, -0.64998; 34, 0.02624; 35, -0.82177; 36, -0.42512; 37, 0.79861; 38, -0.58832; 39, 2.33323;
-            40, 2.26667;
-        ];
-        scores.one = dataset;
-
-    elseif strcmp(regression_type, 'headache-orthog')
-        
-        load D:\PhD\misc\orthog_headache_habituation.mat 
-        
-        scores.one = factor_of_interest(1:39,:);
-        scores.two = factor_of_interest(40:78,:);
-        scores.three = factor_of_interest(79:117,:);
-
-
-    elseif strcmp(regression_type, 'discomfort-orthog')
-    
-    if strcmp(type_of_effect, 'habituation')
-        load D:\PhD\misc\orthog_ds_habituation.mat
-        scores.one = factor_of_interest(1:39,:);
-        scores.two = factor_of_interest(40:78,:);
-        scores.three = factor_of_interest(79:117,:);
-    else
-        load D:\PhD\misc\orthog_discomfort_sensitization.mat
-    end
-    
-    elseif strcmp(regression_type, 'visual_stress-orthog')
-    
-    if strcmp(type_of_effect, 'habituation')
-        load D:\PhD\misc\orthog_vs_habituation.mat
-        scores.one = factor_of_interest(1:39,:);
-        scores.two = factor_of_interest(40:78,:);
-        scores.three = factor_of_interest(79:117,:);
-    else
-        load D:\PhD\misc\orthog_discomfort_sensitization.mat
-    end
-    
-    elseif strcmp(regression_type, 'headache')
+    elseif contains(regression_type, 'headache')
         dataset = [
             1, -0.22667; 2, -0.05198; 3, -0.72116; 4, 0.53139; 5, 1.72021; 6, -1.17636; 7, -0.79706; 8, 0.19942; 9, -0.6924;
             10, -0.35826; 11, -0.58533; 12, 2.04136; 13, -0.26573; 14, 1.30963; 15, 3.4497; 16, 0.00172; 17, -0.15026; 19, -0.55639;
@@ -1785,63 +1886,8 @@ function scores = return_scores(regression_type, type_of_effect)
             40, -0.16678; 
         ];
 
-        scores.one = dataset;
-        scores.two = dataset;
-        scores.three = dataset;
-    
-        min_n = min(scores.one);
-        scores.one(:,2) = scores.one(:,2) - min_n(2);
-        scores.two(:,2) = scores.two(:,2) - min_n(2);
-        scores.three(:,2) = scores.three(:,2) - min_n(2);
-        
-        if strcmp(type_of_effect, 'habituation')
-            scores.one(:,2) = scores.one(:,2) * 2.72;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 1.00;
-        elseif strcmp(type_of_effect, 'sensitization')
-            scores.one(:,2) = scores.one(:,2) * 1.00;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 2.72;
-        else
-            error('Type of experiment not properly specified');
-        end
-        
-        [n_participants, ~] = size(dataset);
-        
-        for k=1:n_participants
-            p1 = scores.one(k,1);
-            p2 = scores.two(k,1);
-            p3 = scores.three(k,1);
-            
-            if p1 == p2 && p2 == p3                
-                if strcmp(type_of_effect, 'habituation')
-                    to_remove = scores.three(k,2);
-                elseif strcmp(type_of_effect, 'sensitization')
-                    to_remove = scores.one(k,2);
-                end
-                
-                scores.one(k,2) = scores.one(k,2) - to_remove;
-                scores.two(k,2) = scores.two(k,2) - to_remove;
-                scores.three(k,2) = scores.three(k,2) - to_remove;
-            else
-                error('Participants do not align...')
-            end
-        end     
-    elseif strcmp(regression_type, 'visual_stress_orthog')
-        if strcmp(type_of_effect, 'habituation')
-            load D:\PhD\misc\orthog_vs_sensitization.mat
-            scores.one = factor_of_interest(1:39,:);
-            scores.two = factor_of_interest(40:78,:);
-            scores.three = factor_of_interest(79:117,:);
-        else
-            load D:\PhD\misc\orthog_discomfort_sensitization.mat
-            scores.one = factor_of_interest(1:39,:);
-            scores.two = factor_of_interest(40:78,:);
-            scores.three = factor_of_interest(79:117,:);
-        end
-
-
-    elseif strcmp(regression_type, 'visual_stress')
+  
+    elseif contains(regression_type, 'visual_stress')
        dataset = [
             1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
             11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
@@ -1850,109 +1896,14 @@ function scores = return_scores(regression_type, type_of_effect)
             40, 2.26667;
         ];
 
-%         dataset = [
-%         1,0.323;2,-0.109;3,-0.51;4,1.134;5,-0.639;6,-1.215;7,-0.33;8,0.752;
-%         9,-0.39;10,-0.722;11,-0.769;12,-1.063;13,-0.899;14,-1.467;16,-1.199;
-%         17,0.154;20,0.587;21,1.001;22,-0.117;23,1.721;24,0.141;25,0.622;
-%         26,-0.748;28,0.674;29,-0.024;30,0.036;31,0.7;32,-0.3;33,-0.65;
-%         34,0.026;37,0.799;38,-0.588;39,2.333;40,2.267;
-%         ];
-
-        scores.one = dataset;
-        scores.two = dataset;
-        scores.three = dataset;
-    
-        min_n = min(scores.one);
-        scores.one(:,2) = scores.one(:,2) - min_n(2);
-        scores.two(:,2) = scores.two(:,2) - min_n(2);
-        scores.three(:,2) = scores.three(:,2) - min_n(2);
-    
-        if strcmp(type_of_effect, 'habituation')
-            scores.one(:,2) = scores.one(:,2) * 2.72;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 1.00;
-        elseif strcmp(type_of_effect, 'sensitization')
-            scores.one(:,2) = scores.one(:,2) * 1.00;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 2.72;
-        else
-            error('Type of experiment not properly specified');
-        end
-        
-        [n_participants, ~] = size(dataset);
-        
-        for k=1:n_participants
-            p1 = scores.one(k,1);
-            p2 = scores.two(k,1);
-            p3 = scores.three(k,1);
-            
-            if p1 == p2 && p2 == p3
-                if strcmp(type_of_effect, 'habituation')
-                    to_remove = scores.three(k,2);
-                elseif strcmp(type_of_effect, 'sensitization')
-                    to_remove = scores.one(k,2);
-                end
-                
-                scores.one(k,2) = scores.one(k,2) - to_remove;
-                scores.two(k,2) = scores.two(k,2) - to_remove;
-                scores.three(k,2) = scores.three(k,2) - to_remove;
-            else
-                error('Participants do not align...')
-            end
-        end
-
-    elseif strcmp(regression_type, 'discomfort')
+    elseif contains(regression_type, 'discomfort')
         dataset = [
             1, -0.264; 2, 0.4459; 3, -0.49781; 4, 1.77666; 5, -0.55638; 6, 0.87174; 7, -0.68504; 8, 0.92835; 9, -0.80581; 10, -0.87505;
             11, 0.39111; 12, -0.76054; 13, -0.68987; 14, 1.60776; 15, -0.19637; 16, 1.13956; 17, 1.53606; 19, -0.08254; 20, 0.12186;
             21, 0.08428; 22, 0.61663; 23, -1.47958; 24, 2.28422; 25, -0.80891; 26, -0.55738; 27, 0.2238; 28, -0.93291; 29, 0.3791; 30, -0.63074;
             31, 2.14683; 32, -1.49948; 33, 1.21954; 34, -0.79734; 35, -0.51303; 36, -1.0687; 37, -0.61345; 38, -1.02592; 39, -0.87653; 40, 0.444;
         ];
-    
-        scores.one = dataset;
-        scores.two = dataset;
-        scores.three = dataset;
-
-        min_n = min(scores.one);
-        scores.one(:,2) = scores.one(:,2) - min_n(2);
-        scores.two(:,2) = scores.two(:,2) - min_n(2);
-        scores.three(:,2) = scores.three(:,2) - min_n(2);
-    
-    
-        if strcmp(type_of_effect, 'habituation')
-            scores.one(:,2) = scores.one(:,2) * 2.72;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 1.00;
-        elseif strcmp(type_of_effect, 'sensitization')
-            scores.one(:,2) = scores.one(:,2) * 1.00;
-            scores.two(:,2) = scores.two(:,2) * 1.65;
-            scores.three(:,2) = scores.three(:,2) * 2.72;
-        else
-            error('Type of experiment not properly specified');
-        end
-
-        
-        [n_participants, ~] = size(dataset);
-        
-        for k=1:n_participants
-            p1 = scores.one(k,1);
-            p2 = scores.two(k,1);
-            p3 = scores.three(k,1);
-            
-            if p1 == p2 && p2 == p3
-                if strcmp(type_of_effect, 'habituation')
-                    to_remove = scores.three(k,2);
-                elseif strcmp(type_of_effect, 'sensitization')
-                    to_remove = scores.one(k,2);
-                end
-                
-                scores.one(k,2) = scores.one(k,2) - to_remove;
-                scores.two(k,2) = scores.two(k,2) - to_remove;
-                scores.three(k,2) = scores.three(k,2) - to_remove;
-            else
-                error('Participants do not align...')
-            end
-        end
+ 
     end
 end
 
@@ -2215,7 +2166,7 @@ end
 function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     end_peak, peak_electrode, peak_effect, t_value, df, regression_type, ...
     pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor, ...
-    type_of_analysis, foi)
+    type_of_analysis, foi, desired_cluster)
 
     
     plotting_window = [-100, 300];
@@ -3321,7 +3272,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     title(t, m_title, 'FontSize', 16);
     cluster_stats = "Cluster: P-value: " + num2str(round(pvalue, 3)) + ", Mass: " + num2str(cluster_size);
     peak_stats = "Max sample: T" + "(" + num2str(df) + ")=" + num2str(t_value) ... 
-        + " Cohen's d: " + num2str(cohens_d) + ", Correlation: " + num2str(effect_size);
+        + " Cohen's d: " + num2str(cohens_d) + ", Correlation: " + num2str(effect_size) + ", C: " + num2str(desired_cluster);
     subtitle(t, {cluster_stats, peak_stats}, 'FontSize', 14)
     
 
@@ -3389,7 +3340,50 @@ function [data_high, data_low, high_ids, low_ids] ...
         end      
     end
 
-    scores = return_scores(regression_type, type_of_effect);
+    dataset = return_scores(regression_type, type_of_effect);
+
+    scores.one = dataset;
+    scores.two = dataset;
+    scores.three = dataset;
+
+    min_n = min(scores.one);
+    scores.one(:,2) = scores.one(:,2) - min_n(2);
+    scores.two(:,2) = scores.two(:,2) - min_n(2);
+    scores.three(:,2) = scores.three(:,2) - min_n(2);
+    
+    if strcmp(type_of_effect, 'habituation')
+        scores.one(:,2) = scores.one(:,2) * 2.72;
+        scores.two(:,2) = scores.two(:,2) * 1.65;
+        scores.three(:,2) = scores.three(:,2) * 1.00;
+    elseif strcmp(type_of_effect, 'sensitization')
+        scores.one(:,2) = scores.one(:,2) * 1.00;
+        scores.two(:,2) = scores.two(:,2) * 1.65;
+        scores.three(:,2) = scores.three(:,2) * 2.72;
+    else
+        error('Type of experiment not properly specified');
+    end
+    
+    [n_participants, ~] = size(dataset);
+    
+    for k=1:n_participants
+        p1 = scores.one(k,1);
+        p2 = scores.two(k,1);
+        p3 = scores.three(k,1);
+        
+        if p1 == p2 && p2 == p3                
+            if strcmp(type_of_effect, 'habituation')
+                to_remove = scores.three(k,2);
+            elseif strcmp(type_of_effect, 'sensitization')
+                to_remove = scores.one(k,2);
+            end
+            
+            scores.one(k,2) = scores.one(k,2) - to_remove;
+            scores.two(k,2) = scores.two(k,2) - to_remove;
+            scores.three(k,2) = scores.three(k,2) - to_remove;
+        else
+            error('Participants do not align...')
+        end
+    end
 
     if contains(regression_type, 'median-split')
         ratings = scores.one;
