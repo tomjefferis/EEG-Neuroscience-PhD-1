@@ -11,8 +11,8 @@ cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
 experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'visual_stress_p1', 'discomfort_p1', 'headache_p1'}; 
-type_of_interaction = 'null';
+desired_design_mtxs = {'headache-orthog'}; 
+type_of_interaction = 'habituation';
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -29,7 +29,7 @@ weight_erps = 0; % weights based on quartiles
 weighting_factor = 0.00; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain_p1';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -640,7 +640,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 10000;
+                cfg.numrandomization = 1000;
                 cfg.tail = roi_to_apply; 
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -1759,21 +1759,42 @@ end
 
 %% function orthog data
 function scores = orthog_data(VS, DS, HD, type_of_effect)
+    type_of_orthog = 'all';
+
     num_per_partition = size(VS.one, 1);
     VS_combined = [VS.one(:,2); VS.two(:,2); VS.three(:,2)];
     HD_combined = [HD.one(:,2); HD.two(:,2); HD.three(:,2)];
     DS_combined = [DS.one(:,2); DS.two(:,2); DS.three(:,2)];
 
-    X1(:,1) = VS_combined;
-    X1(:,2) = HD_combined;
-    X1(:,3) = DS_combined;
 
-    X_orthog = gschmidt(X1, 1);
+
+    if strcmp(type_of_orthog, 'all')
+        X1(:,1) = VS_combined;
+        X1(:,2) = HD_combined;
+        X1(:,3) = DS_combined;
+        X_orthog = gschmidt(X1, 1);
+        dso = X_orthog(:,3);
+        hd_o = X_orthog(:,2);
+    elseif strcmp(type_of_orthog, 'sequential')
+        X1(:,1) = VS_combined;
+        X1(:,2) = HD_combined;
+        headache_orthogd = gschmidt(X1, 1);
+        hd_o = headache_orthogd(:,2);
+
+        X2(:,1) = VS_combined;
+        X2(:,2) = DS_combined;
+        ds_orthogd = gschmidt(X2, 1);
+        ds_orth = ds_orthogd(:,2);
+
+        X3(:,1) = hd_o(:);
+        X3(:,2) = ds_orth(:);
+        ds_final_orthogd = gschmidt(X3, 1);
+        ds_o = ds_final_orthogd(:,2);
+    end
 
     if contains(type_of_effect, 'visual_stress')
         scores = VS;
     elseif contains(type_of_effect, 'discomfort')
-        ds_o = X_orthog(:,3);
         ds1(:,1) = DS.one(:,1);
         ds2(:,1) = DS.two(:,1);
         ds3(:,1) = DS.three(:,1);
@@ -1786,7 +1807,6 @@ function scores = orthog_data(VS, DS, HD, type_of_effect)
         scores.two = ds2;
         scores.three = ds3;
     elseif contains(type_of_effect, 'headache')
-        hd_o = X_orthog(:,2);
         hd1(:,1) = HD.one(:,1);
         hd2(:,1) = HD.two(:,1);
         hd3(:,1) = HD.three(:,1);
