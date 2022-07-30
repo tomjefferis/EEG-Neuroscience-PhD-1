@@ -10,9 +10,9 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};   
-desired_design_mtxs = {'headache-orthog'}; 
-type_of_interaction = 'habituation';
+experiment_types = {'erps-23-45-67'};   
+desired_design_mtxs = {"headache-orthog", "visual_stress", "discomfort-orthog"}; 
+type_of_interaction = 'sensitization';
 start_latency = 0.056;
 end_latency = 0.256;
 
@@ -640,7 +640,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 1000;
+                cfg.numrandomization = 1500;
                 cfg.tail = roi_to_apply; 
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -1759,7 +1759,6 @@ end
 
 %% function orthog data
 function scores = orthog_data(VS, DS, HD, type_of_effect)
-    type_of_orthog = 'all';
 
     num_per_partition = size(VS.one, 1);
     VS_combined = [VS.one(:,2); VS.two(:,2); VS.three(:,2)];
@@ -1768,29 +1767,13 @@ function scores = orthog_data(VS, DS, HD, type_of_effect)
 
 
 
-    if strcmp(type_of_orthog, 'all')
-        X1(:,1) = VS_combined;
-        X1(:,2) = HD_combined;
-        X1(:,3) = DS_combined;
-        X_orthog = gschmidt(X1, 1);
-        dso = X_orthog(:,3);
-        hd_o = X_orthog(:,2);
-    elseif strcmp(type_of_orthog, 'sequential')
-        X1(:,1) = VS_combined;
-        X1(:,2) = HD_combined;
-        headache_orthogd = gschmidt(X1, 1);
-        hd_o = headache_orthogd(:,2);
+    X1(:,1) = VS_combined;
+    X1(:,2) = HD_combined;
+    X1(:,3) = DS_combined;
+    X_orthog = gschmidt(X1, 1);
+    ds_o = X_orthog(:,3);
+    hd_o = X_orthog(:,2);
 
-        X2(:,1) = VS_combined;
-        X2(:,2) = DS_combined;
-        ds_orthogd = gschmidt(X2, 1);
-        ds_orth = ds_orthogd(:,2);
-
-        X3(:,1) = hd_o(:);
-        X3(:,2) = ds_orth(:);
-        ds_final_orthogd = gschmidt(X3, 1);
-        ds_o = ds_final_orthogd(:,2);
-    end
 
     if contains(type_of_effect, 'visual_stress')
         scores = VS;
@@ -2232,10 +2215,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         e_idx = find(contains(data{1}.label,peak_electrode));
         ci = bootstrap_erps(data, e_idx);
         
-        [data1_h, data1_l] = get_partitions_medium_split(data, participant_order_1,...
-            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
-        ci1_h = bootstrap_erps(data1_h, e_idx);
-        ci1_l = bootstrap_erps(data1_l, e_idx);
+        %[data1_h, data1_l] = get_partitions_medium_split(data, participant_order_1,...
+           % regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+        %ci1_h = bootstrap_erps(data1_h, e_idx);
+        %ci1_l = bootstrap_erps(data1_l, e_idx);
     elseif strcmp(experiment_type, 'partitions (no factor)') || strcmp(experiment_type, 'partitions-1') ||  strcmp(experiment_type, 'partitions-2-8')
         n_participants = 40;
 
@@ -2340,11 +2323,11 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
             ci1_h = bootstrap_erps(data1_h,e_idx);
             ci1_l = bootstrap_erps(data1_l,e_idx);
             [data2_h, data2_l] = get_partitions_medium_split(data2, participant_order_2,...
-                regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+                regression_type, 2, type_of_effect, weight_erps, weighting_factor);
             ci2_h = bootstrap_erps(data2_h,e_idx);
             ci2_l = bootstrap_erps(data2_l,e_idx);
             [data3_h, data3_l] = get_partitions_medium_split(data3, participant_order_3,...
-                regression_type, 1,  type_of_effect, weight_erps, weighting_factor);
+                regression_type, 3,  type_of_effect, weight_erps, weighting_factor);
             ci3_h = bootstrap_erps(data3_h,e_idx);
             ci3_l = bootstrap_erps(data3_l,e_idx);
             
@@ -2536,11 +2519,10 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
 
     elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion == 1 || ...
         strcmp(experiment_type,'pure-factor-effect')
-        t = tiledlayout(2,2, 'TileSpacing','Compact');
+        t = tiledlayout(2,1, 'TileSpacing','Compact');
         time = data{1}.time * 1000;
         nexttile
         
-       % PGI LOW
        hold on;
        plot(NaN(1), 'r');
        if contains(experiment_type, 'partitions-2-8')
@@ -2549,60 +2531,17 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
        end
        
-       plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_l.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-       plot(time, ci1_l.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+       plot(time, ci.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+       plot(time, ci.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+       plot(time, ci.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
        x2 = [time, fliplr(time)];
-       inBetween = [ci1_l.dist_pgi_high, fliplr(ci1_l.dist_pgi_low)];
+       inBetween = [ci.dist_pgi_high, fliplr(ci.dist_pgi_low)];
        h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
        set(h,'facealpha',.10)
        
        xlim(plotting_window);
-       if contains(experiment_type, 'partitions-2-8')
-            title('Low Group: Partition 1: PGI','FontSize', labels_text_size);
-       elseif contains(experiment_type, 'pure-factor-effect')
-            title('Low Group: PGI','FontSize', labels_text_size)
-       end
-       ylim([-6, 6])
-       grid on;
-       hold off;
-       
-       if peak_effect ~= 0
-           xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-           xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-           xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-           xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-           yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-       end
 
-        xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
-
-       % PGI HIGH
-       nexttile;
-       hold on;
-       plot(NaN(1), 'r');
-       if contains(experiment_type, 'partitions-2-8')
-            legend({'P1-PGI'},'Location','bestoutside','FontSize', labels_text_size)
-       elseif contains(experiment_type, 'pure-factor-effect')
-            title('High Group: PGI','FontSize', labels_text_size)
-       end
-
-       plot(time, ci1_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_h.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-       plot(time, ci1_h.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_h.dist_pgi_high, fliplr(ci1_h.dist_pgi_low)];
-       h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-       set(h,'facealpha',.10)
-       
-       xlim(plotting_window);
-        if contains(experiment_type, 'partitions-2-8')
-            title('High Group: Partition 1: PGI','FontSize', labels_text_size);
-        elseif contains(experiment_type, 'pure-factor-effect')
-            title('High Group: PGI','FontSize', labels_text_size)
-        end
-
+       title('Pattern Glare Index','FontSize', labels_text_size)
        ylim([-6, 6])
        grid on;
        hold off;
@@ -2619,8 +2558,6 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         ylabel(ax_label, "FontSize",labels_text_size)
 
 
-       
-       % P1 LOW
        nexttile
        hold on;
        plot(NaN(1), 'Color', '#0072BD');
@@ -2628,37 +2565,31 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
        plot(NaN(1), 'Color', '#FFFF00');
        legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
        
-       plot(time, ci1_l.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_l.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
-       plot(time, ci1_l.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
+       plot(time, ci.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+       plot(time, ci.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
+       plot(time, ci.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
        x2 = [time, fliplr(time)];
-       inBetween = [ci1_l.dist_thin_high, fliplr(ci1_l.dist_thin_low)];
+       inBetween = [ci.dist_thin_high, fliplr(ci.dist_thin_low)];
        h = fill(x2, inBetween, [0, 0.447, 0.741], 'HandleVisibility','off', 'LineStyle','none');
        set(h,'facealpha',.10)
        
-       plot(time, ci1_l.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_l.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
-       plot(time, ci1_l.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
+       plot(time, ci.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+       plot(time, ci.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
+       plot(time, ci.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
        x2 = [time, fliplr(time)];
-       inBetween = [ci1_l.dist_med_high, fliplr(ci1_l.dist_med_low)];
+       inBetween = [ci.dist_med_high, fliplr(ci.dist_med_low)];
        h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off', 'LineStyle','none');
        set(h,'facealpha',.10)
        
-       plot(time, ci1_l.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_l.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
-       plot(time, ci1_l.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+       plot(time, ci.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
+       plot(time, ci.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+       plot(time, ci.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
        x2 = [time, fliplr(time)];
-       inBetween = [ci1_l.dist_thick_high, fliplr(ci1_l.dist_thick_low)];
+       inBetween = [ci.dist_thick_high, fliplr(ci.dist_thick_low)];
        h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
        set(h,'facealpha',.175)
        
        xlim(plotting_window);
-
-        if contains(experiment_type, 'partitions-2-8')
-            title('Low Group P1','FontSize', labels_text_size);
-        elseif contains(experiment_type, 'pure-factor-effect')
-            title('Low Group','FontSize', labels_text_size)
-        end
 
        ylim([-6, 12])
        grid on;
@@ -2675,61 +2606,6 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
         xlabel("Milliseconds", "FontSize",labels_text_size)
         ylabel(ax_label, "FontSize",labels_text_size)
 
-
-       % P1 HIGH
-       nexttile
-       hold on;
-       plot(NaN(1), 'Color', '#0072BD');
-       plot(NaN(1), 'Color', '#D95319');
-       plot(NaN(1), 'Color', '#FFFF00');
-       legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
-       
-       plot(time, ci1_h.dist_thin_avg, 'color','#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_h.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
-       plot(time, ci1_h.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_h.dist_thin_high, fliplr(ci1_h.dist_thin_low)];
-       h = fill(x2, inBetween, [0, 0.447, 0.741], 'HandleVisibility','off', 'LineStyle','none');
-       set(h,'facealpha',.10)
-       
-       plot(time, ci1_h.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_h.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
-       plot(time, ci1_h.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_h.dist_med_high, fliplr(ci1_h.dist_med_low)];
-       h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off', 'LineStyle','none');
-       set(h,'facealpha',.10)
-       
-       plot(time, ci1_h.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
-       plot(time, ci1_h.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
-       plot(time, ci1_h.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
-       x2 = [time, fliplr(time)];
-       inBetween = [ci1_h.dist_thick_high, fliplr(ci1_h.dist_thick_low)];
-       h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
-       set(h,'facealpha',.175)
-       
-       xlim(plotting_window);
-
-        if contains(experiment_type, 'partitions-2-8')
-            title('High Group P1','FontSize', labels_text_size);
-        elseif contains(experiment_type, 'pure-factor-effect')
-            title('High Group','FontSize', labels_text_size)
-        end
-
-       ylim([-6, 12])
-       grid on;
-       hold off;
-       
-       if peak_effect ~= 0
-           xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-           xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-           xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-           xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-           yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-       end
-
-        xlabel("Milliseconds", "FontSize",labels_text_size)
-        ylabel(ax_label, "FontSize",labels_text_size)
 
 
     elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erps-23-45-67')
@@ -3356,95 +3232,46 @@ function [data_high, data_low, high_ids, low_ids] ...
                participant.thick = participant.thick * lower_weighting;
                participant.weighting = lower_weighting;
                data{i} = participant;
-            end
+            end 
         end      
     end
 
     dataset = return_scores(regression_type, type_of_effect);
+    [scores, new_participants] = tweak_design_matrix(dataset, participant_order, data, type_of_effect);
 
-    scores.one = dataset;
-    scores.two = dataset;
-    scores.three = dataset;
+    if contains(regression_type, 'orthog')
+        VS = return_scores('visual_stress', type_of_effect);
+        DS = return_scores('discomfort', type_of_effect);
+        HD = return_scores('headache', type_of_effect);
 
-    min_n = min(scores.one);
-    scores.one(:,2) = scores.one(:,2) - min_n(2);
-    scores.two(:,2) = scores.two(:,2) - min_n(2);
-    scores.three(:,2) = scores.three(:,2) - min_n(2);
-    
-    if strcmp(type_of_effect, 'habituation')
-        scores.one(:,2) = scores.one(:,2) * 2.72;
-        scores.two(:,2) = scores.two(:,2) * 1.65;
-        scores.three(:,2) = scores.three(:,2) * 1.00;
-    elseif strcmp(type_of_effect, 'sensitization')
-        scores.one(:,2) = scores.one(:,2) * 1.00;
-        scores.two(:,2) = scores.two(:,2) * 1.65;
-        scores.three(:,2) = scores.three(:,2) * 2.72;
-    else
-        error('Type of experiment not properly specified');
+        [VS, ~] = tweak_design_matrix(VS, participant_order, data, type_of_effect);
+        [DS, ~] = tweak_design_matrix(DS, participant_order, data, type_of_effect);
+        [HD, ~] = tweak_design_matrix(HD, participant_order, data, type_of_effect);
+
+        scores = orthog_data(VS, DS, HD, regression_type);
     end
     
-    [n_participants, ~] = size(dataset);
-    
-    for k=1:n_participants
-        p1 = scores.one(k,1);
-        p2 = scores.two(k,1);
-        p3 = scores.three(k,1);
-        
-        if p1 == p2 && p2 == p3                
-            if strcmp(type_of_effect, 'habituation')
-                to_remove = scores.three(k,2);
-            elseif strcmp(type_of_effect, 'sensitization')
-                to_remove = scores.one(k,2);
-            end
-            
-            scores.one(k,2) = scores.one(k,2) - to_remove;
-            scores.two(k,2) = scores.two(k,2) - to_remove;
-            scores.three(k,2) = scores.three(k,2) - to_remove;
-        else
-            error('Participants do not align...')
-        end
-    end
-
-    if contains(regression_type, 'median-split')
+    if partition == 1
         ratings = scores.one;
-    else
-        if partition == 1
-            ratings = scores.one;
-        elseif partition == 2
-            ratings = scores.two;
-        elseif partition == 3
-            ratings = scores.three;
-        end
+    elseif partition == 2
+        ratings = scores.two;
+    elseif partition == 3
+        ratings = scores.three;
+    elseif partition == 0
+        ratings = scores.one;
     end
 
-    if strcmp(regression_type, 'headache-masked')
-        ps = ratings(:,1);
-        scores = ratings(:,2);
-        scores(scores>0)=1;
-        scores(scores<0)=-1;
-        ratings(:,1) = ps;
-        ratings(:,2) = scores;
-        low_ids = ratings(ratings(:,2)<0);
-        high_ids = ratings(ratings(:,2)>0);
-    elseif strcmp(regression_type, 'headache-quartile')
-        sorted(:,1) = ratings(:,2);
-        sorted(:,2) = ratings(:,1);
-        sorted = flipud(sortrows(sorted));
-        n = ceil(numel(sorted(:,1))/2);
-        high = sorted(1:n/2,:);
-        high_ids = high(:,2);
-        low = sorted(n+n/2+1:end,:);
-        low_ids = low(:,2);
-    else
-        sorted(:,1) = ratings(:,2);
-        sorted(:,2) = ratings(:,1);
-        sorted = flipud(sortrows(sorted));
-        n = ceil(numel(sorted(:,1))/2);
-        high = sorted(1:n,:);
-        high_ids = high(:,2);
-        low = sorted(n+1:end,:);
-        low_ids = low(:,2);
-    end
+    design = ratings(:,2);
+
+    sorted(:,1) = ratings(:,2);
+    sorted(:,2) = ratings(:,1);
+    sorted = flipud(sortrows(sorted));
+    n = ceil(numel(sorted(:,1))/2);
+    high = sorted(1:n,:);
+    high_ids = high(:,2);
+    low = sorted(n+1:end,:);
+    low_ids = low(:,2);
+ 
     [data_high, high_order] = get_participants(data, participant_order, high_ids);
     [data_low, low_order] = get_participants(data, participant_order, low_ids); 
     
