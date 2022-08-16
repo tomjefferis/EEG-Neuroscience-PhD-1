@@ -2829,6 +2829,10 @@ end
             spm_eeg = meeg(D);
             fieldtrip_raw = spm_eeg.ftraw;
             
+            thin = {};
+            med = {};
+            thick = {};
+            
             n_trials = size(D.trials);
             n_trials = n_trials(2);
             mt=1; tht=1; tt=1;
