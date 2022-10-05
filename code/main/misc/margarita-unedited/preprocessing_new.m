@@ -1,11 +1,12 @@
 %% preprocessing pipeline for SPM *** Author; Cihan Dogan
 clear matlabbatch
-cd("C:\Users\marga\Desktop\Research Project\scripts\SPM");
 clear all
 clc
 %% Change these variables depending on what you would like to do.
-main_path = 'C:\Users\marga\Desktop\Research Project\Cihan code\Data for experiment\Visual stress\participant_';
-analyse_partitions = 0;
+main_path = 'D:\PhD\participant_';
+addpath('C:\External_Software\fieldtrip-20210807');
+addpath('C:\External_Software\spm12')
+analyse_partitions = 1;
 only_averaging = 1;
 look_at_factors = 0;
 factors_to_investigate = {};
@@ -24,7 +25,6 @@ if look_at_factors ~= 1
 end
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
-
 
 %% main preprocessing loop
 for factor_k = 1:length(factors_to_investigate)
@@ -63,18 +63,29 @@ for factor_k = 1:length(factors_to_investigate)
                 end
 
                 data_structure = strcat(data_structure, p);  
-                data_structure = strcat(data_structure, '_075_80Hz.mat');   
+                data_structure = strcat(data_structure, '_075_80Hz_rejected_tempesta.mat');   
                 file_main_path = strcat(participant_main_path, data_structure);
                 cd(participant_main_path);
 
+                if ~isfile(data_structure)
+                    continue
+                end
+
                 %% this function updates the trial information so that you only
                 % analyse the conditions of interest
-                condition_names = label_data(thin, med, thick, file_main_path, analyse_partitions, rating{1});
-
+                %condition_names = label_data(thin, med, thick, file_main_path, analyse_partitions, rating{1});
+                condition_names = label_data_cihan(thin, med, thick, participant_main_path,  data_structure, 'partitions');
 %                 partition1_onsets = partition1_onsets+p1;
 %                 partition2_onsets = partition2_onsets+p2;
 %                 partition3_onsets = partition3_onsets+p3;                
                 
+
+
+                %% sort out paths
+                load(file_main_path);
+                D.data.fname = convertStringsToChars(strrep(file_main_path, "mat", "dat"));
+                save(file_main_path, 'D')
+
                 %% filter
                 matlabbatch{1}.spm.meeg.preproc.filter.D = {file_main_path};
                 matlabbatch{1}.spm.meeg.preproc.filter.type = 'butterworth';
@@ -145,13 +156,6 @@ for factor_k = 1:length(factors_to_investigate)
 %                 spm_jobman('run',matlabbatch)
 %                 clear matlabbatch
 
-                
-                %% check if we only want to average for ERPs this is quicker to run over the entire cohort
-                if only_averaging == 1
-                    disp("We are only going to average, so we will skip creating images for now...")
-                    continue;
-                end
-
                  %% baseline rescaling / time-frequency rescale
 %                 onset_description =  strcat('averaged_', description{1});
 %                 data_structure = strcat(onset_description, data_structure);
@@ -166,14 +170,18 @@ for factor_k = 1:length(factors_to_investigate)
 %                 
                  %% determine whether we need to reject an entire participant
 
-%                 data_structure = strcat('t1', data_structure);
-%                 file_main_path = strcat(participant_main_path, data_structure);
-%                 reject_participant = reject_participant_based_on_bad_trials(file_main_path);
-% 
-%                 if reject_participant == 1
-%                     disp('Rejected participant not enough trials after 100 uv rejection');
-%                     continue;
-%                 end
+                 data_structure = strcat('t1', data_structure);
+                 file_main_path = strcat(participant_main_path, data_structure);
+                 
+
+                 reject_participant = reject_participant_based_on_bad_trials(file_main_path);
+ 
+                 if reject_participant == 1
+                     disp('Rejected participant not enough trials after 100 uv rejection');
+                     
+                     
+                     continue;
+                 end
 
 %                  %% convert to SPM images
 %                 onset_description =  strcat('averaged_', description{1});
@@ -347,6 +355,7 @@ function condition_names = label_data(thin, medium, thick, file, analyse_partiti
         p1=0;p2=0;p3=0;
         for onset = 1:n_trials
             condition = D.trials(onset).events.value;
+            condition = regexp(condition, '(?<=\()[^)]*(?=\))', 'match', 'once');
             epoch = D.trials(onset).events.bepoch;
             %e = D.trials(onset).events.epoch;
 %             if sum(contains(condition, first_onsets))
@@ -373,16 +382,16 @@ function condition_names = label_data(thin, medium, thick, file, analyse_partiti
             description = strcat('partition_', int2str(partition_number));
             description = strcat(description, '_');
 
-            if sum(contains(int2str(condition), onsets_thin_REF))
-                condition = strcat(description, '8');
+            if any(strcmp(onsets_thin_REF,condition))
+                condition = strcat(description, 'thin');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
-            elseif sum(contains(int2str(condition), onsets_medium_REF))
-                condition = strcat(description, '9');
+            elseif any(strcmp(onsets_medium_REF,condition))
+                condition = strcat(description, 'medium');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
-            elseif sum(contains(int2str(condition), onsets_thick_REF))
-                condition = strcat(description, '10');
+            elseif any(strcmp(onsets_thick_REF,condition))
+                condition = strcat(description, 'thick');
                 condition = strcat('_', condition);
                 condition = strcat(factor_name, condition);
             else
@@ -547,4 +556,132 @@ function [score,continue_proc] = get_nausea_percentile(participant_number, facto
     else
         continue_proc = 0;
     end    
+end
+
+
+
+%% updates the EEG data with the onsets we are interested in analysing
+function condition_names = label_data_cihan(thin, medium, thick, path, fname, analysis_type)
+    factor_name = '';
+    file = strcat(path, fname);
+    load(file); % loads the D object
+    D.fname = fname;
+    D.path = path;
+    n_trials = size(D.trials);
+    n_trials = n_trials(2);
+    count = 1;
+    condition_names = {};
+    
+    if ~strcmp(analysis_type, 'partitions')
+        med_order = 1;
+        thick_order = 1;
+        thin_order = 1;
+        for onset = 1:n_trials                              
+            
+            events = D.trials(onset).events;
+            [~, rows] = size(events);
+            for i = 1:rows
+                condition = events(i).binlabel;
+                if ~strcmp(condition, '""')
+                    condition_found = 1;
+                    break
+                end
+            end
+
+            if sum(contains(condition, thin))
+                condition = strcat(factor_name, '_thin');
+                D.trials(onset).trial_order = thin_order;  
+                thin_order = thin_order + 1;
+            elseif sum(contains(condition, medium))
+                condition = strcat(factor_name, '_medium');
+                D.trials(onset).trial_order = med_order;  
+                med_order = med_order + 1;
+            elseif sum(contains(condition, thick))
+                condition = strcat(factor_name, '_thick');
+                D.trials(onset).trial_order = thick_order;  
+                thick_order = thick_order + 1;
+            else
+                condition = 'N/A';
+                D.trials(onset).trial_order = -999; 
+            end
+
+            condition_names{onset} = condition;
+            D.trials(onset).label = condition;    
+            count = count + 1;
+        end      
+    else        
+        partition_number = 1;
+        max_epoch = D.trials(n_trials).events.epoch;
+        med_order = 1;
+        thick_order = 1;
+        thin_order = 1;
+        for onset = 1:n_trials
+            events = D.trials(onset).events;
+            current_epoch = D.trials(onset).events.bepoch;
+            
+            [~, rows] = size(events);
+            for i = 1:rows
+                condition = events(i).binlabel;
+                if ~strcmp(condition, '""')
+                    condition_found = 1;
+                    break
+                end
+            end
+            
+            if ~condition_found == 1
+                error('Condition not found...');
+            end
+            
+%             if current_epoch <= (max_epoch/3)
+%                 partition_number = 1;
+%             elseif (current_epoch >(max_epoch/3)) && (current_epoch <=(max_epoch/3)*2)
+%                 partition_number = 2;
+%             elseif (current_epoch >(max_epoch/3)*2) && (current_epoch <=max_epoch)
+%                 partition_number = 3;
+%             end
+                
+
+            if current_epoch <= 144 % (6*3)*9
+                partition_number = 1;
+            elseif current_epoch<=288
+                partition_number = 2;
+            else
+                partition_number = 3;
+            end
+
+            description = strcat('partition_', int2str(partition_number));
+            description = strcat(description, '_');
+
+            if sum(contains(condition, thin))
+                condition = strcat(description, '_thin');
+                condition = strcat('_', condition);
+                condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = thin_order;  
+                thin_order = thin_order + 1;
+            elseif sum(contains(condition, medium))
+                condition = strcat(description, '_medium');
+                condition = strcat('_', condition);
+                condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = med_order;  
+                med_order = med_order + 1;
+            elseif sum(contains(condition, thick))
+                condition = strcat(description, '_thick');
+                condition = strcat('_', condition);
+                condition = strcat(factor_name, condition);
+                D.trials(onset).trial_order = thick_order; 
+                thick_order = thick_order + 1;
+            else
+                condition = 'N/A';     
+                D.trials(onset).trial_order = -999; 
+            end
+
+            condition_names{onset} = condition;
+            D.trials(onset).label = condition;
+        end
+               
+    end
+    
+    condition_names = unique(cellfun(@num2str,condition_names,'uni',0));
+    condition_names(ismember(condition_names,'N/A')) = [];
+    save(file, 'D') 
 end

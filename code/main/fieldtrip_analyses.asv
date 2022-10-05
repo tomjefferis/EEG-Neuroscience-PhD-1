@@ -3307,8 +3307,8 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 
         % onsets 6;7 p3
     plot(time, p2_67_l.dist_med_avg, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_67_l.dist_med_high, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_67_l.dist_med_low, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_l.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_l.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p2_67_l.dist_med_high, fliplr(p2_67_l.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
@@ -3339,27 +3339,27 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     legend({'Onsets 2,3', 'Onsets 4,6', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
-    plot(time, p2_23_h.dist_med_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_23_h.dist_med_high, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_23_h.dist_med_low, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_23_h.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_23_h.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p2_23_h.dist_med_high, fliplr(p2_23_h.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)
 
         % onsets 4,5 p1 
-    plot(time, p2_45_h.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_45_h.dist_med_high, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_45_h.dist_med_low, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_45_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_45_h.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_45_h.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p2_45_h.dist_med_high, fliplr(p2_45_h.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)  
 
         % onsets 6;7 p3
-    plot(time, p2_67_h.dist_med_avg, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_67_h.dist_med_high, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p2_67_h.dist_med_low, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_h.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_h.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p2_67_h.dist_med_high, fliplr(p2_67_h.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
@@ -3390,27 +3390,27 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     legend({'Onsets 2,3', 'Onsets 4,6', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
-    plot(time, p3_23_l.dist_pgi_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_l.dist_pgi_high, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_l.dist_pgi_low, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_pgi_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_pgi_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_23_l.dist_pgi_high, fliplr(p3_23_l.dist_pgi_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)
 
         % onsets 4,5 p1 
-    plot(time, p3_45_l.dist_pgi_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_l.dist_pgi_high, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_l.dist_pgi_low, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_pgi_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_pgi_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_45_l.dist_pgi_high, fliplr(p3_45_l.dist_pgi_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)  
 
         % onsets 6;7 p3
-    plot(time, p3_67_l.dist_pgi_avg, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_l.dist_pgi_high, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_l.dist_pgi_low, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_pgi_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_pgi_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_67_l.dist_pgi_high, fliplr(p3_67_l.dist_pgi_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
@@ -3442,27 +3442,27 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     legend({'Onsets 2,3', 'Onsets 4,6', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
-    plot(time, p3_23_h.dist_pgi_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_h.dist_pgi_high, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_h.dist_pgi_low, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_pgi_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_pgi_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_23_h.dist_pgi_high, fliplr(p3_23_h.dist_pgi_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)
 
         % onsets 4,5 p1 
-    plot(time, p3_45_h.dist_pgi_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_h.dist_pgi_high, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_h.dist_pgi_low, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_pgi_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_pgi_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_45_h.dist_pgi_high, fliplr(p3_45_h.dist_pgi_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)  
 
         % onsets 6;7 p3
-    plot(time, p3_67_h.dist_pgi_avg, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_h.dist_pgi_high, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_h.dist_pgi_low, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_pgi_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_pgi_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_67_h.dist_pgi_high, fliplr(p3_67_h.dist_pgi_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
@@ -3493,27 +3493,27 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     legend({'Onsets 2,3', 'Onsets 4,6', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
-    plot(time, p3_23_l.dist_med_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_l.dist_med_high, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_l.dist_med_low, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_23_l.dist_med_high, fliplr(p3_23_l.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)
 
         % onsets 4,5 p1 
-    plot(time, p3_45_l.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_l.dist_med_high, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_l.dist_med_low, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_45_l.dist_med_high, fliplr(p3_45_l.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)  
 
         % onsets 6;7 p3
-    plot(time, p3_67_l.dist_med_avg, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_l.dist_med_high, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_l.dist_med_low, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_67_l.dist_med_high, fliplr(p3_67_l.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
@@ -3544,27 +3544,27 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     legend({'Onsets 2,3', 'Onsets 4,6', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
-    plot(time, p3_23_h.dist_med_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_h.dist_med_high, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_23_h.dist_med_low, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_23_h.dist_med_high, fliplr(p3_23_h.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)
 
         % onsets 4,5 p1 
-    plot(time, p3_45_h.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_h.dist_med_high, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_45_h.dist_med_low, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_45_h.dist_med_high, fliplr(p3_45_h.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
     set(h,'facealpha',.10)  
 
         % onsets 6;7 p3
-    plot(time, p3_67_h.dist_med_avg, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_h.dist_med_high, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, p3_67_h.dist_med_low, 'color', '#FFFF00', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_med_high, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_med_low, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
     x2 = [time, fliplr(time)];
     inBetween = [p3_67_h.dist_med_high, fliplr(p3_67_h.dist_med_low)];
     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');

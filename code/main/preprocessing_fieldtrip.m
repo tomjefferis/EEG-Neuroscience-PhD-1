@@ -8,11 +8,11 @@ cd("D:\PhD");
     
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
-to_preprocess = {'mean_intercept'};
+to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3,4,5,6,7,8
+    2,3; 4,5; 6,7
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);

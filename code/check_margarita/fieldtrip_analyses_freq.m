@@ -2,16 +2,19 @@
 clear all
 clc
 master_dir = "C:\Users\marga\Desktop\Research Project\scripts";
-main_path = 'D:\PhD\participant_';
-addpath('C:\External_Software\fieldtrip-20210807');
-addpath('C:\External_Software\spm12')
+main_path = 'C:\Users\marga\Desktop\Research Project\participants_Austyn\participant_';
+cd("C:\Users\marga\Documents\MATLAB");
+rmpath spm8;
+addpath spm12;
+addpath fieldtrip-20210311;
 ft_defaults
-%cd(master_dir);
-experiment_type = 'partitions-2-8';
+cd(master_dir);
+experiment_type = 'onsets-2-8';
 time_period = 1; % 0 = whole period, 1 = up to 800ms
 %experiment_type = 'onsets-factor';
 %experiment_type = 'partitions';
-partitions_interaction_only = 1;
+type_of_effect = 'habituation';
+partitions_interaction_only = 0;
 mean_centering = 1;
 tails = 0;
 region_of_interest = 0;
@@ -32,21 +35,11 @@ if contains(experiment_type, 'onsets-2-8')
     partition.is_partition = 0;
     partition.partition_number = 0;
     
-    [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
-    
-    frequency_data.thin1 = thin_data;
-    frequency_data.med1 = med_data;
-    frequency_data.thick1 = thick_data;
-    frequency_data.data1 = fieldtrip_data_agg;
-    frequency_data.participant_order_1 = participant_order;
-    frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI;
-
-    save("D:\PhD\margarita_data\frequency_data_mi.mat", 'frequency_data', '-v7.3')
-    clear frequency_data;
-
+%     [thin,med,thick,data_agg,data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
+    cd("C:\Users\marga\Desktop\Research Project\scripts")
     if time_period == 1
-        load data_PGI
-        load pax_order
+        load data_PGI_correct
+        load participant_order
     else
         load PGI_whole_period
         load whole_order
@@ -60,38 +53,23 @@ elseif contains(experiment_type, 'onsets-factor')
     data_file = 't1f1';
     regressor = 'ft_statfun_indepsamplesregrT';
     n_participants = 40;   
-    regression_type = 'discomfort';
+    regression_type = 'discomfort_p1';
     partition.is_partition = 0;
     partition.partition_number = 0;
     
-    
-    
-    [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
-    
-    frequency_data.thin1 = thin_data;
-    frequency_data.med1 = med_data;
-    frequency_data.thick1 = thick_data;
-    frequency_data.data1 = fieldtrip_data_agg;
-    frequency_data.participant_order_1 = participant_order;
-    frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI;
-
-    save("D:\PhD\margarita_data\frequency_data_mi.mat", 'frequency_data', '-v7.3')
-    clear frequency_data;
-
-
+    %[data_agg, data_PGI, participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition);
+    cd("C:\Users\marga\Desktop\Research Project\scripts")
     if time_period == 1
-        %load data_PGI
-        load data_partition1
-        load pax_order
+        load data_PGI_correct
+        load participant_order
     else
         load PGI_whole_period
         load whole_order
     end
     cd(master_dir);
-    data_PGI = data1;
     n_part = numel(data_PGI);
     [design_matrix, data_PGI] = create_design_matrix_partitions(participant_order, data_PGI, ...
-        regression_type, 1);
+        regression_type, 0, 'null');
     
     if region_of_interest == 1
         if contains(roi_applied, 'one-tailed')
@@ -121,76 +99,36 @@ elseif contains(experiment_type, 'partitions')
     partition3.is_partition = 1; % partition 3
     partition3.partition_number = '3';
     
-%      [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition1);
-% % 
-%     frequency_data.thin1 = thin_data;
-%     frequency_data.med1 = med_data;
-%     frequency_data.thick1 = thick_data;
-%     frequency_data.data1 = fieldtrip_data_agg;
-%     frequency_data.participant_order_1 = participant_order;
-%     frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI;
-% 
-%     save("D:\PhD\margarita_data\frequency_data.mat", 'frequency_data', '-v7.3')
-%     clear frequency_data;
-% 
-% 
-%     [thin_data2,med_data2,thick_data2,fieldtrip_data_agg2,fieldtrip_data_PGI2,participant_order2]  = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition2);
-% 
-%     frequency_data.thin1 = thin_data2;
-%     frequency_data.med1 = med_data2;
-%     frequency_data.thick1 = thick_data2;
-%     frequency_data.data1 = fieldtrip_data_agg2;
-%     frequency_data.participant_order_1 = participant_order2;
-%     frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI2;
-% 
-%     save("D:\PhD\margarita_data\frequency_data2.mat", 'frequency_data', '-v7.3')
-%     clear frequency_data;
-
-%     [thin_data3,med_data3,thick_data3,fieldtrip_data_agg3,fieldtrip_data_PGI3,participant_order3]  = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition3);
-% 
-% 
-%     frequency_data.thin1 = thin_data3;
-%     frequency_data.med1 = med_data3;
-%     frequency_data.thick1 = thick_data3;
-%     frequency_data.data1 = fieldtrip_data_agg3;
-%     frequency_data.participant_order_1 = participant_order3;
-%     frequency_data.fieldtrip_data_PGI = fieldtrip_data_PGI3;
-% 
-%     save("D:\PhD\margarita_data\frequency_data3.mat", 'frequency_data', '-v7.3')
-%     clear frequency_data;
-
-    cd("D:\PhD\margarita_data")
-    load D:\PhD\margarita_data\frequency_data.mat
-    participant_order_1 = frequency_data.participant_order_1;
-    data1 = frequency_data.fieldtrip_data_PGI;
-    disp("loaded p1")
-    clear frequency_data;
-
-    load D:\PhD\margarita_data\frequency_data2.mat
-    participant_order_2 = frequency_data.participant_order_1;
-    data2 = frequency_data.fieldtrip_data_PGI;
-    disp("loaded p2")
-    clear frequency_data;
-
-    load D:\PhD\margarita_data\frequency_data3.mat
-    participant_order_3 = frequency_data.participant_order_1;
-    data3 = frequency_data.fieldtrip_data_PGI;
-    disp("loaded p3")
-    clear frequency_data;
+%     [thin1, med1, thick1, data_agg1, data1, participant_order_1] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition1);
+%     cd(master_dir);
+%     [thin2, med2, thick2, data_agg2, data2, participant_order_2] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition2);
+%     cd(master_dir);
+%     [thin3, med3, thick3, data_agg3, data3, participant_order_3] = from_fieldtrip_to_spm(n_participants,main_path,data_file,partition3);
+%     cd(master_dir);
+    %cd("C:\Users\marga\Desktop\Research Project\participants_Austyn")
+    load data_partition1_correct
+    load data_partition2_correct
+    load data_partition3_correct
+    load participant_order
+    data1 = data1(1:33);
+    data2 = data2(1:33);
+    participant_order_1 = participant_order(1:33);
+    participant_order_2 = participant_order_1;
+    participant_order_3 = participant_order_1;
+    %cd(master_dir)
     
-    
-    if partitions_interaction_only == 1
-        % choose from 'headache', 'visual stress', 'discomfort'
-        regression_type = 'visual stress'; 
+    if partitions_interaction_only == 0
+        % choose from 'headache', 'visual_stress', 'discomfort'
+        regression_type = 'visual_stress'; 
         partition = 1;
         [design1, new_participants1] = create_design_matrix_partitions(participant_order_1, data1, ...
-                regression_type, partition);
+                regression_type, partition, type_of_effect);
         partition = 2;
         [design2, new_participants2] = create_design_matrix_partitions(participant_order_2, data2, ...
-                regression_type, partition);
+                regression_type, partition, type_of_effect);
         partition = 3;
         [design3, new_participants3] = create_design_matrix_partitions(participant_order_3, data3, ...
-                regression_type, partition);
+                regression_type, partition, type_of_effect);
 
         data = [new_participants1, new_participants2, new_participants3];
         null_data = set_values_to_zero(data); % create null data to hack a t-test
@@ -211,7 +149,7 @@ elseif contains(experiment_type, 'partitions')
             design_matrix = design_matrix - mean(design_matrix);
         end
     end
-    %plot_design_matrix(design_matrix, n_part)
+    plot_design_matrix(design_matrix, n_part)
 end
 
 
@@ -220,33 +158,33 @@ end
 % load data_agg
 % cd(master_dir);
 % 
-% cfg = [];
-% cfg.foilim = [30 80];
-% cfg.toilim = [-0.2 0.8];
-% cfg.parameter = 'powspctrm';
-% grand_avg = ft_freqgrandaverage(cfg, thick{:});
-% grand_avg.elec = data_agg{1}.elec;
-% 
-% cfg = [];
-% %cfg.layout = data_agg{1}.elec;
-% cfg.channel = 'A23';
-% cfg.baseline = [-0.1 0];
-% cfg.baselinetype = 'db';
-% cfg.xlim = [-0.1 0.8];
-% cfg.zlim = [-18 18];
-% cfg.colorbar = 'yes';
-% cfg.colormap = 'jet';
-% cfg.showlabels = 'yes';
-% cfg.parameter = 'powspctrm';
-% ft_singleplotTFR(cfg, grand_avg);
-% % ft_topoplotTFR(cfg, grand_avg);
+cfg = [];
+cfg.foilim = [30 80];
+cfg.toilim = [-0.2 0.8];
+cfg.parameter = 'powspctrm';
+grand_avg = ft_freqgrandaverage(cfg, thick{:});
+grand_avg.elec = data_agg{1}.elec;
+
+cfg = [];
+%cfg.layout = data_agg{1}.elec;
+cfg.channel = 'A23';
+cfg.baseline = [-0.1 0];
+cfg.baselinetype = 'db';
+cfg.xlim = [-0.1 0.8];
+cfg.zlim = [-18 18];
+cfg.colorbar = 'yes';
+cfg.colormap = 'jet';
+cfg.showlabels = 'yes';
+cfg.parameter = 'powspctrm';
+ft_singleplotTFR(cfg, grand_avg);
+% ft_topoplotTFR(cfg, grand_avg);
 
 %% setup FT analysis
 % we have to switch to SPM8 to use some of the functions in FT
-%cd("C:\Users\marga\Documents\MATLAB");
-%rmpath spm12;
-%addpath spm8;
-%cd(master_dir);
+cd("C:\Users\marga\Documents\MATLAB");
+rmpath spm12;
+addpath spm8;
+cd(master_dir);
 %data=data_PGI;
 %data=old_data;
 
@@ -269,7 +207,7 @@ cfg.method = 'montecarlo';
 cfg.correctm = 'cluster';
 cfg.neighbours = neighbours;
 cfg.clusteralpha = 0.025;
-cfg.numrandomization = 1000;
+cfg.numrandomization = 10000;
 cfg.alpha = 0.05;
 cfg.tail = tails; % 0 = two-tailed, 1 = one-tailed
 cfg.correcttail = 'alpha';
@@ -328,13 +266,13 @@ elseif contains(experiment_type, 'onsets-factor')
         stat_hg = ft_freqstatistics(cfg, data_PGI{:});
     end
 elseif contains(experiment_type, 'partitions')
-%     cfg.ivar = 1;
-%     cfg.frequency = [8 13];
-%     stat_a = ft_freqstatistics(cfg, data{:});
-%     cfg.frequency = [20 35];
-%     stat_b = ft_freqstatistics(cfg, data{:});
-%     cfg.frequency = [30 45];
-%     stat_lg = ft_freqstatistics(cfg, data{:});
+    cfg.ivar = 1;
+    cfg.frequency = [8 13];
+    stat_a = ft_freqstatistics(cfg, data{:});
+    cfg.frequency = [20 35];
+    stat_b = ft_freqstatistics(cfg, data{:});
+    cfg.frequency = [30 45];
+    stat_lg = ft_freqstatistics(cfg, data{:});
     cfg.frequency = [45 60];
     stat_mg = ft_freqstatistics(cfg, data{:});
     cfg.frequency = [60 80];
@@ -417,15 +355,15 @@ make_plots = 'yes';
 xlim = end_latency*1000;
 if tails == 1
     title = 'Most positive going cluster through time as a % of entire volume';
-    figure(6)
+    figure(1)
     calculate_cluster_size(stat_a, 1, make_plots, title, xlim, 'positive');
-    figure(7)
+    figure(2)
     calculate_cluster_size(stat_b, 1, make_plots, title, xlim, 'positive');
-    figure(8)
+    figure(3)
     calculate_cluster_size(stat_lg, 1, make_plots, title, xlim, 'positive');
-    figure(9)
+    figure(4)
     calculate_cluster_size(stat_mg, 1, make_plots, title, xlim, 'positive');
-    figure(10)
+    figure(5)
     calculate_cluster_size(stat_hg, 1, make_plots, title, xlim, 'positive');
 else
     %title = 'Most positive (up) and negative (down) going clusters through time as a % of entire volume';
@@ -455,10 +393,10 @@ else
 end
 
 %% plot PGI and conditions, mean/intercept-onsets only
-cd("C:\Users\marga\Desktop\Research Project\participants_Austyn")
-load thin
-load med
-load thick
+cd("C:\Users\marga\Desktop\Research Project\scripts")
+load thin_correct
+load med_correct
+load thick_correct
 cd(master_dir)
 
 pause('on')
@@ -551,7 +489,7 @@ end
 %calculate median split for PGI and conditions
 [PGI_p1,PGI_p2,PGI_p3,thin_p1,thin_p2,thin_p3,...
     med_p1,med_p2,med_p3,thick_p1,thick_p2,thick_p3] = median_split_partitions_factor(master_dir,...
-    data1,data2,data3,participant_order_1,regression_type,end_latency);
+    data1,data2,data3,participant_order_1,regression_type,type_of_effect,end_latency);
 
 %% plotting for median split partitions
 pause('on')
@@ -1658,26 +1596,35 @@ end
 %% find median split for factors, partitions
 function [PGI_series1,PGI_series2,PGI_series3,thin_series1,thin_series2,thin_series3,...
     med_series1,med_series2,med_series3,thick_series1,thick_series2,thick_series3] = median_split_partitions_factor(master_dir,...
-    data1,data2,data3,participant_order,regression_type,end_latency)
-    cd("C:\Users\marga\Desktop\Research Project\participants_Austyn")
-    load thin_partition1
-    load med_partition1
-    load thick_partition1
-    load thin_partition2
-    load med_partition2
-    load thick_partition2
-    load thin_partition3
-    load med_partition3
-    load thick_partition3
+    data1,data2,data3,participant_order,regression_type,type_of_effect,end_latency)
+    cd("C:\Users\marga\Desktop\Research Project\scripts")
+    load thin_partition1_correct
+    thin1 = thin1(1:33);
+    load med_partition1_correct
+    med1 = med1(1:33);
+    load thick_partition1_correct
+    thick1 = thick1(1:33);
+    load thin_partition2_correct
+    thin2 = thin2(1:33);
+    load med_partition2_correct
+    med2 = med2(1:33);
+    load thick_partition2_correct
+    thick2 = thick2(1:33);
+    load thin_partition3_correct
+    thin3 = thin3(1:33);
+    load med_partition3_correct
+    med3 = med3(1:33);
+    load thick_partition3_correct
+    thick3 = thick3(1:33);
     cd(master_dir);
     
     partition=1;
-    [PGI_data_high1, PGI_data_low1] = get_median_split(data1, participant_order, regression_type, partition);
+    [PGI_data_high1, PGI_data_low1] = get_median_split(data1, participant_order, regression_type, type_of_effect, partition);
     PGI_grand_avgs_high1 = calculate_freq_avg(PGI_data_high1,end_latency);
     PGI_grand_avgs_low1 = calculate_freq_avg(PGI_data_low1,end_latency);
-    [thin_data_high1, thin_data_low1] = get_median_split(thin1,participant_order,regression_type,partition);
-    [med_data_high1, med_data_low1] = get_median_split(med1,participant_order,regression_type,partition);
-    [thick_data_high1, thick_data_low1] = get_median_split(thick1,participant_order,regression_type,partition);
+    [thin_data_high1, thin_data_low1] = get_median_split(thin1,participant_order,regression_type,type_of_effect,partition);
+    [med_data_high1, med_data_low1] = get_median_split(med1,participant_order,regression_type,type_of_effect,partition);
+    [thick_data_high1, thick_data_low1] = get_median_split(thick1,participant_order,regression_type,type_of_effect,partition);
     thin_grand_avgs_high1 = calculate_avg_conditions(thin_data_high1,end_latency);
     thin_grand_avgs_low1 = calculate_avg_conditions(thin_data_low1,end_latency);
     med_grand_avgs_high1 = calculate_avg_conditions(med_data_high1,end_latency);
@@ -1686,12 +1633,12 @@ function [PGI_series1,PGI_series2,PGI_series3,thin_series1,thin_series2,thin_ser
     thick_grand_avgs_low1 = calculate_avg_conditions(thick_data_low1,end_latency);
     
     partition=2;
-    [PGI_data_high2, PGI_data_low2] = get_median_split(data2, participant_order, regression_type, partition);
+    [PGI_data_high2, PGI_data_low2] = get_median_split(data2, participant_order, regression_type,type_of_effect, partition);
     PGI_grand_avgs_high2 = calculate_freq_avg(PGI_data_high2,end_latency);
     PGI_grand_avgs_low2 = calculate_freq_avg(PGI_data_low2,end_latency);
-    [thin_data_high2, thin_data_low2] = get_median_split(thin2,participant_order,regression_type,partition);
-    [med_data_high2, med_data_low2] = get_median_split(med2,participant_order,regression_type,partition);
-    [thick_data_high2, thick_data_low2] = get_median_split(thick2,participant_order,regression_type,partition);
+    [thin_data_high2, thin_data_low2] = get_median_split(thin2,participant_order,regression_type,type_of_effect,partition);
+    [med_data_high2, med_data_low2] = get_median_split(med2,participant_order,regression_type,type_of_effect,partition);
+    [thick_data_high2, thick_data_low2] = get_median_split(thick2,participant_order,regression_type,type_of_effect,partition);
     thin_grand_avgs_high2 = calculate_avg_conditions(thin_data_high2,end_latency);
     thin_grand_avgs_low2 = calculate_avg_conditions(thin_data_low2,end_latency);
     med_grand_avgs_high2 = calculate_avg_conditions(med_data_high2,end_latency);
@@ -1700,12 +1647,12 @@ function [PGI_series1,PGI_series2,PGI_series3,thin_series1,thin_series2,thin_ser
     thick_grand_avgs_low2 = calculate_avg_conditions(thick_data_low2,end_latency);
     
     partition=3;
-    [PGI_data_high3, PGI_data_low3] = get_median_split(data3, participant_order, regression_type, partition);
+    [PGI_data_high3, PGI_data_low3] = get_median_split(data3, participant_order, regression_type,type_of_effect, partition);
     PGI_grand_avgs_high3 = calculate_freq_avg(PGI_data_high3,end_latency);
     PGI_grand_avgs_low3 = calculate_freq_avg(PGI_data_low3,end_latency);
-    [thin_data_high3, thin_data_low3] = get_median_split(thin3,participant_order,regression_type,partition);
-    [med_data_high3, med_data_low3] = get_median_split(med3,participant_order,regression_type,partition);
-    [thick_data_high3, thick_data_low3] = get_median_split(thick3,participant_order,regression_type,partition);
+    [thin_data_high3, thin_data_low3] = get_median_split(thin3,participant_order,regression_type,type_of_effect,partition);
+    [med_data_high3, med_data_low3] = get_median_split(med3,participant_order,regression_type,type_of_effect,partition);
+    [thick_data_high3, thick_data_low3] = get_median_split(thick3,participant_order,regression_type,type_of_effect,partition);
     thin_grand_avgs_high3 = calculate_avg_conditions(thin_data_high3,end_latency);
     thin_grand_avgs_low3 = calculate_avg_conditions(thin_data_low3,end_latency);
     med_grand_avgs_high3 = calculate_avg_conditions(med_data_high3,end_latency);
@@ -2341,7 +2288,7 @@ function grand_avgs_condition = calculate_avg_conditions(data_condition,end_late
 end
 
 %% calculate median splits
-function [data_high, data_low] = get_median_split(data, participant_order, regression_type, partition)
+function [data_high, data_low] = get_median_split(data, participant_order, regression_type,type_of_effect, partition)
     function split_data = get_participants(data, all_ids, current_ids)
         cnt = 1;
         split_data = {};
@@ -2356,7 +2303,7 @@ function [data_high, data_low] = get_median_split(data, participant_order, regre
         end      
     end    
 
-    scores = return_scores(regression_type);
+    scores = return_scores(regression_type,type_of_effect);
     
     if partition == 1
         ratings = scores.one;
@@ -2414,15 +2361,39 @@ function calculate_cluster_size(stat, desired_cluster, make_plots, ptitle, xlim_
     
 end
 
-%% compute best electrode
-function peak_stat_info = compute_best_electrode_from_t_values(stat, electrode_stats,tail, peak_stat_info)
-    significant_masks = stat.mask;
+%% plot the t values through time and select the best electrode
+function peak_stat_info = compute_best_electrode_from_t_values(stat, electrode_stats, save_dir, tail, peak_stat_info)
+    
+    % updates the mask matrix with 0s if not in any of the clusters found
+    % in the label matrix
+    function significant_masks = update_mask_matrix(stat, tail)
+        significant_masks = stat.mask;
+        
+        if strcmp(tail, 'positive')
+            cla = stat.posclusterslabelmat;
+        else
+            cla = stat.negclusterslabelmat;
+        end
+
+        for k = 1:size(cla, 1)
+            for j = 1:size(cla, 2)
+                cluster_assgn = cla(k, j);
+                if cluster_assgn == 0
+                    significant_masks(k, j) = 0;
+                end
+            end
+        end
+    end
+
+    significant_masks = update_mask_matrix(stat, tail);
     electrodes = electrode_stats.electrodes;
     
     if strcmp(tail, 'positive')
         cluster_labels = stat.posclusterslabelmat;
+        fname = '\positive_t_values_through_time.png';
     else
         cluster_labels = stat.negclusterslabelmat;
+        fname = '\negative_t_values_through_time.png';
     end
     
     time = stat.time;
@@ -2453,8 +2424,10 @@ function peak_stat_info = compute_best_electrode_from_t_values(stat, electrode_s
             most_significant_electrode = e;
             previous_best = significance_count;
         end
-%         plot(time, raw_time_series);
-%         hold on;
+        if sum(raw_time_series) > 0
+            plot(time, raw_time_series);
+            hold on;
+        end
     end
     
    [col, ~] = size(electrode_stats);
@@ -2466,10 +2439,12 @@ function peak_stat_info = compute_best_electrode_from_t_values(stat, electrode_s
           peak_stat_info.t_value = electrode_stats.t_value(i);
       end
    end
-%     xlabel('Time (ms)');
-%     ylabel('Cumulative Frequency (If T-value is significant');
-%     legend(electrodes,'Location','northwest')
-%     title(strcat('Sustained Significant Electrode:',most_significant_electrode)); 
+       
+    
+    xlabel('Time (ms)');
+    ylabel('Cumulative Frequency (If T-value is significant');
+    legend(electrodes,'Location','northwest')
+    title(strcat('Sustained Significant Electrode:',most_significant_electrode)); 
 end
 
 %% used to generate 'peak' level stats
@@ -2485,8 +2460,8 @@ function [peak_level_electrode, all_electrode_stats] = get_peak_level_stats(stat
         cluster_matrix_locations = stat.negclusterslabelmat;
     end
     
+ 
     [rows, columns] = size(cluster_matrix_locations);
-    
     for col = 1:columns
         for row = 1:rows
             
@@ -2511,6 +2486,8 @@ function [peak_level_electrode, all_electrode_stats] = get_peak_level_stats(stat
             end
         end 
     end
+
+
     peak_level_electrode = get_most_significant_electrode(peak_level_stats, type);
     all_electrode_stats = get_all_electrode_stats(peak_level_stats, type);
 end
@@ -2562,7 +2539,6 @@ function most_significant = get_most_significant_electrode(peak_level_stats, typ
         end
     end
 end
-
 %% set all my values to 0 to hack a T test
 function data = set_values_to_zero(data)
     for idx = 1:numel(data)
@@ -2574,17 +2550,34 @@ function data = set_values_to_zero(data)
     end
 end
 %% function to create the design matrix for all experiments
+%% function to create the design matrix for all experiments
 function [design, new_participants] = create_design_matrix_partitions(participant_order, participants, ...
-    regression_type, partition)
+    regression_type, partition, type_of_effect)
+
+    scores = return_scores(regression_type, type_of_effect);
     
-    scores = return_scores(regression_type);
-    
-    if partition == 1
-        ratings = scores.one;
-    elseif partition == 2
-        ratings = scores.two;
-    elseif partition == 3
-        ratings = scores.three;
+    if strcmp(regression_type, 'headache-scores-entire-median-split') ...
+            || strcmp(regression_type, 'discomfort-scores-entire-median-split') ...
+            || strcmp(regression_type, 'vs-scores-entire-median-split')
+        score = scores.one;
+        calc(:,1) = score(:,2);
+        calc(:,2) = score(:,1);
+        calc = sortrows(calc);
+        [rows, ~] = size(calc);
+        calc(1:rows/2,1) = -1;
+        calc(((rows+1)/2):rows,1) =1;
+        ratings(:,1) = calc(:,2);
+        ratings(:,2) = calc(:,1);      
+    else
+        if partition == 1
+            ratings = scores.one;
+        elseif partition == 2
+            ratings = scores.two;
+        elseif partition == 3
+            ratings = scores.three;
+        elseif partition == 0
+            ratings = scores.one;
+        end
     end
     
     new_participants = {};
@@ -2592,7 +2585,7 @@ function [design, new_participants] = create_design_matrix_partitions(participan
     for j = 1:numel(participant_order)
         participant = participant_order(j);
         score = ratings(find(ratings(:,1)==participant),2);
-        
+
         if numel(score) > 0
             design(1,cnt)=score;
             new_participants{cnt} = participants{j};
@@ -2601,8 +2594,259 @@ function [design, new_participants] = create_design_matrix_partitions(participan
     end
     
 end
+%% return scores
+function scores = return_scores(regression_type, type_of_effect)
+    if strcmp(regression_type, 'no-factor') || contains(regression_type, 'eye')
+        dataset = [
+            1, 1; 2, 1; 3, 1; 4, 1; 5, 1; 6, 1; 7, 1; 8, 1; 9, 1; 10, 1; 11, 1; 12, 1; 13, 1; 14, 1; 15, 1;
+            16, 1; 17, 1; 18, 1; 19, 1; 20, 1; 21, 1; 22, 1; 23, 1; 24, 1; 25, 1; 26, 1; 27, 1; 28, 1;
+            29, 1; 30, 1; 31, 1; 32, 1; 33, 1; 34, 1; 35, 1; 36, 1; 37, 1; 38, 1; 39, 1; 40, 1;
+                ];
 
-function scores = return_scores(regression_type)
+        scores.one = dataset;
+        scores.two = dataset;
+        scores.three = dataset;
+        
+    elseif strcmp(regression_type, 'headache-mean-intercept')
+        dataset = [
+        1,-0.2574;2,-0.0417;3,-0.6726;4,0.4236;5,1.781;6,-1.0608;7,-0.7657;
+        8,0.1279;9,-0.6553;10,-0.2896;11,-0.5122;12,2.1424;13,-0.1803;
+        14,1.4491;16,0.1157;17,-0.1649;20,-0.4721;21,1.0486;22,-0.554;23,-0.8912;
+        24,-0.4481;25,-0.7581;26,-1.2784;28,0.2989;29,0.0439;30,-0.4732;31,-0.7701;
+        32,-0.7037;33,-0.819;34,-0.7987;37,1.1507;38,-0.2806;39,0.8546;40,-0.3823;   
+        ];
+    
+        scores.one = dataset;
+    
+    elseif strcmp(regression_type, 'discomfort_p1') || strcmp(regression_type, 'discomfort_p2') || strcmp(regression_type, 'discomfort_p3')
+        dataset = [
+            1, -0.264; 2, 0.4459; 3, -0.49781; 4, 1.77666; 5, -0.55638; 6, 0.87174; 7, -0.68504; 8, 0.92835; 9, -0.80581; 10, -0.87505;
+            11, 0.39111; 12, -0.76054; 13, -0.68987; 14, 1.60776; 15, -0.19637; 16, 1.13956; 17, 1.53606; 19, -0.08254; 20, 0.12186;
+            21, 0.08428; 22, 0.61663; 23, -1.47958; 24, 2.28422; 25, -0.80891; 26, -0.55738; 27, 0.2238; 28, -0.93291; 29, 0.3791; 30, -0.63074;
+            31, 2.14683; 32, -1.49948; 33, 1.21954; 34, -0.79734; 35, -0.51303; 36, -1.0687; 37, -0.61345; 38, -1.02592; 39, -0.87653; 40, 0.444;
+        ];
+        scores.one = dataset;
+
+    elseif strcmp(regression_type, 'headache_p1') || strcmp(regression_type, 'headache_p2') || strcmp(regression_type, 'headache_p3')
+        dataset = [
+            1, -0.22667; 2, -0.05198; 3, -0.72116; 4, 0.53139; 5, 1.72021; 6, -1.17636; 7, -0.79706; 8, 0.19942; 9, -0.6924;
+            10, -0.35826; 11, -0.58533; 12, 2.04136; 13, -0.26573; 14, 1.30963; 15, 3.4497; 16, 0.00172; 17, -0.15026; 19, -0.55639;
+            20, -0.41626; 21, 1.14373; 22, -0.56513; 23, -0.72755; 24, -0.43472; 25, -0.69897; 26, -1.34952; 27, 1.40986; 28, 0.36296; 29, 0.04162;
+            30, -0.4697; 31, -0.70362; 32, -0.73219; 33, -0.88081; 34, -0.79623; 35, -0.75114; 36, 0.09594; 37, 1.22665; 38, -0.3365; 39, 1.07651;
+            40, -0.16678; 
+        ];
+        
+        scores.one = dataset;
+    elseif strcmp(regression_type, 'visual_stress_p1') || strcmp(regression_type, 'visual_stress_p2') || strcmp(regression_type, 'visual_stress_p3')
+        dataset = [
+            1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
+            11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
+            21, 1.0008; 22, -0.11689; 23, 1.72091; 24, 0.14105; 25, 0.62214; 26, -0.74829; 27, 2.02421; 28, 0.67386; 29, -0.02367;
+            30, 0.03638; 31, 0.6996; 32, -0.29977; 33, -0.64998; 34, 0.02624; 35, -0.82177; 36, -0.42512; 37, 0.79861; 38, -0.58832; 39, 2.33323;
+            40, 2.26667;
+        ];
+        scores.one = dataset;
+
+    elseif strcmp(regression_type, 'headache-orthog')
+        
+        load D:\PhD\misc\orthog_headache.mat 
+        
+        scores.one = factor_of_interest(1:39,:);
+        scores.two = factor_of_interest(40:78,:);
+        scores.three = factor_of_interest(79:117,:);
+
+
+    elseif strcmp(regression_type, 'discomfort-orthog')
+    
+    if strcmp(type_of_effect, 'habituation')
+        load D:\PhD\misc\orthog_discomfort.mat 
+        scores.one = factor_of_interest(1:39,:);
+        scores.two = factor_of_interest(40:78,:);
+        scores.three = factor_of_interest(79:117,:);
+    else
+        load D:\PhD\misc\orthog_discomfort_sensitization.mat
+    end
+    
+    elseif strcmp(regression_type, 'headache')
+        dataset = [
+            1, -0.22667; 2, -0.05198; 3, -0.72116; 4, 0.53139; 5, 1.72021; 6, -1.17636; 7, -0.79706; 8, 0.19942; 9, -0.6924;
+            10, -0.35826; 11, -0.58533; 12, 2.04136; 13, -0.26573; 14, 1.30963; 15, 3.4497; 16, 0.00172; 17, -0.15026; 19, -0.55639;
+            20, -0.41626; 21, 1.14373; 22, -0.56513; 23, -0.72755; 24, -0.43472; 25, -0.69897; 26, -1.34952; 27, 1.40986; 28, 0.36296; 29, 0.04162;
+            30, -0.4697; 31, -0.70362; 32, -0.73219; 33, -0.88081; 34, -0.79623; 35, -0.75114; 36, 0.09594; 37, 1.22665; 38, -0.3365; 39, 1.07651;
+            40, -0.16678; 
+        ];
+
+        scores.one = dataset;
+        scores.two = dataset;
+        scores.three = dataset;
+    
+        min_n = min(scores.one);
+        scores.one(:,2) = scores.one(:,2) - min_n(2);
+        scores.two(:,2) = scores.two(:,2) - min_n(2);
+        scores.three(:,2) = scores.three(:,2) - min_n(2);
+        
+        if strcmp(type_of_effect, 'habituation')
+            scores.one(:,2) = scores.one(:,2) * 2.72;
+            scores.two(:,2) = scores.two(:,2) * 1.65;
+            scores.three(:,2) = scores.three(:,2) * 1.00;
+        elseif strcmp(type_of_effect, 'sensitization')
+            scores.one(:,2) = scores.one(:,2) * 1.00;
+            scores.two(:,2) = scores.two(:,2) * 1.65;
+            scores.three(:,2) = scores.three(:,2) * 2.72;
+        else
+            error('Type of experiment not properly specified');
+        end
+        
+        [n_participants, ~] = size(dataset);
+        
+        for k=1:n_participants
+            p1 = scores.one(k,1);
+            p2 = scores.two(k,1);
+            p3 = scores.three(k,1);
+            
+            if p1 == p2 && p2 == p3                
+                if strcmp(type_of_effect, 'habituation')
+                    to_remove = scores.three(k,2);
+                elseif strcmp(type_of_effect, 'sensitization')
+                    to_remove = scores.one(k,2);
+                end
+                
+                scores.one(k,2) = scores.one(k,2) - to_remove;
+                scores.two(k,2) = scores.two(k,2) - to_remove;
+                scores.three(k,2) = scores.three(k,2) - to_remove;
+            else
+                error('Participants do not align...')
+            end
+        end     
+    elseif strcmp(regression_type, 'visual_stress_orthog')
+        if strcmp(type_of_effect, 'habituation')
+            load D:\PhD\misc\orthog_vs_sensitization.mat
+            scores.one = factor_of_interest(1:39,:);
+            scores.two = factor_of_interest(40:78,:);
+            scores.three = factor_of_interest(79:117,:);
+        else
+            load D:\PhD\misc\orthog_discomfort_sensitization.mat
+            scores.one = factor_of_interest(1:39,:);
+            scores.two = factor_of_interest(40:78,:);
+            scores.three = factor_of_interest(79:117,:);
+        end
+
+
+    elseif strcmp(regression_type, 'visual_stress')
+       dataset = [
+            1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
+            11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
+            21, 1.0008; 22, -0.11689; 23, 1.72091; 24, 0.14105; 25, 0.62214; 26, -0.74829; 27, 2.02421; 28, 0.67386; 29, -0.02367;
+            30, 0.03638; 31, 0.6996; 32, -0.29977; 33, -0.64998; 34, 0.02624; 35, -0.82177; 36, -0.42512; 37, 0.79861; 38, -0.58832; 39, 2.33323;
+            40, 2.26667;
+        ];
+
+%         dataset = [
+%         1,0.323;2,-0.109;3,-0.51;4,1.134;5,-0.639;6,-1.215;7,-0.33;8,0.752;
+%         9,-0.39;10,-0.722;11,-0.769;12,-1.063;13,-0.899;14,-1.467;16,-1.199;
+%         17,0.154;20,0.587;21,1.001;22,-0.117;23,1.721;24,0.141;25,0.622;
+%         26,-0.748;28,0.674;29,-0.024;30,0.036;31,0.7;32,-0.3;33,-0.65;
+%         34,0.026;37,0.799;38,-0.588;39,2.333;40,2.267;
+%         ];
+
+        scores.one = dataset;
+        scores.two = dataset;
+        scores.three = dataset;
+    
+        min_n = min(scores.one);
+        scores.one(:,2) = scores.one(:,2) - min_n(2);
+        scores.two(:,2) = scores.two(:,2) - min_n(2);
+        scores.three(:,2) = scores.three(:,2) - min_n(2);
+    
+        if strcmp(type_of_effect, 'habituation')
+            scores.one(:,2) = scores.one(:,2) * 2.72;
+            scores.two(:,2) = scores.two(:,2) * 1.65;
+            scores.three(:,2) = scores.three(:,2) * 1.00;
+        elseif strcmp(type_of_effect, 'sensitization')
+            scores.one(:,2) = scores.one(:,2) * 1.00;
+            scores.two(:,2) = scores.two(:,2) * 1.65;
+            scores.three(:,2) = scores.three(:,2) * 2.72;
+        else
+            error('Type of experiment not properly specified');
+        end
+        
+        [n_participants, ~] = size(dataset);
+        
+        for k=1:n_participants
+            p1 = scores.one(k,1);
+            p2 = scores.two(k,1);
+            p3 = scores.three(k,1);
+            
+            if p1 == p2 && p2 == p3
+                if strcmp(type_of_effect, 'habituation')
+                    to_remove = scores.three(k,2);
+                elseif strcmp(type_of_effect, 'sensitization')
+                    to_remove = scores.one(k,2);
+                end
+                
+                scores.one(k,2) = scores.one(k,2) - to_remove;
+                scores.two(k,2) = scores.two(k,2) - to_remove;
+                scores.three(k,2) = scores.three(k,2) - to_remove;
+            else
+                error('Participants do not align...')
+            end
+        end
+
+    elseif strcmp(regression_type, 'discomfort')
+        dataset = [
+            1, -0.264; 2, 0.4459; 3, -0.49781; 4, 1.77666; 5, -0.55638; 6, 0.87174; 7, -0.68504; 8, 0.92835; 9, -0.80581; 10, -0.87505;
+            11, 0.39111; 12, -0.76054; 13, -0.68987; 14, 1.60776; 15, -0.19637; 16, 1.13956; 17, 1.53606; 19, -0.08254; 20, 0.12186;
+            21, 0.08428; 22, 0.61663; 23, -1.47958; 24, 2.28422; 25, -0.80891; 26, -0.55738; 27, 0.2238; 28, -0.93291; 29, 0.3791; 30, -0.63074;
+            31, 2.14683; 32, -1.49948; 33, 1.21954; 34, -0.79734; 35, -0.51303; 36, -1.0687; 37, -0.61345; 38, -1.02592; 39, -0.87653; 40, 0.444;
+        ];
+    
+        scores.one = dataset;
+        scores.two = dataset;
+        scores.three = dataset;
+
+        min_n = min(scores.one);
+        scores.one(:,2) = scores.one(:,2) - min_n(2);
+        scores.two(:,2) = scores.two(:,2) - min_n(2);
+        scores.three(:,2) = scores.three(:,2) - min_n(2);
+    
+    
+        if strcmp(type_of_effect, 'habituation')
+            scores.one(:,2) = scores.one(:,2) * 2.72;
+            scores.two(:,2) = scores.two(:,2) * 1.65;
+            scores.three(:,2) = scores.three(:,2) * 1.00;
+        elseif strcmp(type_of_effect, 'sensitization')
+            scores.one(:,2) = scores.one(:,2) * 1.00;
+            scores.two(:,2) = scores.two(:,2) * 1.65;
+            scores.three(:,2) = scores.three(:,2) * 2.72;
+        else
+            error('Type of experiment not properly specified');
+        end
+        
+        [n_participants, ~] = size(dataset);
+        
+        for k=1:n_participants
+            p1 = scores.one(k,1);
+            p2 = scores.two(k,1);
+            p3 = scores.three(k,1);
+            
+            if p1 == p2 && p2 == p3
+                if strcmp(type_of_effect, 'habituation')
+                    to_remove = scores.three(k,2);
+                elseif strcmp(type_of_effect, 'sensitization')
+                    to_remove = scores.one(k,2);
+                end
+                
+                scores.one(k,2) = scores.one(k,2) - to_remove;
+                scores.two(k,2) = scores.two(k,2) - to_remove;
+                scores.three(k,2) = scores.three(k,2) - to_remove;
+            else
+                error('Participants do not align...')
+            end
+        end
+    end
+end
+
+function scores = return_scores_mine(regression_type)
     if contains(regression_type, 'headache')
         scores.one = [
         1,-0.227;2,-0.052;3,-0.721;4,0.531;5,1.72;6,-1.176;7,-0.797;
@@ -2674,28 +2918,28 @@ function scores = return_scores(regression_type)
 %         33,-0.411071967;37,-0.411071967;38,-0.411071967;39,-0.411071967;40,-0.411071967];
         
     elseif contains(regression_type, 'visual stress')
-       scores.one = [
-            1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
-            11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
-            21, 1.0008; 22, -0.11689; 23, 1.72091; 24, 0.14105; 25, 0.62214; 26, -0.74829; 27, 2.02421; 28, 0.67386; 29, -0.02367;
-            30, 0.03638; 31, 0.6996; 32, -0.29977; 33, -0.64998; 34, 0.02624; 35, -0.82177; 36, -0.42512; 37, 0.79861; 38, -0.58832; 39, 2.33323;
-            40, 2.26667;
+        scores.one = [
+        1,0.323;2,-0.109;3,-0.51;4,1.134;5,-0.639;6,-1.215;7,-0.33;8,0.752;
+        9,-0.39;10,-0.722;11,-0.769;12,-1.063;13,-0.899;14,-1.467;16,-1.199;
+        17,0.154;20,0.587;21,1.001;22,-0.117;23,1.721;24,0.141;25,0.622;
+        26,-0.748;28,0.674;29,-0.024;30,0.036;31,0.7;32,-0.3;33,-0.65;
+        34,0.026;37,0.799;38,-0.588;39,2.333;40,2.267;
         ];
-
-       scores.two = [
-            1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
-            11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
-            21, 1.0008; 22, -0.11689; 23, 1.72091; 24, 0.14105; 25, 0.62214; 26, -0.74829; 27, 2.02421; 28, 0.67386; 29, -0.02367;
-            30, 0.03638; 31, 0.6996; 32, -0.29977; 33, -0.64998; 34, 0.02624; 35, -0.82177; 36, -0.42512; 37, 0.79861; 38, -0.58832; 39, 2.33323;
-            40, 2.26667;
+    
+        scores.two = [
+        1,0.323;2,-0.109;3,-0.51;4,1.134;5,-0.639;6,-1.215;7,-0.33;8,0.752;
+        9,-0.39;10,-0.722;11,-0.769;12,-1.063;13,-0.899;14,-1.467;16,-1.199;
+        17,0.154;20,0.587;21,1.001;22,-0.117;23,1.721;24,0.141;25,0.622;
+        26,-0.748;28,0.674;29,-0.024;30,0.036;31,0.7;32,-0.3;33,-0.65;
+        34,0.026;37,0.799;38,-0.588;39,2.333;40,2.267;
         ];
-
-       scores.three = [
-            1, 0.3227; 2, -0.10861; 3, -0.51018; 4, 1.1336; 5, -0.63947; 6, -1.21472; 7, -0.33005; 8, 0.75238; 9, -0.39025; 10, -0.72205;
-            11, -0.76904; 12, -1.06297; 13, -0.89853; 14, -1.46715; 15, -1.87343; 16, -1.19871; 17, 0.15415; 19, -0.43427; 20, 0.5867;
-            21, 1.0008; 22, -0.11689; 23, 1.72091; 24, 0.14105; 25, 0.62214; 26, -0.74829; 27, 2.02421; 28, 0.67386; 29, -0.02367;
-            30, 0.03638; 31, 0.6996; 32, -0.29977; 33, -0.64998; 34, 0.02624; 35, -0.82177; 36, -0.42512; 37, 0.79861; 38, -0.58832; 39, 2.33323;
-            40, 2.26667;
+    
+        scores.three = [
+        1,0.323;2,-0.109;3,-0.51;4,1.134;5,-0.639;6,-1.215;7,-0.33;8,0.752;
+        9,-0.39;10,-0.722;11,-0.769;12,-1.063;13,-0.899;14,-1.467;16,-1.199;
+        17,0.154;20,0.587;21,1.001;22,-0.117;23,1.721;24,0.141;25,0.622;
+        26,-0.748;28,0.674;29,-0.024;30,0.036;31,0.7;32,-0.3;33,-0.65;
+        34,0.026;37,0.799;38,-0.588;39,2.333;40,2.267;
         ];
     
         min_n = min(scores.one);
@@ -2796,15 +3040,17 @@ function scores = return_scores(regression_type)
 end
 
 %% return the SPM data in a fieldtrip format
- function [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants, main_path, filename, partition)
+function [thin_data,med_data,thick_data,fieldtrip_data_agg,fieldtrip_data_PGI,participant_order] = from_fieldtrip_to_spm(n_participants, main_path, filename, partition)
     fieldtrip_data_agg = {};
     fieldtrip_data_PGI = {};
     thin_data = {}; med_data = {}; thick_data = {};
     participant_order = [];
     cnt = 1;
-    for participant = 1:40
+    for participant = 1:n_participants
         disp(participant)
-        
+        thin = {};
+        med = {};
+        thick = {};
         participant_main_path = strcat(main_path, int2str(participant));
         if exist(participant_main_path, 'dir')
             if participant < 10
@@ -2815,11 +3061,9 @@ end
 
             % data structure
             data_structure = strcat('spmeeg_P', p);  
-            data_structure = strcat(data_structure, '_075_80hz.mat');
+            data_structure = strcat(data_structure, '_075_80hz_rejected_tempesta.mat');
             data_structure = strcat(filename, data_structure); 
             cd(participant_main_path); 
-            cd("SPM_ARCHIVE")
-
 
             if isfile(data_structure)
                 load(data_structure);
@@ -2830,34 +3074,30 @@ end
             spm_eeg = meeg(D);
             fieldtrip_raw = spm_eeg.ftraw;
             
-            thin = {};
-            med = {};
-            thick = {};
-            
             n_trials = size(D.trials);
             n_trials = n_trials(2);
             mt=1; tht=1; tt=1;
             for index_i = 1:n_trials
                 label = D.trials(index_i).label;
                 if partition.is_partition
-                    if contains(label, partition.partition_number) && contains(label, 'medium')
+                    if contains(label, partition.partition_number) && contains(label, '_9')
                         med(mt) = fieldtrip_raw.trial(index_i);
                         mt=mt+1;
-                    elseif contains(label, partition.partition_number) && contains(label, 'thin')
+                    elseif contains(label, partition.partition_number) && contains(label, '_8')
                         thin(tht) = fieldtrip_raw.trial(index_i);
                         tht=tht+1;
-                    elseif contains(label, partition.partition_number) && contains(label, 'thick')
+                    elseif contains(label, partition.partition_number) && contains(label, '_10')
                         thick(tt) = fieldtrip_raw.trial(index_i);
                         tt=tt+1;
                     end
                 else
-                     if contains(label, 'medium')
+                     if contains(label, '_9')
                         med(mt) = fieldtrip_raw.trial(index_i);
                         mt=mt+1;
-                    elseif contains(label, 'thin')
+                    elseif contains(label, '_8')
                         thin(tht) = fieldtrip_raw.trial(index_i);
                         tht=tht+1;
-                    elseif contains(label, 'thick')
+                    elseif contains(label, '_10')
                         thick(tt) = fieldtrip_raw.trial(index_i);
                         tt=tt+1;
                      end
@@ -2923,7 +3163,7 @@ end
             %crop the epoch
             TFRwave_med.time = TFRwave_med.time(200:end); %200 before, 46 after
             TFRwave_med.powspctrm = TFRwave_med.powspctrm(:,:,:,200:end);
-            TFRwave_thin.time = TFRwave_thin.time(200:end); 
+            TFRwave_thin.time = TFRwave_thin.time(200:end);
             TFRwave_thin.powspctrm = TFRwave_thin.powspctrm(:,:,:,200:end);
             TFRwave_thick.time = TFRwave_thick.time(200:end);
             TFRwave_thick.powspctrm = TFRwave_thick.powspctrm(:,:,:,200:end);

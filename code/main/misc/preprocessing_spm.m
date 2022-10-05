@@ -15,7 +15,7 @@ cd("D:\PhD");
     
 %% Change these variables depending on what you would like to do.
 main_path = 'D:\PhD\participant_';
-to_preprocess = {'partitions', 'mean_intercept'};
+to_preprocess = {'partitions'};
 type_of_analysis = 'frequency_domain'; % or time_domain
 
 onsets = [
@@ -23,7 +23,9 @@ onsets = [
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
+SPM_ONLY = 1;
 
+participant_data = [];
 
 %% main preprocessing loop
 for k=1:numel(to_preprocess)
@@ -41,7 +43,7 @@ for k=1:numel(to_preprocess)
     [n_onsets, ~] = size(onsets);
     for i=1:n_onsets
         subset_onsets = onsets(i,:);
-        for participant = 1:40
+        for participant = 39:40
 
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);
@@ -63,7 +65,7 @@ for k=1:numel(to_preprocess)
                 end
 
                 data_structure = strcat(data_structure, p);
-                data_structure = strcat(data_structure, '_075_80Hz_rejected_tempesta.mat');   
+                data_structure = strcat(data_structure, '_075_80Hz.mat');   
                 file_main_path = strcat(participant_main_path, data_structure);
                 save_path = strcat(participant_main_path, 'SPM_ARCHIVE\');
 
@@ -114,6 +116,7 @@ for k=1:numel(to_preprocess)
                 spm_jobman('run',matlabbatch)
                 clear matlabbatch
 
+                disp(participant);
 
                 %% determine whether we need to reject an entire particiapnt
                 data_structure = strcat('t1', data_structure);
@@ -126,6 +129,10 @@ for k=1:numel(to_preprocess)
                      delete(replace(dir, '.mat', '.dat'));
                      continue;
                  end
+
+                if SPM_ONLY == 1
+                    continue
+                end
 
                 %% load and convert from SPM > FieldTrip
                 load(dir);
@@ -671,6 +678,10 @@ function reject_participant = reject_particiapnt_based_on_bad_trials(file)
         is_bad = D.trials(onset).bad;
         onset_type = D.trials(onset).events.value;
             
+        if ~isstring(onset_type)
+            onset_type = int2str(onset_type);
+        end
+
         if sum(contains(onset_type, thin_onsets))
             thin(thin_count) = is_bad;
             thin_count = thin_count + 1;
