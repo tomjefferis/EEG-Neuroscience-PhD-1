@@ -4,10 +4,10 @@ restoredefaultpath;
 addpath('C:\External_Software\fieldtrip-20210807');
 addpath('C:\External_Software\spm12')
 ft_defaults;
-cd("D:\PhD");
+cd("E:\PhD");
     
 %% Change these variables depending on what you would like to do.
-main_path = 'D:\PhD\participant_';
+main_path = 'E:\PhD\participant_';
 to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
@@ -664,3 +664,5 @@ function new_trials = convert_to_fieldtrip_format(trials)
     end 
     
 end
+
+

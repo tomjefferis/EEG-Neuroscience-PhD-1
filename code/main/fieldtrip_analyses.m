@@ -1,17 +1,17 @@
 %% PATHS AND SETTING UP FIELDTRIP AND PATHS
 clear classes;
 clear all;
-master_dir = 'D:\PhD\fieldtrip';
-main_path = 'D:\PhD\participant_';
-results_dir = 'D:\PhD\results';
+master_dir = 'E:\PhD\fieldtrip';
+main_path = 'E:\PhD\participant_';
+results_dir = 'E:\PhD\results';
 addpath 'C:\External_Software\fieldtrip-20210807';
 addpath('C:\External_Software\spm12')
 ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};
-desired_design_mtxs = {"discomfort_p1"};
+experiment_types = {'three-way-interaction'};
+desired_design_mtxs = {"headache"};
 type_of_interaction = 'habituation';
 start_latency = 0.056;
 end_latency = 0.256;
@@ -29,7 +29,7 @@ weight_erps = 0; % weights based on quartiles
 weighting_factor = 0.75; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain_p1';
+type_of_analysis = 'time_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -37,12 +37,13 @@ if strcmp(type_of_analysis, 'frequency_domain')
     analyse_spectrogram = 1 ; % analysis on the aggregate power data?
     frequency_level = 'trial-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
-    toi = [0.000, 0.800];
-    foi_of_interest = [[45, 60]];
+    toi = [0.500, 3.000];
+    foi_of_interest = [[8, 13]; [20, 35]; [30,45]; [45, 60]; [60, 80]];
     analysis = 'load'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain') || strcmp(type_of_analysis, 'time_domain_p1')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
     foi_of_interest = [[-999, -999]];
+    toi = [0.056, 0.256];
 end
 
 %% OFF TO THE RACES WE GO
@@ -53,24 +54,30 @@ for f = 1:numel(foi_of_interest)
             experiment_type = experiment_types{exp_type};
             desired_design_mtx = desired_design_mtxs{j};
             %% create the results save path depending on the experiment
+
+            % time of interest
+            start_time = num2str(toi(1)*1000);
+            end_time = num2str(toi(2)*1000);
+            time_name = start_time + "_" + end_time + "ms";
+
             if strcmp(experiment_type, 'partitions-2-8')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\', type_of_interaction, '\ ', 'partitions', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis, '\', time_name,'\', type_of_interaction, '\ ', 'partitions', '\', desired_design_mtx);
             elseif contains(experiment_type, 'erps-23-45-67')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', type_of_interaction, '\ ', 'onsets', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name,'\', type_of_interaction, '\ ', 'onsets', '\', desired_design_mtx);
             elseif contains(experiment_type,'onsets-2-8-explicit')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', 'mean_intercept', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name, '\', 'mean_intercept', '\', desired_design_mtx);
             elseif strcmp(experiment_type, 'partitions_vs_onsets')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', type_of_interaction, '\ ', 'partitions_vs_onsets', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name,'\', type_of_interaction, '\ ', 'partitions_vs_onsets', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'trial-level-2-8')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', type_of_interaction, '\ ', 'trial_level_2_8', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name,'\',type_of_interaction, '\ ', 'trial_level_2_8', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'pure-factor-effect')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\' , 'pure-factor-effect', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis, '\' , time_name,'\','pure-factor-effect', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'factor_effect')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\ ', 'factor-effect', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis, '\ ', time_name,'\','factor-effect', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'three-way-interaction')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\', 'three-way-interaction', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '\', type_of_analysis, '\', time_name,'\','three-way-interaction', '\', desired_design_mtx);
             elseif strcmp(experiment_types, 'trial-level-2-8')
-                save_path = strcat(results_dir, '\', tpye_of_analysis, '\', 'trial_level');
+                save_path = strcat(results_dir, '\', tpye_of_analysis, '\', time_name,'\','trial_level');
             end
 
             % check if its a frequency experiment
@@ -90,7 +97,7 @@ for f = 1:numel(foi_of_interest)
             if contains(type_of_analysis, 'time_domain')
                 if strcmp(experiment_type, 'onsets-2-8-explicit')
 
-                    if contains(desired_design_mtxs, 'eye')
+                    if contains(desired_design_mtx, 'eye')
                         data_file = 'time_domain_eye_confound_onsets_2_3_4_5_6_7_8_grand-average.mat';
                     else
                         data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
@@ -114,7 +121,7 @@ for f = 1:numel(foi_of_interest)
                     %            regression_type, 0, type_of_effect);
                     design_matrix =  [1:n_part 1:n_part; ones(1,n_part) 2*ones(1,n_part)];
 
-                    if contains(desired_design_mtxs, 'eye')
+                    if contains(desired_design_mtx, 'eye')
                         data = apply_dummy_coordinates_to_eye_electrodes(data);
                     end
 
@@ -144,9 +151,9 @@ for f = 1:numel(foi_of_interest)
                     if region_of_interest == 1
                         if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect')
                             if strcmp(roi_applied, 'one-tailed')
-                                load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
                             elseif strcmp(roi_applied, 'two-tailed')
-                                load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
                             end
                         end
                         data = create_hacked_roi(data, roi, weight_roi);
@@ -243,9 +250,9 @@ for f = 1:numel(foi_of_interest)
                         if region_of_interest == 1
                             if strcmp(experiment_type, 'partitions-2-8')
                                 if strcmp(roi_applied, 'one-tailed')
-                                    load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                    load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
                                 elseif strcmp(roi_applied, 'two-tailed')
-                                    load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                    load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
                                 end
                             end
                             data = create_hacked_roi(data, roi, weight_roi);
@@ -279,9 +286,9 @@ for f = 1:numel(foi_of_interest)
                         if region_of_interest == 1
                             if strcmp(experiment_type, 'partitions-2-8')
                                 if strcmp(roi_applied, 'one-tailed')
-                                    load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                    load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
                                 elseif strcmp(roi_applied, 'two-tailed')
-                                    load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                    load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
                                 end
                             end
                             data = create_hacked_roi(data, roi, weight_roi);
@@ -351,9 +358,9 @@ for f = 1:numel(foi_of_interest)
                     if region_of_interest == 1
                         if strcmp(experiment_type, 'erps-23-45-67') || strcmp(experiment_type,  'erps-23-45-67-no-factor')
                             if strcmp(roi_applied, 'one-tailed')
-                                load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
                             elseif strcmp(roi_applied, 'two-tailed')
-                                load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
                             end
                         end
                         data = create_hacked_roi(data, roi, weight_roi);
@@ -498,9 +505,9 @@ for f = 1:numel(foi_of_interest)
                         if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect') ...
                                 || strcmp(experiment_type, 'three-way-interaction')
                             if strcmp(roi_applied, 'one-tailed')
-                                load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
                             elseif strcmp(roi_applied, 'two-tailed')
-                                load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
                             end
                         end
                         data = create_hacked_roi(data, roi, weight_roi);
@@ -516,10 +523,10 @@ for f = 1:numel(foi_of_interest)
                 if strcmp(experiment_type, 'erps-23-45-67')
                     n_participants = 40;
                     regression_type = desired_design_mtx;
-                    type_of_effect = 'habituation';
                     regressor = 'ft_statfun_indepsamplesregrT';
                     partitions.is_partition = 0;
                     partitions.partition_number = 0;
+                    type_of_effect = type_of_interaction;
 
                     if strcmp(analysis, 'load')
                         data_file23 = 'frequency_domain_mean_intercept_onsets_2_3_grand-average.mat';
@@ -560,6 +567,8 @@ for f = 1:numel(foi_of_interest)
                     [design3, new_participants3] = create_design_matrix_partitions(participant_order3, p3_freq, ...
                         regression_type, 3, type_of_effect);
 
+                    n_part_per_desgin = numel(design1);
+
                     vector_of_data = [new_participants1, new_participants2, new_participants3];
 
                     all_data = {};
@@ -569,7 +578,7 @@ for f = 1:numel(foi_of_interest)
                     end
 
                     if region_of_interest == 1
-                        load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                        load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
                         all_data = create_hacked_roi_freq(all_data, roi);
                     end
 
@@ -577,13 +586,15 @@ for f = 1:numel(foi_of_interest)
                         design1(1:numel(design1)) = 1.00;
                         design2(1:numel(design1)) = 1.65;
                         design3(1:numel(design1)) = 2.72;
-                        design_matrix = [design1, design2, design3];
+                        design_matrix = [design1; design2; design3];
                     else
-                        design_matrix = [design1, design2, design3];
+                        design_matrix = [design1; design2; design3];
                     end
 
                     design_matrix = design_matrix - mean(design_matrix);
                     all_designs{1} = design_matrix;
+
+                    save_desgin_matrix(design_matrix, n_part_per_desgin, save_path, type_of_interaction)
 
                 elseif strcmp(experiment_type, 'factor_effect')
                     n_participants = 40;
@@ -628,9 +639,8 @@ for f = 1:numel(foi_of_interest)
                 elseif strcmp(experiment_type, 'partitions-2-8')
                     n_participants = 40;
                     regression_type = desired_design_mtx;
-                    type_of_effect = 'habituation';
                     regressor = 'ft_statfun_indepsamplesregrT';
-
+                    type_of_effect = type_of_interaction;
 
                     partition1.is_partition = 1;
                     partition1.partition_number = 1;
@@ -748,6 +758,203 @@ for f = 1:numel(foi_of_interest)
                         all_designs{1} = [1:n_part 1:n_part; ones(1,n_part) 2*ones(1,n_part)];
 
                     end
+                elseif strcmp(experiment_type, 'three-way-interaction')
+                    n_participants = 40;
+                    partition1.is_partition = 1;
+                    partition1.partition_number = 1;
+                    partition2.is_partition = 1;
+                    partition2.partition_number = 2;
+                    partition3.is_partition = 1;
+                    partition3.partition_number = 3;
+                    regressor = 'ft_statfun_indepsamplesregrT';
+                    regression_type = desired_design_mtx;
+                    type_of_effect = type_of_interaction;
+
+                    if strcmp(analysis, 'load')
+                        onsets_2_3 = 'frequency_domain_partitions_partitioned_onsets_2_3_grand-average.mat';
+                        onsets_4_5 = 'frequency_domain_partitions_partitioned_onsets_4_5_grand-average.mat';
+                        onsets_6_7 = 'frequency_domain_partitions_partitioned_onsets_6_7_grand-average.mat';
+                    elseif strcmp(analysis, 'preprocess')
+                        onsets_2_3 = 'frequency_domain_partitions_partitioned_onsets_2_3_trial-level.mat';
+                        onsets_4_5 = 'frequency_domain_partitions_partitioned_onsets_4_5_trial-level.mat';
+                        onsets_6_7 = 'frequency_domain_partitions_partitioned_onsets_6_7_trial-level.mat';
+                    end
+
+                    if f == 1
+
+                        % onsets 2,3 for p1,p2,p3
+
+                        [p1_23, po_p1_23] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_2_3, partition1);
+                        [p2_23, po_p2_23] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_2_3, partition2);
+                        [p3_23, po_p3_23] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_2_3, partition3);
+
+                        p1_23 = to_frequency_data(p1_23, main_path, 1, ...
+                            po_p1_23, analysis, frequency_level, foi, ...
+                            'p123_');
+
+                        p2_23 = to_frequency_data(p2_23, main_path, 2, ...
+                            po_p2_23, analysis, frequency_level, foi, ...
+                            'p223_');
+
+                        p3_23 = to_frequency_data(p3_23, main_path, 3, ...
+                            po_p3_23, analysis, frequency_level, foi, ...
+                            'p323_');
+
+                        partition = 1;
+                        [design_p1_23, p1_23] = create_design_matrix_partitions(po_p1_23, p1_23, ...
+                            regression_type, partition, type_of_effect);
+                        partition = 2;
+                        [design_p2_23, p2_23] = create_design_matrix_partitions(po_p2_23, p2_23, ...
+                            regression_type, partition, type_of_effect);
+                        partition = 3;
+                        [design_p3_23, p3_23] = create_design_matrix_partitions(po_p3_23, p3_23, ...
+                            regression_type, partition, type_of_effect);
+
+                        design_p1_23 = design_p1_23 * 0;
+                        design_p2_23 = design_p2_23 * 0;
+                        design_p3_23 = design_p3_23 * 0;
+
+                        % onsets 4,5 for p1,p2,p3
+                        [p1_45, po_p1_45] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_4_5, partition1);
+                        [p2_45, po_p2_45] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_4_5, partition2);
+                        [p3_45, po_p3_45] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_4_5, partition3);
+
+                        p1_45 = to_frequency_data(p1_45, main_path, 1, ...
+                            po_p1_45, analysis, frequency_level, foi, ...
+                            'p145');
+
+                        p2_45 = to_frequency_data(p2_45, main_path, 2, ...
+                            po_p2_45, analysis, frequency_level, foi, ...
+                            'p245_');
+
+                        p3_45 = to_frequency_data(p3_45, main_path, 3, ...
+                            po_p3_45, analysis, frequency_level, foi, ...
+                            'p345_');
+
+                        partition = 1;
+                        [design_p1_45, p1_45] = create_design_matrix_partitions(po_p1_45, p1_45, ...
+                            regression_type, partition, type_of_effect);
+                        partition = 2;
+                        [design_p2_45, p2_45] = create_design_matrix_partitions(po_p2_45, p2_45, ...
+                            regression_type, partition, type_of_effect);
+                        partition = 3;
+                        [design_p3_45, p3_45] = create_design_matrix_partitions(po_p3_45, p3_45, ...
+                            regression_type, partition, type_of_effect);
+    
+                        design_p1_45 = design_p1_45 * 1.65;
+                        design_p2_45 = design_p2_45 * 1.65;
+                        design_p3_45 = design_p3_45 * 1.65;
+
+                        % onsets 6,7 for p1,p2,p3
+                        [p1_67, po_p1_67] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_6_7, partition1);
+                        [p2_67, po_p2_67] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_6_7, partition2);
+                        [p3_67, po_p3_67] = load_postprocessed_data(main_path, n_participants, ...
+                            onsets_6_7, partition3);
+
+                        p1_67 = to_frequency_data(p1_67, main_path, 1, ...
+                            po_p1_45, analysis, frequency_level, foi, ...
+                            'p167');
+
+                        p2_67 = to_frequency_data(p2_67, main_path, 2, ...
+                            po_p2_45, analysis, frequency_level, foi, ...
+                            'p267_');
+
+                        p3_67 = to_frequency_data(p3_67, main_path, 3, ...
+                            po_p3_45, analysis, frequency_level, foi, ...
+                            'p367_');
+
+                        partition = 1;
+                        [design_p1_67, p1_67] = create_design_matrix_partitions(po_p1_67, p1_67, ...
+                            regression_type, partition, type_of_effect);
+                        partition = 2;
+                        [design_p2_67, p2_67] = create_design_matrix_partitions(po_p2_67, p2_67, ...
+                            regression_type, partition, type_of_effect);
+                        partition = 3;
+                        [design_p3_67, p3_67] = create_design_matrix_partitions(po_p3_67, p3_67, ...
+                            regression_type, partition, type_of_effect);
+                    end
+
+                    design_p1_67 = design_p1_67 * 2.72;
+                    design_p2_67 = design_p2_67 * 2.72;
+                    design_p3_67 = design_p3_67 * 2.72;
+
+
+                    design_matrix = [
+                        design_p1_23; design_p1_45; design_p1_67; ...
+                        design_p2_23; design_p2_45; design_p2_67; ...
+                        design_p3_23; design_p3_45; design_p3_67; ...
+                        ];
+
+                    design_matrix = design_matrix - mean(design_matrix);
+
+                    
+                    onsets_2_3 = [design_p1_23; design_p2_23; design_p3_23];
+                    onsets_4_5 = [design_p1_45; design_p2_45; design_p3_45];
+                    onsets_6_7 = [design_p1_67; design_p2_67; design_p3_67];
+
+                    plot(onsets_2_3, "LineWidth",3.5)
+                    hold on;
+                    plot(onsets_4_5, "LineWidth",3.5)
+                    plot(onsets_6_7, "LineWidth",3.5)
+
+
+                    xline(numel(design_p1_23), '--r', {'Partition 1'}, 'LineWidth', 3.5)
+                    xline(numel(design_p1_23)*2, '--r', {'Partition 2'}, 'LineWidth', 3.5)       
+                    xline(numel(design_p1_23)*3, '--r', {'Partition 3'}, 'LineWidth', 3.5)
+
+                    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','northwest')
+                    xlabel('Participants');
+                    ylabel('3-way Interaction');
+
+                    if strcmp(desired_design_mtx, 'visual_stress')
+                        label_factor = "Visual Stress";
+                    elseif contains(desired_design_mtx, 'headache')
+                        label_factor = 'Headache';
+                    elseif contains(desired_design_mtx, 'discomfort')
+                        label_factor = 'Discomfort';
+                    end
+
+                    plot_title = label_factor + " x Habituation for Partitions x Sensitization for Onsets";
+
+                    title(plot_title);
+                    set(gcf,'Position',[100 100 1000 750])
+                    path = strcat(save_path, '\', 'design_matrix.png');
+                    exportgraphics(gcf,path,'Resolution',500);
+                    close;
+
+                    dataset = [
+                        p1_23, p1_45, p1_67, ...
+                        p2_23, p2_45, p2_67, ...
+                        p3_23, p3_45, p3_67
+                        ];
+
+                    if region_of_interest == 1
+                        if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect') ...
+                                || strcmp(experiment_type, 'three-way-interaction')
+                            if strcmp(roi_applied, 'one-tailed')
+                                load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                            elseif strcmp(roi_applied, 'two-tailed')
+                                load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                            end
+                        end
+                        dataset = create_hacked_roi(dataset, roi, weight_roi);
+                    end
+
+                    all_data = {};
+                    for i = 1:numel(dataset)
+                        participant = dataset(i);
+                        all_data{1}{i} = participant{1}.pgi;
+                    end
+                    
+                    all_designs{1} = design_matrix;
                 end
             end
 
@@ -797,7 +1004,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 5000;
+                cfg.numrandomization = 1000;
                 cfg.tail = roi_to_apply;
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -1573,7 +1780,8 @@ grid on;
 xlabel('Time (ms)', 'FontSize', 14);
 ylabel('Percentage of cluster', 'FontSize', 14);
 xlim([0,260])
-%xlim([56,800])
+%xlim([0,800])
+%xlim([0,3000])
 title(ptitle, 'FontSize', 14);
 legend(legend_to_use, 'Location', 'northwest', 'FontSize',14);
 
@@ -1727,7 +1935,7 @@ if strcmp(analysis_type, 'frequency_domain')
 
     max_iter = numel(j)-1;
     for k = 1:max_iter
-        subplot(3,4,k);
+        subplot(10,4,k);
         cfg = [];
         cfg.parameter = 'stat';
         cfg.xlim = [j(k) j(k+1)];
@@ -1786,7 +1994,7 @@ else
     max_t = round(max_t, 2);
 
     for k = 1:max_iter
-        subplot(2,4,k);
+        subplot(1,8,k);
         cfg = [];
         cfg.xlim = [j(k) j(k+1)];
         cfg.zlim = [-5e-14 5e-14];
@@ -1809,8 +2017,15 @@ else
         %ft_clusterplot(cfg, stat)
     end
 end
-set(gcf,'Position',[100 100 1000 750])
+set(gcf,'Position',[100 100 2000 1500])
 exportgraphics(gcf,save_dir,'Resolution',500);
+topo = imread(save_dir);
+
+timings = topo(1:100, :, :);
+top = topo(2150:3000, :, :);
+legends = topo(5200:end-50, :, :);
+new_topo = [timings; top; legends];
+imwrite(new_topo,save_dir,'PNG');
 close;
 end
 
@@ -2148,7 +2363,7 @@ for i=1:n_participants
     disp(strcat('LOADING PARTICIPANT...', int2str(i)));
     participant_main_path = strcat(main_path, int2str(i));
 
-    %if ismember(i,[1,2,3,4,6,7,8,9,10,12,13,14,17,20,21,22,23,25,26,30,31,32,33,34,38,39,40])
+    if ismember(i,[1,2,3,4,6,7,8,9,10,12,13,14,17,20,21,22,23,25,26,30,31,32,33,34,38,39,40])
 
     if exist(participant_main_path, 'dir')
         cd(participant_main_path);
@@ -2195,8 +2410,12 @@ for i=1:n_participants
                 thick = data.thick;
             end
         elseif ~partition.is_partition
-            pgi = data.med - (data.thin + data.thick)/2;
-            ft.avg = pgi;
+            try
+                pgi = data.med - (data.thin + data.thick)/2;
+                ft.avg = pgi;
+            catch
+                disp('freq')
+            end
             thin = data.thin;
             med = data.med;
             thick = data.thick;
@@ -2224,7 +2443,7 @@ for i=1:n_participants
         participant_order{idx_used_for_saving_data} = i;
         idx_used_for_saving_data = idx_used_for_saving_data + 1;
     end
-    %end
+    end
 end
 end
 
@@ -2334,7 +2553,7 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     type_of_analysis, foi, desired_cluster)
 
 
-plotting_window = [-100, 300];
+plotting_window = [-200, 300];
 rmpath C:\ProgramFiles\spm8;
 addpath C:\ProgramFiles\spm12;
 cd(master_dir);
@@ -2365,23 +2584,49 @@ if strcmp(experiment_type, 'onsets-2-8-explicit')
 
     ci = bootstrap_erps(data, e_idx);
 
-elseif strcmp(experiment_type, 'pure-factor-effect')
-    n_participants = 40;
+elseif strcmp(experiment_type, 'pure-factor-effect') || strcmp(experiment_type, 'factor_effect')
+    
+    if strcmp(type_of_analysis, 'time_domain')
+        n_participants = 40;
+    
+        partition.is_partition = 0;
+        partition.partition_number = 0;
+        type_of_effect = 'habituation';
+    
+        data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+        [data, participant_order] = load_postprocessed_data(main_path, n_participants, ...
+            data_file, partition);
+        e_idx = find(contains(data{1}.label,peak_electrode));
+    
+        [data_h, data_l] = get_partitions_medium_split(data, participant_order,...
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+    
+        ci_h = bootstrap_erps(data_h, e_idx);
+        ci_l = bootstrap_erps(data_l, e_idx);
+    elseif strcmp(type_of_analysis, 'frequency_domain')
+        data_file = 'frequency_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
+        n_participants = 40;
+    
+        partition.is_partition = 0;
+        partition.partition_number = 0;
+        type_of_effect = 'habituation';
 
-    partition.is_partition = 0;
-    partition.partition_number = 0;
-    type_of_effect = 'habituation';
+        [data, participant_order] = load_postprocessed_data(main_path, n_participants, ...
+            data_file, partition);
+        e_idx = find(contains(data{1}.label,peak_electrode));
+    
+        freq = to_frequency_data(data, main_path, 1, ...
+            participant_order, 'load', 'trial-level', foi, 'mean_intercept');
 
-    data_file = 'time_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
-    [data, participant_order] = load_postprocessed_data(main_path, n_participants, ...
-        data_file, partition);
-    e_idx = find(contains(data{1}.label,peak_electrode));
+        data1 = format_for_plotting_functions(freq);
 
-    [data_h, data_l] = get_partitions_medium_split(data, participant_order,...
-        regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+        [data1_h, data1_l] = get_partitions_medium_split(data1, participant_order,...
+            regression_type, 1, type_of_effect, weight_erps, weighting_factor);
+        ci_h = bootstrap_erps(data1_h, e_idx);
+        ci_l = bootstrap_erps(data1_l, e_idx);
 
-    ci_h = bootstrap_erps(data_h, e_idx);
-    ci_l = bootstrap_erps(data_l, e_idx);
+        data = data1;
+    end
 
 elseif strcmp(experiment_type, 'partitions-2-8') && contains(regression_type, 'p1')
     n_participants = 40;
@@ -2911,7 +3156,7 @@ elseif strcmp(experiment_type, 'onsets-2-8-explicit')
 elseif strcmp(experiment_type, 'pure-factor-effect')
     experiment_name = "Illustration of Onsets 2:8 Factor {factor}";
 elseif strcmp(experiment_type, 'three-way-interaction')
-    experiment_name = "Illustration of the Three-Way-Interaction Experiment for {factor}";
+    experiment_name = "Illustration of the Three-Way-Interaction: {factor} x Sensitization (over Onsets) x Habituation (over Partitions)";
 else
     experiment_name = experiment_type;
 end
@@ -3032,9 +3277,8 @@ if contains(experiment_type, 'onsets-2-8')
 
     hold off;
 
-elseif strcmp(experiment_type,'pure-factor-effect')
-    strcmp(experiment_type,'pure-factor-effect')
-    t = tiledlayout(2,2, 'TileSpacing','Compact');
+elseif strcmp(experiment_type,'pure-factor-effect') || strcmp(experiment_type,'factor_effect')
+    t = tiledlayout(3,2, 'TileSpacing','Compact');
     time = data{1}.time * 1000;
     nexttile
 
@@ -3212,6 +3456,117 @@ elseif strcmp(experiment_type,'pure-factor-effect')
     xlabel("Milliseconds", "FontSize",labels_text_size)
     ylabel(ax_label, "FontSize",labels_text_size)
 
+
+    % overlay the PGIs
+        % high gratings
+    nexttile
+    hold on;
+
+    plot(NaN(1), 'r');
+    plot(NaN(1), 'g');
+    title('High and Low Group: PGI')
+
+    legend({'PGI-High', 'PGI-Low'},'Location','bestoutside','FontSize', labels_text_size)
+
+    plot(time, ci_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci_h.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    plot(time, ci_h.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci_h.dist_pgi_high, fliplr(ci_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    plot(time, ci_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci_l.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
+    plot(time, ci_l.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci_l.dist_pgi_high, fliplr(ci_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+
+    xlim(plotting_window);
+
+    %title('Pattern Glare Index','FontSize', labels_text_size)
+    ylim([-6, 6])
+    grid on;
+    hold off;
+
+    if peak_effect ~= 0
+        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    end
+
+
+    xlabel("Milliseconds", "FontSize",labels_text_size)
+    ylabel(ax_label, "FontSize",labels_text_size)
+
+    min_y = min([min(ci_l.dist_thick_low), min(ci_l.dist_thin_low), min(ci_l.dist_med_low)])-0.5;
+    max_y = max([max(ci_h.dist_thick_high), max(ci_h.dist_thin_high), max(ci_h.dist_med_high)])+0.5;
+    ylim([min_y, max_y])
+    grid on;
+
+    xlabel("Milliseconds", "FontSize",labels_text_size)
+    ylabel(ax_label, "FontSize",labels_text_size)
+
+
+% overlay the medians
+        % high gratings
+    nexttile
+    hold on;
+
+    plot(NaN(1), 'r');
+    plot(NaN(1), 'g');
+    title('High and Low Group: Medians')
+
+    legend({'Median-High', 'Median-Low'},'Location','bestoutside','FontSize', labels_text_size)
+
+    plot(time, ci_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci_h.dist_med_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    plot(time, ci_h.dist_med_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci_h.dist_med_high, fliplr(ci_h.dist_med_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    plot(time, ci_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci_l.dist_med_high, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
+    plot(time, ci_l.dist_med_low, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci_l.dist_med_high, fliplr(ci_l.dist_med_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+
+    xlim(plotting_window);
+
+    %title('Pattern Glare Index','FontSize', labels_text_size)
+    grid on;
+    hold off;
+
+    if peak_effect ~= 0
+        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    end
+    
+    xlabel("Milliseconds", "FontSize",labels_text_size)
+    ylabel(ax_label, "FontSize",labels_text_size)
+
+    min_y = min([min(ci_l.dist_thick_low), min(ci_l.dist_thin_low), min(ci_l.dist_med_low)])-0.5;
+    max_y = max([max(ci_h.dist_thick_high), max(ci_h.dist_thin_high), max(ci_h.dist_med_high)])+0.5;
+    ylim([min_y, max_y])
+    grid on;
+
+
+
+
+
 elseif strcmp(experiment_type, 'three-way-interaction')
     t = tiledlayout(6,2, 'TileSpacing','Compact');
     time = data{1}.time * 1000;
@@ -3220,10 +3575,10 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     % onsets 2;3, 4;5 6,7 for P1 low
     nexttile
     hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
     plot(time, p1_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3253,9 +3608,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("Low Group Partition 1 PGI")
+    title("LOW", "FontSize",18)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3264,12 +3619,23 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("PGI", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    yyaxis right
+    yticks([])
+    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+
+    
     %%%%%%%
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P1 high
+    set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
     plot(NaN(1), 'Color', 'r');
@@ -3305,9 +3671,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("High Group Partition 1 PGI")
+    title("HIGH","FontSize", 18)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3316,17 +3682,18 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P1 medium low
+    set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
     plot(time, p1_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3356,9 +3723,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("Low Group Partition 1 Medium")
+    %title("Medium","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3367,11 +3734,19 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    yyaxis right
+    yticks([])
+    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P1 medium high
+    set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
     plot(NaN(1), 'Color', 'r');
@@ -3407,9 +3782,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("High Group Partition 1 Medium")
+    %title("Medium","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3418,19 +3793,20 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
     %%%%%%% PARTITION 1
 
     %%%%%%% PARTITION 2
     % onsets 2;3, 4;5 6,7 for P2 low
+    set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
     plot(time, p2_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3460,9 +3836,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("Low Group Partition 2 PGI")
+    %title("PGI","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3471,8 +3847,16 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("PGI", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    yyaxis right
+    yticks([])
+    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+    
     %%%%%%%
 
     %%%%%%%
@@ -3512,9 +3896,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("High Group Partition 2 PGI")
+    %title("PGI","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3523,17 +3907,17 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P2 medium low
     nexttile
     hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
     plot(time, p2_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3563,9 +3947,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("Low Group Partition 2 Medium")
+    %title("Medium","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3574,8 +3958,15 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    yyaxis right
+    yticks([])
+    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P2 medium high
@@ -3614,9 +4005,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("High Group Partition 2 Medium")
+    %title("Medium","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3625,17 +4016,17 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
 %%%%%%% PARTITION 3
     % onsets 2;3, 4;5 6,7 for P3 low
     nexttile
     hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
     plot(time, p3_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3665,9 +4056,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("Low Group Partition 3 PGI")
+    %title("PGI","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3676,12 +4067,21 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("PGI", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    yyaxis right
+    yticks([])
+    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+    
     %%%%%%%
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P3 high
+    set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
     plot(NaN(1), 'Color', 'r');
@@ -3717,9 +4117,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("High Group Partition 3 PGI")
+    %title("PGI","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3728,17 +4128,18 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P3 medium low
+    set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
 
         % onsets 2;3 p1
     plot(time, p3_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3768,9 +4169,9 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("Low Group Partition 3 Medium")
+    %title("Medium","FontSize", 13)
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3780,10 +4181,18 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
     xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    yyaxis right
+    yticks([])
+    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P3 medium high
+    set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
     plot(NaN(1), 'Color', 'r');
@@ -3819,9 +4228,10 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %     set(h,'facealpha',.10) 
 
     xlim(plotting_window);
-    ylim([-3, 8.5])
+    ylim([-4, 12])
     grid on;
-    title("High Group Partition 3 Medium")
+    %title("Medium","FontSize", 13)
+    set(gca,'Color',[.85,.85,.85])
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -3831,7 +4241,7 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
     xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
     
 
 
@@ -4567,7 +4977,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
 
     xlabel("Milliseconds", "FontSize",labels_text_size)
     ylabel(ax_label, "FontSize",labels_text_size)
-
+        
 
 end
 
@@ -4582,11 +4992,16 @@ if contains(experiment_type, 'partitions-2-8') || contains(experiment_type, 'erp
     set(gcf,'Position',[100 100 1250 1250])
 elseif contains(experiment_type, 'three-way-interaction')
     set(gcf,'Position',[100 100 1300 1250])
+    p1 = text(-920, 90, 'Partition 1', 'Fontsize', 18, 'Rotation', 90, "FontWeight","bold");
+    p2 = text(-920, 50, 'Partition 2', 'Fontsize', 18, 'Rotation', 90, "FontWeight","bold");
+    p3 = text(-920, 10, 'Partition 3', 'Fontsize', 18, 'Rotation', 90, "FontWeight","bold");
+
 else
     set(gcf,'Position',[100 100 1000 750])
 end
 
  exportgraphics(gcf,save_dir,'Resolution',500);
+
  close;
 end
 %% calculate partitions splits
@@ -4850,7 +5265,7 @@ cfg.width = 5;
 cfg.output = 'pow';
 cfg.pad = 'nextpow2';
 cfg.foi = 5:80;
-cfg.toi = -0.5:0.002:1.2;
+cfg.toi = -0.5:0.002:3;
 cfg.keeptrials = 'yes';
 
 
@@ -5393,4 +5808,31 @@ function extract_timeseries_through_time(data)
     end
 
     disp(EEG_timeseries);
+end
+
+%% combine images together for visual purposes
+function combine_images(save_dir)
+
+    clusters_through_time = imread(save_dir + "\positive_cluster.png");
+    topographic_maps = imread(save_dir + "\positive_topographic.png");
+    erps = imread(save_dir + "\positive_peak_erp_1.png");
+    highlighted_electrode = imread(save_dir + "\highlighted_electrode.png");
+
+    % remove whitespace from topographic maps
+    top = topographic_maps(1:1200, :, :);
+    bottom = topographic_maps(1850:end, :, :);
+    topographic_maps = [top; bottom];
+
+    
+    clusters_through_time = imresize(clusters_through_time, [size(clusters_through_time, 1)/2, size(clusters_through_time,2)/2])
+    erps = imresize(erps, [size(erps, 1)*4, size(erps,2)*4]);
+
+    x = imtile({erps, clusters_through_time, topographic_maps}, 'GridSize', [3, 1], ...
+        'BackgroundColor', 'white');
+
+    path = save_dir + "\combined.png";
+    imwrite(x,path,'JPEG');
+
+
+    disp('1')
 end
