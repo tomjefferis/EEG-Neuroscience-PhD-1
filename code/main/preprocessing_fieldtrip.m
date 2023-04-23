@@ -4,11 +4,11 @@ restoredefaultpath;
 addpath('C:\External_Software\fieldtrip-20210807');
 addpath('C:\External_Software\spm12')
 ft_defaults;
-cd("D:\PhD");
+cd("E:\PhD");
     
 %% Change these variables depending on what you would like to do.
-main_path = 'D:\PhD\participant_';
-to_preprocess = {'mean_intercept'};
+main_path = 'E:\PhD\participant_';
+to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
@@ -25,7 +25,7 @@ for k=1:numel(to_preprocess)
     if strcmp(analysis_type, 'mean_intercept') || strcmp(analysis_type, 'eye_confound')
         n_participants = 40;
     elseif contains(analysis_type, 'partitions')
-        n_participants = 40;
+        n_participants = 39;
     end
     
     % parfloor
@@ -664,3 +664,5 @@ function new_trials = convert_to_fieldtrip_format(trials)
     end 
     
 end
+
+
