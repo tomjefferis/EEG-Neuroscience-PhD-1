@@ -12,7 +12,7 @@ to_preprocess = {'partitions'};
 type_of_analysis = 'time_domain'; % or time_domain
 
 onsets = [
-    2,3; 4,5; 6,7
+    2,3,4,5,6,7,8
 ];
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
@@ -25,7 +25,7 @@ for k=1:numel(to_preprocess)
     if strcmp(analysis_type, 'mean_intercept') || strcmp(analysis_type, 'eye_confound')
         n_participants = 40;
     elseif contains(analysis_type, 'partitions')
-        n_participants = 40;
+        n_participants = 39;
     end
     
     % parfloor

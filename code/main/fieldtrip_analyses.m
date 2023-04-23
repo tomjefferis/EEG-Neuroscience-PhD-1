@@ -1004,7 +1004,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 1000;
+                cfg.numrandomization = 3000;
                 cfg.tail = roi_to_apply;
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -1028,6 +1028,9 @@ for f = 1:numel(foi_of_interest)
                             || contains(experiment_type, 'trial-level-2-8') || contains(experiment_type, 'pure-factor-effect')
                         cfg.ivar = 1;
                         stat = ft_timelockstatistics(cfg, data{:});
+
+                        disp(stat.posclusters(1).prob)
+
                         save(strcat(new_save_path, '\stat.mat'), 'stat')
 
                         if ~isfield(stat, 'posclusters') || ~isfield(stat, 'negclusters')
@@ -2601,8 +2604,8 @@ elseif strcmp(experiment_type, 'pure-factor-effect') || strcmp(experiment_type, 
         [data_h, data_l] = get_partitions_medium_split(data, participant_order,...
             regression_type, 1, type_of_effect, weight_erps, weighting_factor);
     
-        ci_h = bootstrap_erps(data_h, e_idx);
-        ci_l = bootstrap_erps(data_l, e_idx);
+        ci1_h = bootstrap_erps(data_h, e_idx);
+        ci1_l = bootstrap_erps(data_l, e_idx);
     elseif strcmp(type_of_analysis, 'frequency_domain')
         data_file = 'frequency_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
         n_participants = 40;
@@ -2628,7 +2631,7 @@ elseif strcmp(experiment_type, 'pure-factor-effect') || strcmp(experiment_type, 
         data = data1;
     end
 
-elseif strcmp(experiment_type, 'partitions-2-8') && contains(regression_type, 'p1')
+elseif strcmp(experiment_type, 'partitions-2-8') && contains(type_of_analysis, 'p1')
     n_participants = 40;
     partition1.is_partition = 1; % partition 1
     partition1.partition_number = 1;
@@ -3162,7 +3165,7 @@ else
 end
 
 first_partition_regresion = 0;
-if contains(regression_type, 'p1')
+if contains(regression_type, 'p1') || contains(type_of_analysis, 'p1')
     first_partition_regresion = 1;
     label = '-';
 else
@@ -3221,8 +3224,13 @@ if contains(experiment_type, 'onsets-2-8')
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+    %ylh = ylabel("PGI", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    %ylh.Position(2) = 2.75;
+    %ylh.Position(1) = -220;
+
 
     nexttile
     hold on;
@@ -3268,996 +3276,30 @@ if contains(experiment_type, 'onsets-2-8')
     max_y = max([max(ci.dist_thick_high), max(ci.dist_thin_high), max(ci.dist_med_high)])+0.5;
     ylim([min_y, max_y])
 
+    %ylh = ylabel("Mean/Intercept", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    %ylh.Position(2) = 2.75;
+    %ylh.Position(1) = -220;
 
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
     grid on
 
 
     hold off;
 
 elseif strcmp(experiment_type,'pure-factor-effect') || strcmp(experiment_type,'factor_effect')
-    t = tiledlayout(3,2, 'TileSpacing','Compact');
-    time = data{1}.time * 1000;
-    nexttile
-
-    hold on;
-    title('Low Group: PGI')
-    plot(NaN(1), 'r');
-    legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
-
-    plot(time, ci_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, ci_l.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    plot(time, ci_l.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_l.dist_pgi_high, fliplr(ci_l.dist_pgi_low)];
-    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    xlim(plotting_window);
-
-    min_y = min([min(ci_l.dist_thick_low), min(ci_l.dist_thin_low), min(ci_l.dist_med_low)])-0.5;
-    max_y = max([max(ci_l.dist_thick_high), max(ci_l.dist_thin_high), max(ci_l.dist_med_high)])+0.5;
-    ylim([min_y, max_y])
-    grid on ;
-
-
-    xline(start_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    xlim(plotting_window);
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
-    nexttile;
-    hold on;
-
-    hold on;
-    plot(NaN(1), 'r');
-    title('High Group: PGI')
-
-    legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
-
-    plot(time, ci_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, ci_h.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    plot(time, ci_h.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_h.dist_pgi_high, fliplr(ci_h.dist_pgi_low)];
-    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    xlim(plotting_window);
-
-    %title('Pattern Glare Index','FontSize', labels_text_size)
-    ylim([-6, 6])
-    grid on;
-    hold off;
-
-    if peak_effect ~= 0
-        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    end
-
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
-    min_y = min([min(ci_h.dist_thick_low), min(ci_h.dist_thin_low), min(ci_h.dist_med_low)])-0.5;
-    max_y = max([max(ci_h.dist_thick_high), max(ci_h.dist_thin_high), max(ci_h.dist_med_high)])+0.5;
-    ylim([min_y, max_y])
-    grid on;
-
-    nexttile
-    hold on;
-
-    % low gratings
-
-    title('Low Group')
-    plot(NaN(1), 'Color', '#0072BD');
-    plot(NaN(1), 'Color', '#D95319');
-    plot(NaN(1), 'Color', '#FFFF00');
-    legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside', 'FontSize', labels_text_size)
-
-    plot(time, ci_l.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5, 'HandleVisibility','off')
-    plot(time, ci_l.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
-    plot(time, ci_l.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_l.dist_thin_high, fliplr(ci_l.dist_thin_low)];
-    h = fill(x2, inBetween, [0, 0.447, 0.741], 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    plot(time, ci_l.dist_med_avg, 'color', '#D95319','LineWidth', 3.5, 'HandleVisibility','off');
-    plot(time, ci_l.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
-    plot(time, ci_l.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_l.dist_med_high, fliplr(ci_l.dist_med_low)];
-    h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off' , 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-
-    plot(time, ci_l.dist_thick_avg, 'color', '#FFE600','LineWidth', 3.5, 'HandleVisibility','off');
-    plot(time, ci_l.dist_thick_high, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
-    plot(time, ci_l.dist_thick_low, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_l.dist_thick_high, fliplr(ci_l.dist_thick_low)];
-    h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    xline(start_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    xlim(plotting_window);
-
-    min_y = min([min(ci_l.dist_thick_low), min(ci_l.dist_thin_low), min(ci_l.dist_med_low)])-0.5;
-    max_y = max([max(ci_l.dist_thick_high), max(ci_l.dist_thin_high), max(ci_l.dist_med_high)])+0.5;
-    ylim([min_y, max_y])
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
-    grid on;
-    hold off;
-
-    % high gratings
-    nexttile
-    hold on;
-
-    title('High Group')
-    plot(NaN(1), 'Color', '#0072BD');
-    plot(NaN(1), 'Color', '#D95319');
-    plot(NaN(1), 'Color', '#FFFF00');
-    legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside', 'FontSize', labels_text_size)
-
-    plot(time, ci_h.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5, 'HandleVisibility','off')
-    plot(time, ci_h.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
-    plot(time, ci_h.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_h.dist_thin_high, fliplr(ci_h.dist_thin_low)];
-    h = fill(x2, inBetween, [0, 0.447, 0.741], 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    plot(time, ci_h.dist_med_avg, 'color', '#D95319','LineWidth', 3.5, 'HandleVisibility','off');
-    plot(time, ci_h.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
-    plot(time, ci_h.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_h.dist_med_high, fliplr(ci_h.dist_med_low)];
-    h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off' , 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-
-    plot(time, ci_h.dist_thick_avg, 'color', '#FFE600','LineWidth', 3.5, 'HandleVisibility','off');
-    plot(time, ci_h.dist_thick_high, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
-    plot(time, ci_h.dist_thick_low, 'LineWidth', 0.01, 'color', '#FFE600','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_h.dist_thick_high, fliplr(ci_h.dist_thick_low)];
-    h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    xline(start_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r', 'HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    xlim(plotting_window);
-
-    min_y = min([min(ci_h.dist_thick_low), min(ci_h.dist_thin_low), min(ci_h.dist_med_low)])-0.5;
-    max_y = max([max(ci_h.dist_thick_high), max(ci_h.dist_thin_high), max(ci_h.dist_med_high)])+0.5;
-    ylim([min_y, max_y])
-    grid on;
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
-
-    % overlay the PGIs
-        % high gratings
-    nexttile
-    hold on;
-
-    plot(NaN(1), 'r');
-    plot(NaN(1), 'g');
-    title('High and Low Group: PGI')
-
-    legend({'PGI-High', 'PGI-Low'},'Location','bestoutside','FontSize', labels_text_size)
-
-    plot(time, ci_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, ci_h.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    plot(time, ci_h.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_h.dist_pgi_high, fliplr(ci_h.dist_pgi_low)];
-    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    plot(time, ci_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, ci_l.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
-    plot(time, ci_l.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_l.dist_pgi_high, fliplr(ci_l.dist_pgi_low)];
-    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-
-    xlim(plotting_window);
-
-    %title('Pattern Glare Index','FontSize', labels_text_size)
-    ylim([-6, 6])
-    grid on;
-    hold off;
-
-    if peak_effect ~= 0
-        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    end
-
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
-    min_y = min([min(ci_l.dist_thick_low), min(ci_l.dist_thin_low), min(ci_l.dist_med_low)])-0.5;
-    max_y = max([max(ci_h.dist_thick_high), max(ci_h.dist_thin_high), max(ci_h.dist_med_high)])+0.5;
-    ylim([min_y, max_y])
-    grid on;
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
-
-% overlay the medians
-        % high gratings
-    nexttile
-    hold on;
-
-    plot(NaN(1), 'r');
-    plot(NaN(1), 'g');
-    title('High and Low Group: Medians')
-
-    legend({'Median-High', 'Median-Low'},'Location','bestoutside','FontSize', labels_text_size)
-
-    plot(time, ci_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, ci_h.dist_med_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    plot(time, ci_h.dist_med_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_h.dist_med_high, fliplr(ci_h.dist_med_low)];
-    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-    plot(time, ci_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-    plot(time, ci_l.dist_med_high, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
-    plot(time, ci_l.dist_med_low, 'LineWidth', 0.00001, 'color', 'g','HandleVisibility','off');
-    x2 = [time, fliplr(time)];
-    inBetween = [ci_l.dist_med_high, fliplr(ci_l.dist_med_low)];
-    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-    set(h,'facealpha',.10)
-
-
-    xlim(plotting_window);
-
-    %title('Pattern Glare Index','FontSize', labels_text_size)
-    grid on;
-    hold off;
-
-    if peak_effect ~= 0
-        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    end
-    
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
-    min_y = min([min(ci_l.dist_thick_low), min(ci_l.dist_thin_low), min(ci_l.dist_med_low)])-0.5;
-    max_y = max([max(ci_h.dist_thick_high), max(ci_h.dist_thin_high), max(ci_h.dist_med_high)])+0.5;
-    ylim([min_y, max_y])
-    grid on;
-
-
-
-
-
-elseif strcmp(experiment_type, 'three-way-interaction')
-    t = tiledlayout(6,2, 'TileSpacing','Compact');
-    time = data{1}.time * 1000;
-
-    %%%%%%% PARTITION 1
-    % onsets 2;3, 4;5 6,7 for P1 low
-    nexttile
-    hold on;
-    %plot(NaN(1), 'Color', 'r');
-    %plot(NaN(1), 'Color', 'g');
-    %plot(NaN(1), 'Color', 'b');
-    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p1_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_23_l.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_23_l.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_23_l.dist_pgi_high, fliplr(p1_23_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p1_45_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_45_l.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_45_l.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_45_l.dist_pgi_high, fliplr(p1_45_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p1_67_l.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_67_l.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_67_l.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_67_l.dist_pgi_high, fliplr(p1_67_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    title("LOW", "FontSize",18)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-    ylh = ylabel("PGI", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
-    ylh.Position(2) = 2.75;
-    ylh.Position(1) = -220;
-
-    yyaxis right
-    yticks([])
-    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
-
-    
-    %%%%%%%
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P1 high
-    set(gca,'Color',[.85,.85,.85])
-    nexttile
-    hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p1_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_23_h.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_23_h.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_23_h.dist_pgi_high, fliplr(p1_23_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p1_45_h.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_45_h.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_45_h.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_45_h.dist_pgi_high, fliplr(p1_45_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p1_67_h.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_67_h.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_67_h.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_67_h.dist_pgi_high, fliplr(p1_67_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    title("HIGH","FontSize", 18)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P1 medium low
-    set(gca,'Color',[.85,.85,.85])
-    nexttile
-    hold on;
-    %plot(NaN(1), 'Color', 'r');
-    %plot(NaN(1), 'Color', 'g');
-    %plot(NaN(1), 'Color', 'b');
-    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p1_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_23_l.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_23_l.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_23_l.dist_med_high, fliplr(p1_23_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p1_45_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_45_l.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_45_l.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_45_l.dist_med_high, fliplr(p1_45_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p1_67_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_67_l.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_67_l.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_67_l.dist_med_high, fliplr(p1_67_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("Medium","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-    ylh = ylabel("Medium", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
-    ylh.Position(2) = 2.75;
-    ylh.Position(1) = -220;
-
-    yyaxis right
-    yticks([])
-    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P1 medium high
-    set(gca,'Color',[.85,.85,.85])
-    nexttile
-    hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p1_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_23_h.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_23_h.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_23_h.dist_med_high, fliplr(p1_23_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p1_45_h.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_45_h.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_45_h.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_45_h.dist_med_high, fliplr(p1_45_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p1_67_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p1_67_h.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p1_67_h.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p1_67_h.dist_med_high, fliplr(p1_67_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("Medium","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-
-    %%%%%%% PARTITION 1
-
-    %%%%%%% PARTITION 2
-    % onsets 2;3, 4;5 6,7 for P2 low
-    set(gca,'Color',[.85,.85,.85])
-    nexttile
-    hold on;
-    %plot(NaN(1), 'Color', 'r');
-    %plot(NaN(1), 'Color', 'g');
-    %plot(NaN(1), 'Color', 'b');
-    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p2_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_23_l.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_23_l.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_23_l.dist_pgi_high, fliplr(p2_23_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p2_45_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_45_l.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_45_l.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_45_l.dist_pgi_high, fliplr(p2_45_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p2_67_l.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_67_l.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_67_l.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_67_l.dist_pgi_high, fliplr(p2_67_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("PGI","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-    ylh = ylabel("PGI", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
-    ylh.Position(2) = 2.75;
-    ylh.Position(1) = -220;
-
-    yyaxis right
-    yticks([])
-    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
-    
-    %%%%%%%
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P1 high
-    nexttile
-    hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p2_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_23_h.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_23_h.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_23_h.dist_pgi_high, fliplr(p2_23_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p2_45_h.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_45_h.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_45_h.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_45_h.dist_pgi_high, fliplr(p2_45_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p2_67_h.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_67_h.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_67_h.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_67_h.dist_pgi_high, fliplr(p2_67_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("PGI","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P2 medium low
-    nexttile
-    hold on;
-    %plot(NaN(1), 'Color', 'r');
-    %plot(NaN(1), 'Color', 'g');
-    %plot(NaN(1), 'Color', 'b');
-    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p2_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_23_l.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_23_l.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_23_l.dist_med_high, fliplr(p2_23_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p2_45_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_45_l.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_45_l.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_45_l.dist_med_high, fliplr(p2_45_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p2_67_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_67_l.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_67_l.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_67_l.dist_med_high, fliplr(p2_67_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("Medium","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-    ylh = ylabel("Medium", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
-    ylh.Position(2) = 2.75;
-    ylh.Position(1) = -220;
-
-    yyaxis right
-    yticks([])
-    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P2 medium high
-    nexttile
-    hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p2_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_23_h.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_23_h.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_23_h.dist_med_high, fliplr(p2_23_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p2_45_h.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_45_h.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_45_h.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_45_h.dist_med_high, fliplr(p2_45_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p2_67_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p2_67_h.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p2_67_h.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p2_67_h.dist_med_high, fliplr(p2_67_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("Medium","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-
-%%%%%%% PARTITION 3
-    % onsets 2;3, 4;5 6,7 for P3 low
-    nexttile
-    hold on;
-    %plot(NaN(1), 'Color', 'r');
-    %plot(NaN(1), 'Color', 'g');
-    %plot(NaN(1), 'Color', 'b');
-    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p3_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_23_l.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_23_l.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_23_l.dist_pgi_high, fliplr(p3_23_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p3_45_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_45_l.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_45_l.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_45_l.dist_pgi_high, fliplr(p3_45_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p3_67_l.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_67_l.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_67_l.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_67_l.dist_pgi_high, fliplr(p3_67_l.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("PGI","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-    ylh = ylabel("PGI", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
-    ylh.Position(2) = 2.75;
-    ylh.Position(1) = -220;
-
-    yyaxis right
-    yticks([])
-    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
-    
-    %%%%%%%
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P3 high
-    set(gca,'Color',[.85,.85,.85])
-    nexttile
-    hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p3_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_23_h.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_23_h.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_23_h.dist_pgi_high, fliplr(p3_23_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p3_45_h.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_45_h.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_45_h.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_45_h.dist_pgi_high, fliplr(p3_45_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p3_67_h.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_67_h.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_67_h.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_67_h.dist_pgi_high, fliplr(p3_67_h.dist_pgi_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("PGI","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    %xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P3 medium low
-    set(gca,'Color',[.85,.85,.85])
-    nexttile
-    hold on;
-    %plot(NaN(1), 'Color', 'r');
-    %plot(NaN(1), 'Color', 'g');
-    %plot(NaN(1), 'Color', 'b');
-    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p3_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_23_l.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_23_l.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_23_l.dist_med_high, fliplr(p3_23_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p3_45_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_45_l.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_45_l.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_45_l.dist_med_high, fliplr(p3_45_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p3_67_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_67_l.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_67_l.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_67_l.dist_med_high, fliplr(p3_67_l.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("Medium","FontSize", 13)
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-    ylh = ylabel("Medium", "FontSize",14, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
-    ylh.Position(2) = 2.75;
-    ylh.Position(1) = -220;
-
-    yyaxis right
-    yticks([])
-    ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P3 medium high
-    set(gca,'Color',[.85,.85,.85])
-    nexttile
-    hold on;
-    plot(NaN(1), 'Color', 'r');
-    plot(NaN(1), 'Color', 'g');
-    plot(NaN(1), 'Color', 'b');
-    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
-
-        % onsets 2;3 p1
-    plot(time, p3_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_23_h.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_23_h.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_23_h.dist_med_high, fliplr(p3_23_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)
-
-        % onsets 4,5 p1 
-    plot(time, p3_45_h.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_45_h.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_45_h.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_45_h.dist_med_high, fliplr(p3_45_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10)  
-
-        % onsets 6;7 p3
-    plot(time, p3_67_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
-%     plot(time, p3_67_h.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     plot(time, p3_67_h.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
-%     x2 = [time, fliplr(time)];
-%     inBetween = [p3_67_h.dist_med_high, fliplr(p3_67_h.dist_med_low)];
-%     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
-%     set(h,'facealpha',.10) 
-
-    xlim(plotting_window);
-    ylim([-4, 12])
-    grid on;
-    %title("Medium","FontSize", 13)
-    set(gca,'Color',[.85,.85,.85])
-    hold off;
-
-    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
-    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    %ylabel(ax_label, "FontSize",labels_text_size)
-    
-
-
-elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion == 1 || ...
     strcmp(experiment_type,'pure-factor-effect')
     t = tiledlayout(2,2, 'TileSpacing','Compact');
     time = data{1}.time * 1000;
     nexttile
 
     hold on;
-    plot(NaN(1), 'r');
-    if contains(experiment_type, 'partitions-2-8')
-        legend({'P1-PGI'},'Location','bestoutside','FontSize', labels_text_size)
-    elseif contains(experiment_type, 'pure-factor-effect')
-        legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
-    end
+    %plot(NaN(1), 'r');
+    %if contains(experiment_type, 'partitions-2-8')
+    %    legend({'P1-PGI'},'Location','bestoutside','FontSize', labels_text_size)
+    %elseif contains(experiment_type, 'pure-factor-effect')
+    %    legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
+    %end
 
     % low
     plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -4270,7 +3312,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion ==
 
     xlim(plotting_window);
 
-    title('Low Group: PGI','FontSize', labels_text_size)
+    title("LOW",'FontSize', 18);
     ylim([-6, 6])
     grid on;
     hold off;
@@ -4283,9 +3325,12 @@ elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion ==
         yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     end
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
+    ylh = ylabel("PGI", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 0.5;
+    ylh.Position(1) = -220;
 
     nexttile;
 
@@ -4307,7 +3352,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion ==
 
     xlim(plotting_window);
 
-    title('High Group: PGI','FontSize', labels_text_size)
+    title("HIGH",'FontSize', 18);
     ylim([-6, 6])
     grid on;
     hold off;
@@ -4320,17 +3365,17 @@ elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion ==
         yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     end
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
     ylabel(ax_label, "FontSize",labels_text_size)
 
 
     % low med etc
     nexttile
     hold on;
-    plot(NaN(1), 'Color', '#0072BD');
-    plot(NaN(1), 'Color', '#D95319');
-    plot(NaN(1), 'Color', '#FFFF00');
-    legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', '#0072BD');
+    %plot(NaN(1), 'Color', '#D95319');
+    %plot(NaN(1), 'Color', '#FFFF00');
+    %legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
 
     plot(time, ci1_l.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
     plot(time, ci1_l.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -4371,8 +3416,10 @@ elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion ==
     end
 
     xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 1.8;
+    ylh.Position(1) = -220;
 
     % high med etc
     nexttile
@@ -4424,6 +3471,869 @@ elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion ==
     ylabel(ax_label, "FontSize",labels_text_size)
 
 
+
+
+elseif strcmp(experiment_type, 'three-way-interaction')
+    t = tiledlayout(6,2, 'TileSpacing','Compact');
+    time = data{1}.time * 1000;
+
+    %%%%%%% PARTITION 1
+    % onsets 2;3, 4;5 6,7 for P1 low
+    nexttile
+    hold on;
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p1_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p1_23_l.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p1_23_l.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+     inBetween = [p1_23_l.dist_pgi_high, fliplr(p1_23_l.dist_pgi_low)];
+     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');     set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p1_45_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+     plot(time, p1_45_l.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+     plot(time, p1_45_l.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+     inBetween = [p1_45_l.dist_pgi_high, fliplr(p1_45_l.dist_pgi_low)];
+     h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+     set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p1_67_l.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+     plot(time, p1_67_l.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+     plot(time, p1_67_l.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+     inBetween = [p1_67_l.dist_pgi_high, fliplr(p1_67_l.dist_pgi_low)];
+     h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+     set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    title("LOW", "FontSize",18)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("PGI", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    %yyaxis right
+    %yticks([])
+    %ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+
+    
+    %%%%%%%
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P1 high
+    set(gca,'Color',[.85,.85,.85])
+    nexttile
+    hold on;
+    plot(NaN(1), 'Color', 'r');
+    plot(NaN(1), 'Color', 'g');
+    plot(NaN(1), 'Color', 'b');
+    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p1_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+     plot(time, p1_23_h.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+     plot(time, p1_23_h.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+     inBetween = [p1_23_h.dist_pgi_high, fliplr(p1_23_h.dist_pgi_low)];
+     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+     set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p1_45_h.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+     plot(time, p1_45_h.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+     plot(time, p1_45_h.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+     inBetween = [p1_45_h.dist_pgi_high, fliplr(p1_45_h.dist_pgi_low)];
+     h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+     set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p1_67_h.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+     plot(time, p1_67_h.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+     plot(time, p1_67_h.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+     inBetween = [p1_67_h.dist_pgi_high, fliplr(p1_67_h.dist_pgi_low)];
+     h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+     set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    title("HIGH","FontSize", 18)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P1 medium low
+    set(gca,'Color',[.85,.85,.85])
+    nexttile
+    hold on;
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p1_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+     plot(time, p1_23_l.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+     plot(time, p1_23_l.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+     inBetween = [p1_23_l.dist_med_high, fliplr(p1_23_l.dist_med_low)];
+     h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+     set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p1_45_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+     plot(time, p1_45_l.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+     plot(time, p1_45_l.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+     x2 = [time, fliplr(time)];
+    inBetween = [p1_45_l.dist_med_high, fliplr(p1_45_l.dist_med_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p1_67_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p1_67_l.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p1_67_l.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p1_67_l.dist_med_high, fliplr(p1_67_l.dist_med_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("Medium","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    %yyaxis right
+    %yticks([])
+    %ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P1 medium high
+    set(gca,'Color',[.85,.85,.85])
+    nexttile
+    hold on;
+    plot(NaN(1), 'Color', 'r');
+    plot(NaN(1), 'Color', 'g');
+    plot(NaN(1), 'Color', 'b');
+    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p1_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p1_23_h.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p1_23_h.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p1_23_h.dist_med_high, fliplr(p1_23_h.dist_med_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p1_45_h.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p1_45_h.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p1_45_h.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p1_45_h.dist_med_high, fliplr(p1_45_h.dist_med_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p1_67_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p1_67_h.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p1_67_h.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p1_67_h.dist_med_high, fliplr(p1_67_h.dist_med_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("Medium","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+    %%%%%%% PARTITION 1
+
+    %%%%%%% PARTITION 2
+    % onsets 2;3, 4;5 6,7 for P2 low
+    set(gca,'Color',[.85,.85,.85])
+    nexttile
+    hold on;
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p2_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_23_l.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_23_l.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_23_l.dist_pgi_high, fliplr(p2_23_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p2_45_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_45_l.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_45_l.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_45_l.dist_pgi_high, fliplr(p2_45_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p2_67_l.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_l.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_67_l.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_67_l.dist_pgi_high, fliplr(p2_67_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("PGI","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("PGI", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    %yyaxis right
+    %yticks([])
+    %ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+    
+    %%%%%%%
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P1 high
+    nexttile
+    hold on;
+    plot(NaN(1), 'Color', 'r');
+    plot(NaN(1), 'Color', 'g');
+    plot(NaN(1), 'Color', 'b');
+    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p2_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_23_h.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_23_h.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_23_h.dist_pgi_high, fliplr(p2_23_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p2_45_h.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_45_h.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_45_h.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_45_h.dist_pgi_high, fliplr(p2_45_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p2_67_h.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_h.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_67_h.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_67_h.dist_pgi_high, fliplr(p2_67_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("PGI","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P2 medium low
+    nexttile
+    hold on;
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p2_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_23_l.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_23_l.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_23_l.dist_med_high, fliplr(p2_23_l.dist_med_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p2_45_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_45_l.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_45_l.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_45_l.dist_med_high, fliplr(p2_45_l.dist_med_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p2_67_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_l.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_67_l.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_67_l.dist_med_high, fliplr(p2_67_l.dist_med_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("Medium","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    %yyaxis right
+    %yticks([])
+    %ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P2 medium high
+    nexttile
+    hold on;
+    plot(NaN(1), 'Color', 'r');
+    plot(NaN(1), 'Color', 'g');
+    plot(NaN(1), 'Color', 'b');
+    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p2_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_23_h.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_23_h.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_23_h.dist_med_high, fliplr(p2_23_h.dist_med_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p2_45_h.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_45_h.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_45_h.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_45_h.dist_med_high, fliplr(p2_45_h.dist_med_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p2_67_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p2_67_h.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p2_67_h.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p2_67_h.dist_med_high, fliplr(p2_67_h.dist_med_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("Medium","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+%%%%%%% PARTITION 3
+    % onsets 2;3, 4;5 6,7 for P3 low
+    nexttile
+    hold on;
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p3_23_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_23_l.dist_pgi_high, fliplr(p3_23_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p3_45_l.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_45_l.dist_pgi_high, fliplr(p3_45_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p3_67_l.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_67_l.dist_pgi_high, fliplr(p3_67_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("PGI","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("PGI", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+    %yyaxis right
+    %yticks([])
+    %ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+    
+    %%%%%%%
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P3 high
+    set(gca,'Color',[.85,.85,.85])
+    nexttile
+    hold on;
+    plot(NaN(1), 'Color', 'r');
+    plot(NaN(1), 'Color', 'g');
+    plot(NaN(1), 'Color', 'b');
+    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p3_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_pgi_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_pgi_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_23_h.dist_pgi_high, fliplr(p3_23_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p3_45_h.dist_pgi_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_pgi_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_pgi_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_45_h.dist_pgi_high, fliplr(p3_45_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p3_67_h.dist_pgi_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_pgi_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_pgi_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_67_h.dist_pgi_high, fliplr(p3_67_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("PGI","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P3 medium low
+    set(gca,'Color',[.85,.85,.85])
+    nexttile
+    hold on;
+    %plot(NaN(1), 'Color', 'r');
+    %plot(NaN(1), 'Color', 'g');
+    %plot(NaN(1), 'Color', 'b');
+    %legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p3_23_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_23_l.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_23_l.dist_med_high, fliplr(p3_23_l.dist_med_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p3_45_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_45_l.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_45_l.dist_med_high, fliplr(p3_45_l.dist_med_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p3_67_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_67_l.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_67_l.dist_med_high, fliplr(p3_67_l.dist_med_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("Medium","FontSize", 13)
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
+
+   % yyaxis right
+    %yticks([])
+    %ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
+
+    %%%%%%%
+    % onsets 2;3, 4;5 6,7 for P3 medium high
+    set(gca,'Color',[.85,.85,.85])
+    nexttile
+    hold on;
+    plot(NaN(1), 'Color', 'r');
+    plot(NaN(1), 'Color', 'g');
+    plot(NaN(1), 'Color', 'b');
+    legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+
+        % onsets 2;3 p1
+    plot(time, p3_23_h.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_med_high, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_23_h.dist_med_low, 'color', 'r', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_23_h.dist_med_high, fliplr(p3_23_h.dist_med_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+        % onsets 4,5 p1 
+    plot(time, p3_45_h.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_med_high, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_45_h.dist_med_low, 'color', 'g', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_45_h.dist_med_high, fliplr(p3_45_h.dist_med_low)];
+    h = fill(x2, inBetween, 'g', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)  
+
+        % onsets 6;7 p3
+    plot(time, p3_67_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_med_high, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    plot(time, p3_67_h.dist_med_low, 'color', 'b', 'LineWidth', 0.00001,'HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [p3_67_h.dist_med_high, fliplr(p3_67_h.dist_med_low)];
+    h = fill(x2, inBetween, 'b', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10) 
+
+    xlim(plotting_window);
+    ylim([-4, 12])
+    grid on;
+    %title("Medium","FontSize", 13)
+    set(gca,'Color',[.85,.85,.85])
+    hold off;
+
+    xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+    xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+    xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+
+    xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    
+
+
+elseif strcmp(experiment_type, 'partitions-2-8') && first_partition_regresion == 1 || ...
+    strcmp(experiment_type,'pure-factor-effect')
+    t = tiledlayout(2,2, 'TileSpacing','Compact');
+    time = data{1}.time * 1000;
+    nexttile
+
+    hold on;
+    %plot(NaN(1), 'r');
+    %if contains(experiment_type, 'partitions-2-8')
+    %    legend({'P1-PGI'},'Location','bestoutside','FontSize', labels_text_size)
+    %elseif contains(experiment_type, 'pure-factor-effect')
+    %    legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
+    %end
+
+    % low
+    plot(time, ci1_l.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_l.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    plot(time, ci1_l.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_l.dist_pgi_high, fliplr(ci1_l.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    xlim(plotting_window);
+
+    title("LOW",'FontSize', 18);
+    ylim([-6, 6])
+    grid on;
+    hold off;
+
+    if peak_effect ~= 0
+        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    end
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+    ylh = ylabel("PGI", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 0.5;
+    ylh.Position(1) = -220;
+
+    nexttile;
+
+    plot(NaN(1), 'r');
+    if contains(experiment_type, 'partitions-2-8')
+        legend({'P1-PGI'},'Location','bestoutside','FontSize', labels_text_size)
+    elseif contains(experiment_type, 'pure-factor-effect')
+        legend({'PGI'},'Location','bestoutside','FontSize', labels_text_size)
+    end
+
+    hold on;
+    plot(time, ci1_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_h.dist_pgi_high, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    plot(time, ci1_h.dist_pgi_low, 'LineWidth', 0.00001, 'color', 'r','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_h.dist_pgi_high, fliplr(ci1_h.dist_pgi_low)];
+    h = fill(x2, inBetween, 'r', 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    xlim(plotting_window);
+
+    title("HIGH",'FontSize', 18);
+    ylim([-6, 6])
+    grid on;
+    hold off;
+
+    if peak_effect ~= 0
+        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    end
+
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+
+    % low med etc
+    nexttile
+    hold on;
+    %plot(NaN(1), 'Color', '#0072BD');
+    %plot(NaN(1), 'Color', '#D95319');
+    %plot(NaN(1), 'Color', '#FFFF00');
+    %legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
+
+    plot(time, ci1_l.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_l.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
+    plot(time, ci1_l.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_l.dist_thin_high, fliplr(ci1_l.dist_thin_low)];
+    h = fill(x2, inBetween, [0, 0.447, 0.741], 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    plot(time, ci1_l.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_l.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
+    plot(time, ci1_l.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_l.dist_med_high, fliplr(ci1_l.dist_med_low)];
+    h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    plot(time, ci1_l.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_l.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+    plot(time, ci1_l.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_l.dist_thick_high, fliplr(ci1_l.dist_thick_low)];
+    h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.175)
+
+    xlim(plotting_window);
+
+    ylim([-5.5, 8.5])
+    grid on;
+    hold off;
+
+    if peak_effect ~= 0
+        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    end
+
+    xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 1.8;
+    ylh.Position(1) = -220;
+
+    % high med etc
+    nexttile
+    hold on;
+    plot(NaN(1), 'Color', '#0072BD');
+    plot(NaN(1), 'Color', '#D95319');
+    plot(NaN(1), 'Color', '#FFFF00');
+    legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
+
+    plot(time, ci1_h.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_h.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
+    plot(time, ci1_h.dist_thin_low, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_h.dist_thin_high, fliplr(ci1_h.dist_thin_low)];
+    h = fill(x2, inBetween, [0, 0.447, 0.741], 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    plot(time, ci1_h.dist_med_avg, 'color', '#D95319', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_h.dist_med_high, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
+    plot(time, ci1_h.dist_med_low, 'LineWidth', 0.01, 'color', '#D95319','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_h.dist_med_high, fliplr(ci1_h.dist_med_low)];
+    h = fill(x2, inBetween, [0.851, 0.325, 0.098], 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.10)
+
+    plot(time, ci1_h.dist_thick_avg, 'color', '#FCD200', 'LineWidth', 3.5,'HandleVisibility','off');
+    plot(time, ci1_h.dist_thick_high, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+    plot(time, ci1_h.dist_thick_low, 'LineWidth', 0.01, 'color', '#FCD200','HandleVisibility','off');
+    x2 = [time, fliplr(time)];
+    inBetween = [ci1_h.dist_thick_high, fliplr(ci1_h.dist_thick_low)];
+    h = fill(x2, inBetween, [1,0.92,0], 'HandleVisibility','off', 'LineStyle','none');
+    set(h,'facealpha',.175)
+
+    xlim(plotting_window);
+
+    ylim([-5.5, 8.5])
+    grid on;
+    hold off;
+
+    if peak_effect ~= 0
+        xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
+        xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
+        xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+        yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
+    end
+
+    xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+
+
 elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erps-23-45-67')
     t = tiledlayout(5,2, 'TileSpacing','Compact');
     time = data{1}.time * 1000;
@@ -4432,13 +4342,12 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     % PGI LOW
     nexttile
     hold on;
-    hold on;
-    plot(NaN(1), 'r');
-    plot(NaN(1), 'g');
-    plot(NaN(1),  'color','#4DBEEE');
+    %plot(NaN(1), 'r');
+    %plot(NaN(1), 'g');
+    %plot(NaN(1),  'color','#4DBEEE');
     if contains(experiment_type, 'partitions-2-8')
 
-        legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', labels_text_size)
+        %legend({'P1-PGI', 'P2-PGI', 'P3-PGI'},'Location','bestoutside','FontSize', labels_text_size)
         pgi_low = "Low Group: Partitions PGI";
         pgi_high = "High Group: Partitions: PGI";
         med_low = "Low Group: Medium Through the Partitions";
@@ -4452,7 +4361,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
 
     elseif strcmp(experiment_type, 'erps-23-45-67')
 
-        legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', labels_text_size)
+        %legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', labels_text_size)
         pgi_low = "Low Group: Onsets PGI";
         pgi_high = "High Group: Onsets: PGI";
         med_low = "Low Group: Medium Through the Onsets";
@@ -4491,7 +4400,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.10)
 
     xlim(plotting_window);
-    title(pgi_low,'FontSize', labels_text_size);
+    title("LOW",'FontSize', 18);
 
 
 
@@ -4515,9 +4424,11 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
-
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("PGI", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 0.5;
+    ylh.Position(1) = -220;
 
 
     % PGI HIGH
@@ -4557,7 +4468,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.10)
 
     xlim(plotting_window);
-    title(pgi_high,'FontSize', labels_text_size);
+    title("HIGH",'FontSize', 18);
 
 
     ylim([min_y, max_y])
@@ -4570,28 +4481,28 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
 
     % MED LOW
     nexttile
     hold on;
-    plot(NaN(1), 'r');
-    plot(NaN(1), 'g');
-    plot(NaN(1), 'b');
-    if contains(experiment_type, 'partitions-2-8')
-        legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', labels_text_size)
-    elseif strcmp(experiment_type, 'erps-23-45-67')
-        legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', labels_text_size)
-    end
+    %plot(NaN(1), 'r');
+    %plot(NaN(1), 'g');
+    %plot(NaN(1), 'b');
+    %if contains(experiment_type, 'partitions-2-8')
+    %    legend({'Med-P1', 'Med-P2', 'Med-P3'},'Location','bestoutside','FontSize', labels_text_size)
+    %elseif strcmp(experiment_type, 'erps-23-45-67')
+    %    legend({'Med-2:3', 'Med-4:5', 'Med-6:7'},'Location','bestoutside','FontSize', labels_text_size)
+    %end
 
     plot(time, ci1_l.dist_med_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
     plot(time, ci2_l.dist_med_avg, 'color', 'g', 'LineWidth', 3.5,'HandleVisibility','off');
     plot(time, ci3_l.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
 
     xlim(plotting_window);
-    title(med_low,'FontSize', labels_text_size);
+    %title("Medium",'FontSize', labels_text_size);
 
     min_y_low = min([min(ci1_l.dist_med_avg), min(ci2_l.dist_med_avg), min(ci3_l.dist_med_avg)])-0.5;
     max_y_low = max([max(ci1_l.dist_med_avg), max(ci2_l.dist_med_avg), max(ci3_l.dist_med_avg)])+0.5;
@@ -4613,8 +4524,11 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    ylh = ylabel("Medium", "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
 
     % MED HIGH
     nexttile
@@ -4634,7 +4548,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     plot(time, ci3_h.dist_med_avg, 'color', 'b', 'LineWidth', 3.5,'HandleVisibility','off');
 
     xlim(plotting_window);
-    title(med_high,'FontSize', labels_text_size);
+    %title(med_high,'FontSize', labels_text_size);
 
     ylim([min_y, max_y])
 
@@ -4647,17 +4561,17 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
 
     % P1 LOW
     nexttile
     hold on;
-    plot(NaN(1), 'Color', '#0072BD');
-    plot(NaN(1), 'Color', '#D95319');
-    plot(NaN(1), 'Color', '#FFFF00');
-    legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', '#0072BD');
+    %plot(NaN(1), 'Color', '#D95319');
+    %plot(NaN(1), 'Color', '#FFFF00');
+    %legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
 
     plot(time, ci1_l.dist_thin_avg, 'color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
     plot(time, ci1_l.dist_thin_high, 'LineWidth', 0.01, 'color', '#0072BD','HandleVisibility','off');
@@ -4684,7 +4598,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.175)
 
     xlim(plotting_window);
-    title(low_p1,'FontSize', labels_text_size);
+    %title(low_p1,'FontSize', labels_text_size);
 
 
     min_yl = min([min(ci1_h.dist_thick_low), min(ci1_h.dist_med_low), min(ci1_h.dist_thin_low)])-0.5;
@@ -4706,9 +4620,17 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    if strcmp(experiment_type, 'erps-23-45-67')
+        la = 'Onsets 2:3';
+    else
+        la = 'Partition 1';
+    end
 
+    ylh = ylabel(la, "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
 
     % P1 HIGH
     nexttile
@@ -4743,7 +4665,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.175)
 
     xlim(plotting_window);
-    title(high_p1,'FontSize', labels_text_size);
+    %title(high_p1,'FontSize', labels_text_size);
 
     ylim([min_y, max_y])
 
@@ -4755,17 +4677,17 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
 
     % P2 LOW
     nexttile
     hold on;
-    plot(NaN(1), 'Color', '#0072BD');
-    plot(NaN(1), 'Color', '#D95319');
-    plot(NaN(1), 'Color', '#FFFF00');
-    legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', '#0072BD');
+    %plot(NaN(1), 'Color', '#D95319');
+    %plot(NaN(1), 'Color', '#FFFF00');
+    %legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
 
     plot(time, ci2_l.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
     plot(time, ci2_l.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -4792,7 +4714,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.175)
 
     xlim(plotting_window);
-    title(low_p2,'FontSize', labels_text_size);
+    %title(low_p2,'FontSize', labels_text_size);
 
     min_yl = min([min(ci2_l.dist_thin_low), min(ci2_l.dist_med_low), min(ci2_l.dist_thick_low)])-0.5;
     max_yl = max([max(ci2_l.dist_thick_high), max(ci2_l.dist_med_high), max(ci2_l.dist_thin_high)])+0.5;
@@ -4814,9 +4736,18 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
+    if strcmp(experiment_type, 'erps-23-45-67')
+        la = 'Onsets 4:5';
+    else
+        la = 'Partition 2';
+    end
 
+
+    ylh = ylabel(la, "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
 
     % P2 HIGH
     nexttile
@@ -4851,7 +4782,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.175)
 
     xlim(plotting_window);
-    title(high_p2,'FontSize', labels_text_size);
+    %title(high_p2,'FontSize', labels_text_size);
 
 
     ylim([min_y, max_y])
@@ -4865,17 +4796,17 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
 
     % P3 LOW
     nexttile
     hold on;
-    plot(NaN(1), 'Color', '#0072BD');
-    plot(NaN(1), 'Color', '#D95319');
-    plot(NaN(1), 'Color', '#FFFF00');
-    legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
+    %plot(NaN(1), 'Color', '#0072BD');
+    %plot(NaN(1), 'Color', '#D95319');
+    %plot(NaN(1), 'Color', '#FFFF00');
+    %legend({'Thin', 'Medium', 'Thick'},'Location','bestoutside','FontSize', labels_text_size)
 
     plot(time, ci3_l.dist_thin_avg, 'Color', '#0072BD', 'LineWidth', 3.5,'HandleVisibility','off');
     plot(time, ci3_l.dist_thin_high, 'LineWidth', 0.01, 'Color', '#0072BD','HandleVisibility','off');
@@ -4902,7 +4833,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.175)
 
     xlim(plotting_window);
-    title(low_p3,'FontSize', labels_text_size);
+    %title(low_p3,'FontSize', labels_text_size);
 
     min_yl = min([min(ci3_l.dist_thin_low), min(ci3_l.dist_med_low), min(ci3_l.dist_thick_low)])-0.5;
     max_yl = max([max(ci3_l.dist_thick_high), max(ci3_l.dist_med_high), max(ci3_l.dist_thin_high)])+0.5;
@@ -4924,9 +4855,18 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
 
+    if strcmp(experiment_type, 'erps-23-45-67')
+        la = 'Onsets 6:7';
+    else
+        la = 'Partition 3';
+    end
+
+    ylh = ylabel(la, "FontSize",16, "Rotation", 0, 'HorizontalAlignment','right', "FontWeight", "bold");
+    ylh.Position(2) = 2.75;
+    ylh.Position(1) = -220;
 
     % P3 HIGH
     nexttile
@@ -4961,7 +4901,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     set(h,'facealpha',.175)
 
     xlim(plotting_window);
-    title(high_p3,'FontSize', labels_text_size);
+    %title(high_p3,'FontSize', labels_text_size);
 
 
     ylim([min_y, max_y])
@@ -4975,8 +4915,8 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
 
-    xlabel("Milliseconds", "FontSize",labels_text_size)
-    ylabel(ax_label, "FontSize",labels_text_size)
+    %xlabel("Milliseconds", "FontSize",labels_text_size)
+    %ylabel(ax_label, "FontSize",labels_text_size)
         
 
 end
@@ -4988,20 +4928,19 @@ peak_stats = "Max sample: T" + "(" + num2str(df) + ")=" + num2str(t_value) ...
 subtitle(t, {cluster_stats, peak_stats}, 'FontSize', 14)
 
 
-if contains(experiment_type, 'partitions-2-8') || contains(experiment_type, 'erps-23-45-67')
+if contains(experiment_type, 'partitions-2-8') && first_partition_regresion ~= 1 || contains(experiment_type, 'erps-23-45-67') 
     set(gcf,'Position',[100 100 1250 1250])
+    exportgraphics(gcf,save_dir,'Resolution',500);
 elseif contains(experiment_type, 'three-way-interaction')
-    set(gcf,'Position',[100 100 1300 1250])
+    set(gcf,'Position',[100 100 1300 1250]) 
     p1 = text(-920, 90, 'Partition 1', 'Fontsize', 18, 'Rotation', 90, "FontWeight","bold");
     p2 = text(-920, 50, 'Partition 2', 'Fontsize', 18, 'Rotation', 90, "FontWeight","bold");
     p3 = text(-920, 10, 'Partition 3', 'Fontsize', 18, 'Rotation', 90, "FontWeight","bold");
-
+    exportgraphics(gcf,save_dir,'Resolution',500);
 else
     set(gcf,'Position',[100 100 1000 750])
+    exportgraphics(gcf,save_dir,'Resolution',500);
 end
-
- exportgraphics(gcf,save_dir,'Resolution',500);
-
  close;
 end
 %% calculate partitions splits
