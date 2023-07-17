@@ -1004,7 +1004,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 3000;
+                cfg.numrandomization = 250;
                 cfg.tail = roi_to_apply;
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -4649,10 +4649,10 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
 
     % calculate global min/max for partitions
     global_min_y = min([min_y_p3, min_y_p2, min_y_p1]);
-    global_max_y = max([max_y_p3, max_y_p2, max_y_p1]);
+    global_min_y = max([max_y_p3, max_y_p2, max_y_p1]);
 
 
-    ylim([global_min_y, global_max_y])
+    ylim([global_min_y, global_min_y])
 
     grid on;
     hold off;
@@ -4709,7 +4709,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xlim(plotting_window);
     %title(high_p1,'FontSize', labels_text_size);
 
-    ylim([global_min_y, global_max_y])
+    ylim([min_y, max_y])
 
     grid on;
     hold off;
@@ -4758,7 +4758,16 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xlim(plotting_window);
     %title(low_p2,'FontSize', labels_text_size);
 
-    ylim([global_min_y, global_max_y])
+    min_yl = min([min(ci2_l.dist_thin_low), min(ci2_l.dist_med_low), min(ci2_l.dist_thick_low)])-0.5;
+    max_yl = max([max(ci2_l.dist_thick_high), max(ci2_l.dist_med_high), max(ci2_l.dist_thin_high)])+0.5;
+
+    min_yh = min([min(ci2_h.dist_thin_low), min(ci2_h.dist_med_low), min(ci2_h.dist_thick_low)])-0.5;
+    max_yh = max([max(ci2_h.dist_thick_high), max(ci2_h.dist_med_high), max(ci2_h.dist_thin_high)])+0.5;
+
+    min_y = min([min_yl, min_yh]);
+    max_y = max([max_yl, max_yh]);
+
+    ylim([min_y, max_y])
 
     grid on;
     hold off;
@@ -4818,7 +4827,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     %title(high_p2,'FontSize', labels_text_size);
 
 
-    ylim([global_min_y, global_max_y])
+    ylim([min_y, max_y])
 
     grid on;
     hold off;
@@ -4868,7 +4877,16 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xlim(plotting_window);
     %title(low_p3,'FontSize', labels_text_size);
 
-    ylim([global_min_y, global_max_y])
+    min_yl = min([min(ci3_l.dist_thin_low), min(ci3_l.dist_med_low), min(ci3_l.dist_thick_low)])-0.5;
+    max_yl = max([max(ci3_l.dist_thick_high), max(ci3_l.dist_med_high), max(ci3_l.dist_thin_high)])+0.5;
+
+    min_yh = min([min(ci3_h.dist_thick_low), min(ci3_h.dist_med_low), min(ci3_h.dist_thin_low)])-0.5;
+    max_yh = max([max(ci3_h.dist_thin_high), max(ci3_h.dist_med_high), max(ci3_h.dist_thick_high)])+0.5;
+
+    min_y = min([min_yl, min_yh]);
+    max_y = max([max_yl, max_yh]);
+
+    ylim([min_y, max_y])
 
     grid on;
     hold off;
@@ -4928,7 +4946,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     %title(high_p3,'FontSize', labels_text_size);
 
 
-    ylim([global_min_y, global_max_y])
+    ylim([min_y, max_y])
 
     grid on;
     hold off;
