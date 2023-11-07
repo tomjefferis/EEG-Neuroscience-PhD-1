@@ -186,8 +186,8 @@ end
 %% create using morlett waveletts on both the trial level
 cfg1              = [];
 cfg1.output       = 'pow';
-cfg1.method       = 'wavelet';
-%cfg1.taper = 'hanning';
+cfg1.method       = 'mtmconvol';
+cfg1.taper = 'hanning';
 cfg1.foi =   5:1:30; % in 1 Hz steps
 cfg1.t_ftimwin = 3./cfg1.foi;
 cfg1.toi          = desired_toi(1):0.05:desired_toi(2); % 2ms steps
@@ -255,7 +255,7 @@ cfg = [];
 cfg.baseline = 'no';
 cfg.xlim = [desired_toi(1),desired_toi(2)];
 cfg.channel = 'A1';
-cfg.zlim = [-2, 3];
+cfg.zlim = [-1, 6];
 ft_singleplotTFR(cfg, tl_tf);
 title('Without Extended Baseline', 'FontSize', 15)
 xline(1.2, '--r', 'LineWidth', 2)
@@ -270,7 +270,7 @@ cfg = [];
 cfg.baseline = 'no';
 cfg.xlim = [desired_toi(1),desired_toi(2)];
 cfg.channel = 'A1';
-cfg.zlim = [-2, 3];
+cfg.zlim = [-1, 4];
 ft_singleplotTFR(cfg, tl_tf_extended);
 title('With Extended Baseline', 'FontSize', 15)
 xline(1.2, '--r', 'LineWidth', 2)
@@ -289,18 +289,17 @@ without_extended_time = tl_tf.time;
 with_extended = tl_tf_extended.powspctrm;
 with_extended_time = tl_tf_extended.time;
 
-tl_tf_extended.powspctrm = abs(with_extended-without_extended);
+tl_tf_extended.powspctrm = abs(without_extended-with_extended);
 cfg = [];
 cfg.baseline = 'no';
 cfg.xlim = [desired_toi(1),desired_toi(2)];
 cfg.channel = 'A1';
-cfg.zlim = [-2, 3];
+cfg.zlim = [-2, 1.5];
 ft_singleplotTFR(cfg, tl_tf_extended);
 title('Absoulute Difference in Power', 'FontSize', 15)
-xline(1.2, '--r', 'LineWidth', 2)
+xline(1, '--r', 'LineWidth', 2)
 xlabel('Time')
 ylabel('Power')
-set(gcf,'Position',[100 100 1000 500])
 exportgraphics(gcf,"E:\EEG-Neuroscience-PhD\code\synthetic_data\outputs\difference_plot.png",'Resolution',500);
 close;
 

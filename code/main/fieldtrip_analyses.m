@@ -10,8 +10,8 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'partitions-2-8'};
-desired_design_mtxs = {"visual_stress"};
+experiment_types = {'erps-23-45-67'};
+desired_design_mtxs = {"discomfort"};
 type_of_interaction = 'habituation';
 start_latency = 0.056;
 end_latency = 0.256;
@@ -162,7 +162,7 @@ for f = 1:numel(foi_of_interest)
                     plot(design_matrix(1:numel(design_matrix)), 'color', 'r', 'LineWidth', 3.5);
                     hold on;
                     xlabel('Participants', 'FontSize',11);
-                    ylabel('Factor Score', 'FontSize',11);
+                    ylabel('Value in Regressor', 'FontSize',11);
 
                     set(gcf,'Position',[100 100 500 500])
                     save_dir = strcat(save_path, '\', 'design_matrix.png');
@@ -470,13 +470,13 @@ for f = 1:numel(foi_of_interest)
                     plot(onsets_6_7, "LineWidth",3.5)
 
 
-                    xline(numel(design_p1_23), '--r', {'Partition 1'}, 'LineWidth', 3.5)
-                    xline(numel(design_p1_23)*2, '--r', {'Partition 2'}, 'LineWidth', 3.5)       
-                    xline(numel(design_p1_23)*3, '--r', {'Partition 3'}, 'LineWidth', 3.5)
+                    xline(numel(design_p1_23), '--r', {'Partition 1'}, 'LineWidth', 3.5, 'LabelHorizontalAlignment', 'left')
+                    xline(numel(design_p1_23)*2, '--r', {'Partition 2'}, 'LineWidth', 3.5, 'LabelHorizontalAlignment', 'left')       
+                    xline(numel(design_p1_23)*3, '--r', {'Partition 3'}, 'LineWidth', 3.5, 'LabelHorizontalAlignment', 'left')
 
                     legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','northwest')
                     xlabel('Participants');
-                    ylabel('3-way Interaction');
+                    ylabel('Value in Regressor');
 
                     if strcmp(desired_design_mtx, 'visual_stress')
                         label_factor = "Visual Stress";
@@ -1029,7 +1029,7 @@ for f = 1:numel(foi_of_interest)
                         cfg.ivar = 1;
                         stat = ft_timelockstatistics(cfg, data{:});
 
-                        disp(stat.posclusters(1).prob)
+                        %disp(stat.posclusters(1).prob)
 
                         save(strcat(new_save_path, '\stat.mat'), 'stat')
 
@@ -1499,7 +1499,7 @@ hold on;
 plot(design_matrix(n_participants+1:n_participants*2), 'color', 'g', 'LineWidth', 3.5);
 plot(design_matrix((n_participants*2)+1:n_participants*3), 'color', 'b', 'LineWidth', 3.5);
 xlabel('Participants','FontSize', 14);
-ylabel('Interaction','FontSize', 14);
+ylabel('Value in Regressor','FontSize', 14);
 if strcmp(experiment_type, 'habituation')
     legend({'P1', 'P2', 'P3'},'Location','bestoutside','FontSize', 14)
 else
