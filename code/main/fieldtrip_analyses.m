@@ -1,23 +1,23 @@
 %% PATHS AND SETTING UP FIELDTRIP AND PATHS
 clear classes;
 clear all;
-master_dir = 'E:\PhD\fieldtrip';
-main_path = 'E:\PhD\participant_';
-results_dir = 'E:\PhD\results';
-addpath 'C:\External_Software\fieldtrip-20210807';
-addpath('C:\External_Software\spm12')
+master_dir = '/Users/cihandogan/Documents/Research/PhD/fieldtrip';
+main_path = '/Users/cihandogan/Documents/Research/preprocessing/after_spm_script/participant_';
+results_dir = '/Users/cihandogan/Documents/Research/preprocessing/results';
+addpath('/Users/cihandogan/Documents/Research/fieldtrip-20240214');
+
 ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'three-way-interaction'};
-desired_design_mtxs = {"headache"};
+experiment_types = {'onsets-2-8-explicit'};
+desired_design_mtxs = {"no-factor"};
 type_of_interaction = 'habituation';
-start_latency = 0.056;
-end_latency = 0.256;
+start_latency = 0.0;
+end_latency = 0.8;
 
 %% SHALL WE APPLY A ROI, IF SO HOW?
-region_of_interest = 1;
+region_of_interest = 0;
 roi_applied = 'two-tailed';
 weight_roi = 0;
 roi_to_apply = 0;
@@ -29,7 +29,7 @@ weight_erps = 0; % weights based on quartiles
 weighting_factor = 0.75; % weights based on quartiles
 
 %% CHOOSE THE TYPE OF ANALYSIS EITHER 'frequency_domain' or 'time_domain'
-type_of_analysis = 'time_domain';
+type_of_analysis = 'frequency_domain';
 
 if strcmp(type_of_analysis, 'frequency_domain')
     disp('RUNNING A FREQUENCY-DOMAIN ANALYSIS');
@@ -37,9 +37,12 @@ if strcmp(type_of_analysis, 'frequency_domain')
     analyse_spectrogram = 1 ; % analysis on the aggregate power data?
     frequency_level = 'trial-level'; % freq analyses on 'participant-level' or 'trial-level'
     extract_timeseries_values = 0;
-    toi = [0.500, 3.000];
-    foi_of_interest = [[8, 13]; [20, 35]; [30,45]; [45, 60]; [60, 80]];
-    analysis = 'load'; % 'load' or 'preprocess'
+    toi = [0.0, 0.8];
+    foi_of_interest = [[8, 13]; [20,30]; [30,45]; [45, 60]; [60, 80]];
+    foi_of_interest = [[60, 80]];
+    % 8-13Hz Alpha, 20-35Hz Beta, 30-45Hz, Low Gamma, 45-60Hz, Mid Gamma
+    % 60-80Hz High Gamma
+    analysis = 'preprocess'; % 'load' or 'preprocess'
 elseif strcmp(type_of_analysis, 'time_domain') || strcmp(type_of_analysis, 'time_domain_p1')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
     foi_of_interest = [[-999, -999]];
@@ -61,23 +64,23 @@ for f = 1:numel(foi_of_interest)
             time_name = start_time + "_" + end_time + "ms";
 
             if strcmp(experiment_type, 'partitions-2-8')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\', time_name,'\', type_of_interaction, '\ ', 'partitions', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis, '/', time_name,'/', type_of_interaction, '/ ', 'partitions', '/', desired_design_mtx);
             elseif contains(experiment_type, 'erps-23-45-67')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name,'\', type_of_interaction, '\ ', 'onsets', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis,'/', time_name,'/', type_of_interaction, '/ ', 'onsets', '/', desired_design_mtx);
             elseif contains(experiment_type,'onsets-2-8-explicit')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name, '\', 'mean_intercept', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis,'/', time_name, '/', 'mean_intercept', '/', desired_design_mtx);
             elseif strcmp(experiment_type, 'partitions_vs_onsets')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name,'\', type_of_interaction, '\ ', 'partitions_vs_onsets', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis,'/', time_name,'/', type_of_interaction, '/ ', 'partitions_vs_onsets', '/', desired_design_mtx);
             elseif strcmp(experiment_types, 'trial-level-2-8')
-                save_path = strcat(results_dir, '\', type_of_analysis,'\', time_name,'\',type_of_interaction, '\ ', 'trial_level_2_8', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis,'/', time_name,'/',type_of_interaction, '/ ', 'trial_level_2_8', '/', desired_design_mtx);
             elseif strcmp(experiment_types, 'pure-factor-effect')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\' , time_name,'\','pure-factor-effect', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis, '/' , time_name,'/','pure-factor-effect', '/', desired_design_mtx);
             elseif strcmp(experiment_types, 'factor_effect')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\ ', time_name,'\','factor-effect', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis, '/ ', time_name,'/','factor-effect', '/', desired_design_mtx);
             elseif strcmp(experiment_types, 'three-way-interaction')
-                save_path = strcat(results_dir, '\', type_of_analysis, '\', time_name,'\','three-way-interaction', '\', desired_design_mtx);
+                save_path = strcat(results_dir, '/', type_of_analysis, '/', time_name,'/','three-way-interaction', '/', desired_design_mtx);
             elseif strcmp(experiment_types, 'trial-level-2-8')
-                save_path = strcat(results_dir, '\', tpye_of_analysis, '\', time_name,'\','trial_level');
+                save_path = strcat(results_dir, '/', tpye_of_analysis, '/', time_name,'/','trial_level');
             end
 
             % check if its a frequency experiment
@@ -151,9 +154,9 @@ for f = 1:numel(foi_of_interest)
                     if region_of_interest == 1
                         if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect')
                             if strcmp(roi_applied, 'one-tailed')
-                                load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                load('E:/PhD/fieldtrip/roi/one_tailed_roi_28.mat');
                             elseif strcmp(roi_applied, 'two-tailed')
-                                load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                load('E:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                             end
                         end
                         data = create_hacked_roi(data, roi, weight_roi);
@@ -162,10 +165,10 @@ for f = 1:numel(foi_of_interest)
                     plot(design_matrix(1:numel(design_matrix)), 'color', 'r', 'LineWidth', 3.5);
                     hold on;
                     xlabel('Participants', 'FontSize',11);
-                    ylabel('Factor Score', 'FontSize',11);
+                    ylabel('Value in Regressor', 'FontSize',11);
 
                     set(gcf,'Position',[100 100 500 500])
-                    save_dir = strcat(save_path, '\', 'design_matrix.png');
+                    save_dir = strcat(save_path, '/', 'design_matrix.png');
                     exportgraphics(gcf,save_dir,'Resolution',500);
                     close;
 
@@ -187,7 +190,7 @@ for f = 1:numel(foi_of_interest)
                         data_file, partition1);
 
                     if region_of_interest == 1
-                        load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                        load('D:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                     end
 
                     all_data = create_data_with_increasing_number_of_trials(data1, k_trials, roi);
@@ -250,9 +253,9 @@ for f = 1:numel(foi_of_interest)
                         if region_of_interest == 1
                             if strcmp(experiment_type, 'partitions-2-8')
                                 if strcmp(roi_applied, 'one-tailed')
-                                    load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                    load('E:/PhD/fieldtrip/roi/one_tailed_roi_28.mat');
                                 elseif strcmp(roi_applied, 'two-tailed')
-                                    load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                    load('E:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                                 end
                             end
                             data = create_hacked_roi(data, roi, weight_roi);
@@ -278,7 +281,7 @@ for f = 1:numel(foi_of_interest)
                         xlabel('Participants', 'FontSize',14);
                         ylabel('Factor Score', 'FontSize',14);
                         set(gcf,'Position',[100 100 500 500])
-                        save_dir = strcat(save_path, '\', 'design_matrix.png');
+                        save_dir = strcat(save_path, '/', 'design_matrix.png');
                         exportgraphics(gcf,save_dir,'Resolution',500);
                         close;
 
@@ -286,9 +289,9 @@ for f = 1:numel(foi_of_interest)
                         if region_of_interest == 1
                             if strcmp(experiment_type, 'partitions-2-8')
                                 if strcmp(roi_applied, 'one-tailed')
-                                    load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                    load('E:/PhD/fieldtrip/roi/one_tailed_roi_28.mat');
                                 elseif strcmp(roi_applied, 'two-tailed')
-                                    load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                    load('E:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                                 end
                             end
                             data = create_hacked_roi(data, roi, weight_roi);
@@ -358,9 +361,9 @@ for f = 1:numel(foi_of_interest)
                     if region_of_interest == 1
                         if strcmp(experiment_type, 'erps-23-45-67') || strcmp(experiment_type,  'erps-23-45-67-no-factor')
                             if strcmp(roi_applied, 'one-tailed')
-                                load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                load('E:/PhD/fieldtrip/roi/one_tailed_roi_28.mat');
                             elseif strcmp(roi_applied, 'two-tailed')
-                                load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                load('E:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                             end
                         end
                         data = create_hacked_roi(data, roi, weight_roi);
@@ -470,13 +473,13 @@ for f = 1:numel(foi_of_interest)
                     plot(onsets_6_7, "LineWidth",3.5)
 
 
-                    xline(numel(design_p1_23), '--r', {'Partition 1'}, 'LineWidth', 3.5)
-                    xline(numel(design_p1_23)*2, '--r', {'Partition 2'}, 'LineWidth', 3.5)       
-                    xline(numel(design_p1_23)*3, '--r', {'Partition 3'}, 'LineWidth', 3.5)
+                    xline(numel(design_p1_23), '--r', {'Partition 1'}, 'LineWidth', 3.5, 'LabelHorizontalAlignment', 'left')
+                    xline(numel(design_p1_23)*2, '--r', {'Partition 2'}, 'LineWidth', 3.5, 'LabelHorizontalAlignment', 'left')       
+                    xline(numel(design_p1_23)*3, '--r', {'Partition 3'}, 'LineWidth', 3.5, 'LabelHorizontalAlignment', 'left')
 
                     legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','northwest')
                     xlabel('Participants');
-                    ylabel('3-way Interaction');
+                    ylabel('Value in Regressor');
 
                     if strcmp(desired_design_mtx, 'visual_stress')
                         label_factor = "Visual Stress";
@@ -490,7 +493,7 @@ for f = 1:numel(foi_of_interest)
 
                     title(plot_title);
                     set(gcf,'Position',[100 100 1000 750])
-                    path = strcat(save_path, '\', 'design_matrix.png');
+                    path = strcat(save_path, '/', 'design_matrix.png');
                     exportgraphics(gcf,path,'Resolution',500);
                     close;
 
@@ -505,9 +508,9 @@ for f = 1:numel(foi_of_interest)
                         if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect') ...
                                 || strcmp(experiment_type, 'three-way-interaction')
                             if strcmp(roi_applied, 'one-tailed')
-                                load('E:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                load('E:/PhD/fieldtrip/roi/one_tailed_roi_28.mat');
                             elseif strcmp(roi_applied, 'two-tailed')
-                                load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                load('E:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                             end
                         end
                         data = create_hacked_roi(data, roi, weight_roi);
@@ -578,7 +581,7 @@ for f = 1:numel(foi_of_interest)
                     end
 
                     if region_of_interest == 1
-                        load('E:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                        load('E:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                         all_data = create_hacked_roi_freq(all_data, roi);
                     end
 
@@ -697,7 +700,7 @@ for f = 1:numel(foi_of_interest)
                     end
 
                     %if region_of_interest == 1
-                    %    load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                    %    load('D:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                     %    all_data = create_hacked_roi_freq(all_data, roi);
                     %end
 
@@ -734,18 +737,22 @@ for f = 1:numel(foi_of_interest)
                     partition.partition_number = 0;
 
                     if f == 1
-                        [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-                            data_file, partition);
-
                         disp('--processing-- Hz')
                         disp(foi);
 
-                        freq = to_frequency_data(data, main_path, 1, ...
-                            participant_order_1, analysis, frequency_level, foi, 'mean_intercept');
-                        n_part = numel(data);
+                        freq = to_frequency_data(main_path, partition, ...
+                            analysis, frequency_level, foi, ...
+                            'mean_intercept', data_file, n_participants);
+                        n_part = numel(freq);
 
                         null_data = set_values_to_zero_freq(freq);
 
+                        if strcmp(desired_design_mtx, 'aggregated_average')
+                            create_agg_average(freq);
+                            return;
+                        end
+                        
+                        
                         for i = 1:numel(freq)
                             participant = freq(i);
                             freq{i} = participant{1}.pgi;
@@ -756,7 +763,6 @@ for f = 1:numel(foi_of_interest)
 
                         all_data{1} = freq;
                         all_designs{1} = [1:n_part 1:n_part; ones(1,n_part) 2*ones(1,n_part)];
-
                     end
                 elseif strcmp(experiment_type, 'three-way-interaction')
                     n_participants = 40;
@@ -926,7 +932,7 @@ for f = 1:numel(foi_of_interest)
 
                     title(plot_title);
                     set(gcf,'Position',[100 100 1000 750])
-                    path = strcat(save_path, '\', 'design_matrix.png');
+                    path = strcat(save_path, '/', 'design_matrix.png');
                     exportgraphics(gcf,path,'Resolution',500);
                     close;
 
@@ -940,9 +946,9 @@ for f = 1:numel(foi_of_interest)
                         if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect') ...
                                 || strcmp(experiment_type, 'three-way-interaction')
                             if strcmp(roi_applied, 'one-tailed')
-                                load('D:\PhD\fieldtrip\roi\one_tailed_roi_28.mat');
+                                load('D:/PhD/fieldtrip/roi/one_tailed_roi_28.mat');
                             elseif strcmp(roi_applied, 'two-tailed')
-                                load('D:\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
+                                load('D:/PhD/fieldtrip/roi/two_tailed_roi_28.mat');
                             end
                         end
                         dataset = create_hacked_roi(dataset, roi, weight_roi);
@@ -981,12 +987,14 @@ for f = 1:numel(foi_of_interest)
 
                 %% save the number of participants which went into the analysis
                 num_part = numel(data);
-                save(strcat(new_save_path, '\number_of_participants.mat'), 'num_part')
+                save(strcat(new_save_path, '/number_of_participants.mat'), 'num_part')
 
                 %% setup FT analysis
                 % we have to switch to SPM8 to use some of the functions in FT
-                addpath 'C:\External_Software\spm8';
-                rmpath 'C:\External_Software\spm12';
+                %addpath '/Users/cihandogan/Documents/Research/spm8';
+                %addpath '/Users/cihandogan/Documents/Research/spm12';
+                %rmpath '/Users/cihandogan/Documents/Research/fieldtrip-20230118/external/spm12';
+                %rmpath '/Users/cihandogan/Documents/Research/fieldtrip-20230118/external/spm8';
 
                 % we need to tell fieldtrip how our electrodes are structured
                 cfg = [];
@@ -1004,7 +1012,7 @@ for f = 1:numel(foi_of_interest)
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 3000;
+                cfg.numrandomization = 2000;
                 cfg.tail = roi_to_apply;
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -1019,7 +1027,7 @@ for f = 1:numel(foi_of_interest)
                         cfg.ivar = 2;
                         null_data = set_values_to_zero(data); % create null data to hack a t-test
                         stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
-                        save(strcat(new_save_path, '\stat.mat'), 'stat')
+                        save(strcat(new_save_path, '/stat.mat'), 'stat')
                         desired_cluster =1;
                         %get_region_of_interest_electrodes(stat, desired_cluster, experiment_type, roi_applied);
                     elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
@@ -1029,9 +1037,9 @@ for f = 1:numel(foi_of_interest)
                         cfg.ivar = 1;
                         stat = ft_timelockstatistics(cfg, data{:});
 
-                        disp(stat.posclusters(1).prob)
+                        %disp(stat.posclusters(1).prob)
 
-                        save(strcat(new_save_path, '\stat.mat'), 'stat')
+                        save(strcat(new_save_path, '/stat.mat'), 'stat')
 
                         if ~isfield(stat, 'posclusters') || ~isfield(stat, 'negclusters')
                             continue;
@@ -1043,14 +1051,15 @@ for f = 1:numel(foi_of_interest)
                         cfg.ivar = 2;
                         cfg.avgoverfreq = 'yes';
                         cfg.frequency = [foi(1) foi(2)];
+                        cfg.clusterthreshold = 'nonparametric_common';
                         stat = ft_freqstatistics(cfg, data{:}, null_data{:});
-                        save(strcat(new_save_path, '\stat.mat'), 'stat')
+                        save(strcat(new_save_path, '/stat.mat'), 'stat')
                     else
                         cfg.frequency = [foi(1) foi(2)];
                         cfg.ivar = 1;
                         cfg.avgoverfreq = 'yes';
                         stat = ft_freqstatistics(cfg, data{:});
-                        save(strcat(new_save_path, '\stat.mat'), 'stat')
+                        save(strcat(new_save_path, '/stat.mat'), 'stat')
                         if ~isfield(stat, 'posclusters') || ~isfield(stat, 'negclusters')
                             continue;
                         end
@@ -1067,7 +1076,7 @@ for f = 1:numel(foi_of_interest)
                 if numel(stat.posclusters) > 0
                     for i=1:numel(stat.posclusters)
                         [pos_peak_level_stats, pos_all_stats] = get_peak_level_stats(stat, i, 'positive');
-                        fname = "\pos_peak_level_stats_c_" + num2str(i) + ".mat";
+                        fname = "/pos_peak_level_stats_c_" + num2str(i) + ".mat";
                         save(strcat(new_save_path, fname), 'pos_all_stats')
                         if i == 1
                             first_pos_peak_level_stats = pos_peak_level_stats;
@@ -1081,8 +1090,8 @@ for f = 1:numel(foi_of_interest)
                 if numel(stat.negclusters) > 0
                     for i=1:numel(stat.negclusters)
                         [neg_peak_level_stats, neg_all_stats] = get_peak_level_stats(stat, i, 'negative');
-                        fname = "\neg_peak_level_stats_c_" + num2str(i) + ".mat";
-                        save(strcat(new_save_path, '\neg_peak_level_stats.mat'), 'neg_all_stats')
+                        fname = "/neg_peak_level_stats_c_" + num2str(i) + ".mat";
+                        save(strcat(new_save_path, '/neg_peak_level_stats.mat'), 'neg_all_stats')
                         if i == 1
                             first_neg_peak_level_stats = neg_peak_level_stats;
                             first_neg_all_stats = neg_all_stats;
@@ -1114,41 +1123,47 @@ for f = 1:numel(foi_of_interest)
                             end
                         end
                     end
-                    num_neg_clusters = numel(stat.negclusters);
-                    if num_neg_clusters > 0
-                        for i = 1:1
-                            if i <= number_of_clusters_to_plot
-                                generate_peak_erps(master_dir, main_path, experiment_type, ...
-                                    stat, neg_cluster_peak_level_data{i}, 'negative', desired_design_mtx, i, ...
-                                    new_save_path, weight_erps, weighting_factor, ...
-                                    type_of_analysis, foi);
-                            end
-                        end
-                    end
+                    %num_neg_clusters = numel(stat.negclusters);
+                    %if num_neg_clusters > 0
+                    %    for i = 1:1
+                    %        if i <= number_of_clusters_to_plot
+                    %            generate_peak_erps(master_dir, main_path, experiment_type, ...
+                    %                stat, neg_cluster_peak_level_data{i}, 'negative', desired_design_mtx, i, ...
+                    %                new_save_path, weight_erps, weighting_factor, ...
+                    %                type_of_analysis, foi);
+                    %        end
+                    %    end
+                    %end
                 end
 
                 %% get cluster level percentage through time
+                if region_of_interest == 1
+                    volume_descriptor = " of mean/intercept ROI";
+                else
+                    volume_descriptor = " of entire volume";
+                end
+
                 % 1 for the most positive going cluster
                 if numel(stat.posclusters) > 0
-                    title = 'Positive going clusters through time as a % of entire volume';
+                    title = "Positive going clusters through time as a %" + volume_descriptor;
                     calculate_cluster_size(stat, title, 'positive', new_save_path);
                 end
 
-                if numel(stat.negclusters) > 0
-                    title = 'Negative going clusters through time as a % of entire volume';
-                    calculate_cluster_size(stat, title, 'negative', new_save_path);
-                end
+                %if numel(stat.negclusters) > 0
+                %    title = "Negative going clusters through time as a %" + volume_descriptor;
+                %    calculate_cluster_size(stat, title, 'negative', new_save_path);
+                %end
 
                 %% make pretty plots
-                if create_topographic_maps == 1
+               if create_topographic_maps == 1
                     create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
                         0.05, 'positive', new_save_path, type_of_analysis)
 
                     %% plot the peak electrode
                     create_viz_peak_electrode(stat, first_pos_peak_level_stats, new_save_path)
 
-                    create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
-                        0.05, 'negative', new_save_path, type_of_analysis)
+                    %create_viz_topographic_maps(data, stat, start_latency, end_latency, ...
+                    %    0.05, 'negative', new_save_path, type_of_analysis)
                 end
             end
         end
@@ -1425,10 +1440,10 @@ electrodes = electrode_stats.electrodes;
 
 if strcmp(tail, 'positive')
     cluster_labels = stat.posclusterslabelmat;
-    fname = '\positive_t_values_through_time.png';
+    fname = '/positive_t_values_through_time.png';
 else
     cluster_labels = stat.negclusterslabelmat;
-    fname = '\negative_t_values_through_time.png';
+    fname = '/negative_t_values_through_time.png';
 end
 
 time = stat.time;
@@ -1493,14 +1508,14 @@ hold on;
 plot(design_matrix(n_participants+1:n_participants*2), 'color', 'g', 'LineWidth', 3.5);
 plot(design_matrix((n_participants*2)+1:n_participants*3), 'color', 'b', 'LineWidth', 3.5);
 xlabel('Participants','FontSize', 14);
-ylabel('Interaction','FontSize', 14);
+ylabel('Value in Regressor','FontSize', 14);
 if strcmp(experiment_type, 'habituation')
     legend({'P1', 'P2', 'P3'},'Location','bestoutside','FontSize', 14)
 else
     legend({'Onsets 2:3', 'Onsets 4:5', 'Onsets 6:7'},'Location','bestoutside','FontSize', 14)
 end
 set(gcf,'Position',[100 100 500 500])
-save_dir = strcat(save_path, '\', 'design_matrix.png');
+save_dir = strcat(save_path, '/', 'design_matrix.png');
 exportgraphics(gcf,save_dir,'Resolution',500);
 close;
 end
@@ -1545,7 +1560,7 @@ end_idx = find(through_time(:), desired_cluster, 'last');
 start_of_effect = time(start_idx);
 end_of_effect = time(end_idx);
 
-save_dir = strcat(save_dir, '\', plot_desc);
+save_dir = strcat(save_dir, '/', plot_desc);
 
 generate_plots(master_dir, main_path, experiment_type, start_of_effect,...
     end_of_effect, peak_electrode, peak_time, peak_t_value, df, ...
@@ -1710,7 +1725,7 @@ time = stat.time;
 roi.clusters = roi_clusters;
 roi.time = time;
 
-save 'D:\PhD\fieldtrip\roi' roi;
+save 'D:/PhD/fieldtrip/roi' roi;
 
 end
 
@@ -1720,7 +1735,7 @@ cfg = [];
 cfg.alpha = alpha;
 cfg.parameter = 'stat';
 cfg.zlim = [-4 4];
-cfg.xlim = [0.56, 0.256];
+cfg.xlim = [0.00, 0.800];
 cfg.highlightcolorpos = [1,0,0];
 cfg.highlightsymbolseries =  ['*', '*','*','*','*'];
 %cfg.toi = [0.56, 0.256];
@@ -1734,13 +1749,13 @@ if contains(type, 'positive')
     number_of_formed_clusters = unique(stat.posclusterslabelmat);
     number_of_formed_clusters = number_of_formed_clusters(number_of_formed_clusters~=0);
     significance_clusters = stat.posclusters;
-    save_dir = strcat(save_dir, '\', 'positive_cluster.png');
+    save_dir = strcat(save_dir, '/', 'positive_cluster.png');
 elseif contains(type, 'negative')
     cluster_labelling_mtx = stat.negclusterslabelmat;
     number_of_formed_clusters = unique(stat.negclusterslabelmat);
     number_of_formed_clusters = number_of_formed_clusters(number_of_formed_clusters~=0);
     significance_clusters = stat.negclusters;
-    save_dir = strcat(save_dir, '\', 'negative_cluster.png');
+    save_dir = strcat(save_dir, '/', 'negative_cluster.png');
 end
 
 time_mtx = stat.time;
@@ -1782,7 +1797,7 @@ ylim([0 ylim_max]);
 grid on;
 xlabel('Time (ms)', 'FontSize', 14);
 ylabel('Percentage of cluster', 'FontSize', 14);
-xlim([0,260])
+xlim([0,800])
 %xlim([0,800])
 %xlim([0,3000])
 title(ptitle, 'FontSize', 14);
@@ -1915,9 +1930,9 @@ if strcmp(analysis_type, 'frequency_domain')
         pos_cluster_pvals = [stat.posclusters(:).prob];
         pos_clust = find(pos_cluster_pvals < 0.05);
         pos = ismember(stat.posclusterslabelmat, pos_clust);
-        save_dir = strcat(save_dir, '\', 'positive_topographic.png');
+        save_dir = strcat(save_dir, '/', 'positive_topographic.png');
         if isempty(pos_clust)
-            clust = zeros(118,1,401); %401 before
+            clust = zeros(128,1,401); %401 before
         else
             clust = pos;
         end
@@ -1926,11 +1941,11 @@ if strcmp(analysis_type, 'frequency_domain')
         neg_clust = find(neg_cluster_pvals < 0.05);
         neg = ismember(stat.negclusterslabelmat, neg_clust);
         if isempty(neg_clust)
-            clust = zeros(118,1,401); %401 before
+            clust = zeros(128,1,401); %401 before
         else
             clust = neg;
         end
-        save_dir = strcat(save_dir, '\', 'negative_topographic.png');
+        save_dir = strcat(save_dir, '/', 'negative_topographic.png');
     end
 
     max_t = max(stat.stat, [], 'all');
@@ -1938,24 +1953,29 @@ if strcmp(analysis_type, 'frequency_domain')
 
     max_iter = numel(j)-1;
     for k = 1:max_iter
-        subplot(10,4,k);
+        subplot(2,10,k);
         cfg = [];
         cfg.parameter = 'stat';
         cfg.xlim = [j(k) j(k+1)];
         cfg.zlim = [-max_t, max_t];
-        clust_int = zeros(118,1);
+        clust_int = zeros(128,1);
         t_idx = find(stat.time>=j(k) & stat.time<=j(k+1));
         clust_int(i1) = all(clust(i2,1,t_idx),3);
+        cfg.colorbar = 'SouthOutside';
         cfg.marker ='on';
-        cfg.markersize = 1;
+        cfg.markersize = 3;
         cfg.highlight = 'on';
         cfg.highlightchannel = find(clust_int);
         cfg.highlightcolor = {'r',[0 0 1]};
         cfg.highlightsize = 2;
+        cfg.fontsize = 15;
         cfg.comment = 'xlim';
         cfg.commentpos = 'title';
         ft_topoplotTFR(cfg, stat);
     end
+
+
+
 else
     cfg = [];
     cfg.channel   = 'all';
@@ -1984,12 +2004,12 @@ else
         pos_cluster_pvals = [stat.posclusters(:).prob];
         pos_clust = find(pos_cluster_pvals < alpha);
         clust = ismember(stat.posclusterslabelmat, pos_clust);
-        save_dir = strcat(save_dir, '\', 'positive_topographic.png');
+        save_dir = strcat(save_dir, '/', 'positive_topographic.png');
     elseif contains(type, 'negative')
         neg_cluster_pvals = [stat.negclusters(:).prob];
         neg_clust = find(neg_cluster_pvals < alpha);
         clust = ismember(stat.negclusterslabelmat, neg_clust);
-        save_dir = strcat(save_dir, '\', 'negative_topographic.png');
+        save_dir = strcat(save_dir, '/', 'negative_topographic.png');
     end
     max_iter = numel(m)-1;
 
@@ -2022,12 +2042,14 @@ else
 end
 set(gcf,'Position',[100 100 2000 1500])
 exportgraphics(gcf,save_dir,'Resolution',500);
+
 topo = imread(save_dir);
 
-timings = topo(1:100, :, :);
-top = topo(2150:3000, :, :);
-legends = topo(5200:end-50, :, :);
-new_topo = [timings; top; legends];
+timings = topo(1:200, :, :);
+topographic_maps = topo(700:1820, :, :);
+legends = topo(2400:2648, :, :);
+new_topo = [timings; topographic_maps; legends];
+
 imwrite(new_topo,save_dir,'PNG');
 close;
 end
@@ -2362,11 +2384,21 @@ ft_regression_data = {};
 participant_order = {};
 
 idx_used_for_saving_data = 1;
-for i=1:n_participants
+for i=1:1
     disp(strcat('LOADING PARTICIPANT...', int2str(i)));
     participant_main_path = strcat(main_path, int2str(i));
 
-    if ismember(i,[1,2,3,4,6,7,8,9,10,12,13,14,17,20,21,22,23,25,26,30,31,32,33,34,38,39,40])
+    %exp_type = 'mean_intercept';
+
+    %if strcmp(exp_type, 'mean_intercept')
+    %   parts_to_filter = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,17,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,38,39,40];
+    %else
+    %   parts_to_filter = [1,2,3,4,6,7,8,9,10,12,13,14,17,20,21,22,23,25,26,30,31,32,33,34,38,39,40];
+    %end
+    
+    %if ismember(i,parts_to_filter)
+
+
 
     if exist(participant_main_path, 'dir')
         cd(participant_main_path);
@@ -2448,7 +2480,7 @@ for i=1:n_participants
     end
     end
 end
-end
+%end
 
 %% spm loading fn
 %% load post-processed fildtrip data
@@ -2485,7 +2517,7 @@ for participant = 1:n_participants
             p = int2str(participant);
         end
 
-        cd("SPM_ARCHIVE\")
+        cd("SPM_ARCHIVE/")
 
         data_structure = strcat('spmeeg_P', p);
         data_structure = strcat(data_structure, '_075_80hz_rejected_tempesta.mat');
@@ -2556,9 +2588,9 @@ function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     type_of_analysis, foi, desired_cluster)
 
 
-plotting_window = [-200, 300];
-rmpath C:\ProgramFiles\spm8;
-addpath C:\ProgramFiles\spm12;
+plotting_window = [-200, 800];
+%rmpath C:/ProgramFiles/spm8;
+%addpath C:/ProgramFiles/spm12;
 cd(master_dir);
 
 %% Are we looking at onsets 2-8 or partitions
@@ -2576,11 +2608,11 @@ if strcmp(experiment_type, 'onsets-2-8-explicit')
         e_idx = find(contains(data{1}.label,peak_electrode));
     elseif strcmp(type_of_analysis, 'frequency_domain')
         data_file = 'frequency_domain_mean_intercept_onsets_2_3_4_5_6_7_8_grand-average.mat';
-        [data, participant_order_1] = load_postprocessed_data(main_path, n_participants, ...
-            data_file, partition);
-        freq = to_frequency_data(data, main_path, 1, ...
-            participant_order_1, 'load', 'trial-level', ...
-            foi, 'mean_intercept');
+        freq = to_frequency_data(main_path, partition, ...
+            'load', 'trial-level', foi, ...
+            'mean_intercept', data_file, n_participants);
+        n_part = numel(freq);
+
         e_idx = find(contains(freq{1}.pgi.label,peak_electrode));
         data = format_for_plotting_functions(freq);
     end
@@ -2960,7 +2992,7 @@ elseif strcmp(experiment_type, 'partitions (no factor)') || strcmp(experiment_ty
         end
         
 
-        data = [p1_45];
+        data = p1_45;
 
  elseif strcmp(experiment_type, 'three-way-interaction')
         n_participants = 40;
@@ -3180,8 +3212,8 @@ elseif contains(regression_type, 'headache')
     regression_type = 'Headache';
 end
 
-regression_type = regexprep(regression_type,"(\<[a-z])","${upper($1)}");
-effect_type = strcat(regexprep(effect_type,'(\<[a-z])','${upper($1)}'), ' Tail');
+regression_type = regexprep(regression_type,"(/<[a-z])","${upper($1)}");
+effect_type = strcat(regexprep(effect_type,'(/<[a-z])','${upper($1)}'), ' Tail');
 experiment_name = strrep(experiment_name,'{factor}',regression_type);
 m_title = experiment_name + ", " + "Electrode " + peak_electrode;
 
@@ -3651,7 +3683,7 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P1 medium high
-    set(gca,'Color',[.85,.85,.85])
+    %set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
     plot(NaN(1), 'Color', 'r');
@@ -3705,8 +3737,8 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 
     %%%%%%% PARTITION 2
     % onsets 2;3, 4;5 6,7 for P2 low
-    set(gca,'Color',[.85,.85,.85])
     nexttile
+    set(gca,'Color',[.85,.85,.85])
     hold on;
     %plot(NaN(1), 'Color', 'r');
     %plot(NaN(1), 'Color', 'g');
@@ -3763,15 +3795,17 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     %ylabel(ax_label, "FontSize",labels_text_size, 'Color', 'black')
     
     %%%%%%%
-
-    %%%%%%%
-    % onsets 2;3, 4;5 6,7 for P1 high
+    
+    %%%%%%% PARTITION 2
+    % onsets 2;3, 4;5 6,7 for P2 high
     nexttile
+    set(gca,'Color',[.85,.85,.85])
     hold on;
     plot(NaN(1), 'Color', 'r');
     plot(NaN(1), 'Color', 'g');
     plot(NaN(1), 'Color', 'b');
     legend({'Onsets 2,3', 'Onsets 4,5', 'Onsets 6,7'},'Location','bestoutside','FontSize', labels_text_size)
+    set(legend,'color','white');
 
         % onsets 2;3 p1
     plot(time, p2_23_h.dist_pgi_avg, 'color', 'r', 'LineWidth', 3.5,'HandleVisibility','off');
@@ -3818,6 +3852,7 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P2 medium low
     nexttile
+    %set(gca,'Color',[.85,.85,.85])
     hold on;
     %plot(NaN(1), 'Color', 'r');
     %plot(NaN(1), 'Color', 'g');
@@ -3927,6 +3962,7 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 %%%%%%% PARTITION 3
     % onsets 2;3, 4;5 6,7 for P3 low
     nexttile
+    set(gca,'Color',[.85,.85,.85])
     hold on;
     %plot(NaN(1), 'Color', 'r');
     %plot(NaN(1), 'Color', 'g');
@@ -3988,6 +4024,7 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     % onsets 2;3, 4;5 6,7 for P3 high
     set(gca,'Color',[.85,.85,.85])
     nexttile
+    
     hold on;
     plot(NaN(1), 'Color', 'r');
     plot(NaN(1), 'Color', 'g');
@@ -4097,7 +4134,7 @@ elseif strcmp(experiment_type, 'three-way-interaction')
 
     %%%%%%%
     % onsets 2;3, 4;5 6,7 for P3 medium high
-    set(gca,'Color',[.85,.85,.85])
+    %set(gca,'Color',[.85,.85,.85])
     nexttile
     hold on;
     plot(NaN(1), 'Color', 'r');
@@ -4136,7 +4173,7 @@ elseif strcmp(experiment_type, 'three-way-interaction')
     ylim([-4, 12])
     grid on;
     %title("Medium","FontSize", 13)
-    set(gca,'Color',[.85,.85,.85])
+    %set(gca,'Color',[.85,.85,.85])
     hold off;
 
     xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
@@ -4600,6 +4637,8 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xlim(plotting_window);
     %title(low_p1,'FontSize', labels_text_size);
 
+    % calculate global min/maxes
+    % P1
 
     min_yl = min([min(ci1_h.dist_thick_low), min(ci1_h.dist_med_low), min(ci1_h.dist_thin_low)])-0.5;
     max_yl = max([max(ci1_h.dist_thin_high), max(ci1_h.dist_med_high), max(ci1_h.dist_thick_high)])+0.5;
@@ -4607,10 +4646,39 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     min_yh = min([min(ci1_l.dist_thin_low), min(ci1_l.dist_med_low), min(ci1_l.dist_thick_low)])-0.5;
     max_yh = max([max(ci1_l.dist_thick_high), max(ci1_l.dist_med_high), max(ci1_l.dist_thin_high)])+0.5;
 
-    min_y = min([min_yl, min_yh]);
-    max_y = max([max_yl, max_yh]);
+    min_y_p1 = min([min_yl, min_yh]);
+    max_y_p1 = max([max_yl, max_yh]);
 
-    ylim([min_y, max_y])
+
+    % P2 
+
+    min_yl = min([min(ci2_h.dist_thick_low), min(ci2_h.dist_med_low), min(ci2_h.dist_thin_low)])-0.5;
+    max_yl = max([max(ci2_h.dist_thin_high), max(ci2_h.dist_med_high), max(ci2_h.dist_thick_high)])+0.5;
+
+    min_yh = min([min(ci2_l.dist_thin_low), min(ci2_l.dist_med_low), min(ci2_l.dist_thick_low)])-0.5;
+    max_yh = max([max(ci2_l.dist_thick_high), max(ci2_l.dist_med_high), max(ci2_l.dist_thin_high)])+0.5;
+
+    min_y_p2 = min([min_yl, min_yh]);
+    max_y_p2 = max([max_yl, max_yh]);
+
+
+    % P3
+
+    min_yl = min([min(ci3_h.dist_thick_low), min(ci3_h.dist_med_low), min(ci3_h.dist_thin_low)])-0.5;
+    max_yl = max([max(ci3_h.dist_thin_high), max(ci3_h.dist_med_high), max(ci3_h.dist_thick_high)])+0.5;
+
+    min_yh = min([min(ci3_l.dist_thin_low), min(ci3_l.dist_med_low), min(ci3_l.dist_thick_low)])-0.5;
+    max_yh = max([max(ci3_l.dist_thick_high), max(ci3_l.dist_med_high), max(ci3_l.dist_thin_high)])+0.5;
+
+    min_y_p3 = min([min_yl, min_yh]);
+    max_y_p3 = max([max_yl, max_yh]);
+
+    % calculate global min/max for partitions
+    global_min_y = min([min_y_p3, min_y_p2, min_y_p1]);
+    global_max_y = max([max_y_p3, max_y_p2, max_y_p1]);
+
+
+    ylim([global_min_y, global_max_y])
 
     grid on;
     hold off;
@@ -4667,7 +4735,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xlim(plotting_window);
     %title(high_p1,'FontSize', labels_text_size);
 
-    ylim([min_y, max_y])
+    ylim([global_min_y, global_max_y])
 
     grid on;
     hold off;
@@ -4716,16 +4784,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xlim(plotting_window);
     %title(low_p2,'FontSize', labels_text_size);
 
-    min_yl = min([min(ci2_l.dist_thin_low), min(ci2_l.dist_med_low), min(ci2_l.dist_thick_low)])-0.5;
-    max_yl = max([max(ci2_l.dist_thick_high), max(ci2_l.dist_med_high), max(ci2_l.dist_thin_high)])+0.5;
-
-    min_yh = min([min(ci2_h.dist_thin_low), min(ci2_h.dist_med_low), min(ci2_h.dist_thick_low)])-0.5;
-    max_yh = max([max(ci2_h.dist_thick_high), max(ci2_h.dist_med_high), max(ci2_h.dist_thin_high)])+0.5;
-
-    min_y = min([min_yl, min_yh]);
-    max_y = max([max_yl, max_yh]);
-
-    ylim([min_y, max_y])
+    ylim([global_min_y, global_max_y])
 
     grid on;
     hold off;
@@ -4785,7 +4844,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     %title(high_p2,'FontSize', labels_text_size);
 
 
-    ylim([min_y, max_y])
+    ylim([global_min_y, global_max_y])
 
     grid on;
     hold off;
@@ -4835,16 +4894,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     xlim(plotting_window);
     %title(low_p3,'FontSize', labels_text_size);
 
-    min_yl = min([min(ci3_l.dist_thin_low), min(ci3_l.dist_med_low), min(ci3_l.dist_thick_low)])-0.5;
-    max_yl = max([max(ci3_l.dist_thick_high), max(ci3_l.dist_med_high), max(ci3_l.dist_thin_high)])+0.5;
-
-    min_yh = min([min(ci3_h.dist_thick_low), min(ci3_h.dist_med_low), min(ci3_h.dist_thin_low)])-0.5;
-    max_yh = max([max(ci3_h.dist_thin_high), max(ci3_h.dist_med_high), max(ci3_h.dist_thick_high)])+0.5;
-
-    min_y = min([min_yl, min_yh]);
-    max_y = max([max_yl, max_yh]);
-
-    ylim([min_y, max_y])
+    ylim([global_min_y, global_max_y])
 
     grid on;
     hold off;
@@ -4904,7 +4954,7 @@ elseif strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'erp
     %title(high_p3,'FontSize', labels_text_size);
 
 
-    ylim([min_y, max_y])
+    ylim([global_min_y, global_max_y])
 
     grid on;
     hold off;
@@ -5184,43 +5234,43 @@ end
 end
 
 %% applies the wavelett decomposition to the data
-function dataset = to_frequency_data(data, save_dir, partition, ...
-    participant_order, type, participant_level, foi, analysis_type)
+function dataset = to_frequency_data(save_dir, partition, type, ...
+    participant_level, foi, analysis_type, filename, n_participants)
 
-% cfg              = [];
-% cfg.output       = 'pow';
-% cfg.method       = 'wavelet';
-% cfg.taper        = 'hanning';
-% cfg.width = 3;
-% cfg.foi =   foi(1):foi(2);
-% cfg.t_ftimwin = ones(length(cfg.foi),1).*0.25;
-% cfg.toi          = -0.2:0.002:1;
-% cfg.channel      = 'all';
+num_cycles = 32;
 
 cfg = [];
 cfg.channel = 'all';
 cfg.method = 'wavelet';
-cfg.width = 5;
+cfg.width = num_cycles;
 cfg.output = 'pow';
 cfg.pad = 'nextpow2';
-cfg.foi = 5:80;
-cfg.toi = -0.5:0.002:3;
+cfg.foi = foi(1):1:foi(2);
+cfg.toi = -0.5:0.002:1.3;
 cfg.keeptrials = 'yes';
 
 
 dataset = {};
-for i=1:numel(data)
-    participant = data{i};
-
-    disp(strcat('Loading/Processing Participant ', int2str(i)));
-    participant_number = participant_order{i};
-
-    save_path = strcat(save_dir, int2str(participant_number), '\', analysis_type, int2str(partition), '_');
+for i=1:n_participants
+    save_path = strcat(save_dir, int2str(i), '/', analysis_type, '_', int2str(partition.partition_number), '_');
 
 
-    full_save_dir = save_path + "trial_level_5_80_Hz.mat";
+    full_save_dir = save_path + "trial_level_" + int2str(foi(1)) + "_" + int2str(foi(2)) + "_numcycles_" + int2str(num_cycles) + ".mat";
 
     if strcmp(type, 'preprocess')
+
+        % if we want to preprocess, load each participants data
+        disp(strcat('LOADING PARTICIPANT...', int2str(i)));
+        participant_main_path = strcat(save_dir, int2str(i));
+        [participant, participant_number] = load_one_postprocessed_data( ...
+            participant_main_path, filename, partition, i);
+
+        if participant_number == -9999
+            continue;
+        end
+
+        % end of loading
+
         med.label = participant.label;
         med.elec = participant.elec;
         med.trial = participant.med;
@@ -5570,7 +5620,7 @@ for k = 1:numel(data)
     figure
     ft_singleplotTFR(cfg, med);
     %rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
-    save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition), 'part', int2str(k), '_medium_freq.png');
+    save_dir = strcat(save_path, '/spectrograms/',  cat_type, '_p', int2str(partition), 'part', int2str(k), '_medium_freq.png');
     exportgraphics(gcf,save_dir,'Resolution',500);
     close;
 
@@ -5584,7 +5634,7 @@ for k = 1:numel(data)
         aggr_avg = data.aggr_avg;
         ft_singleplotTFR(cfg, aggr_avg);
         rectangle('Position', [0.09, 5, 0.1, 2.6],'EdgeColor','r', 'LineWidth', 1)
-        save_dir = strcat(save_path, '\spectrograms\',  cat_type, '_p', int2str(partition),'_medium_freq.png');
+        save_dir = strcat(save_path, '/spectrograms/',  cat_type, '_p', int2str(partition),'_medium_freq.png');
         exportgraphics(gcf,save_dir,'Resolution',500);
         close;
     end
@@ -5752,10 +5802,10 @@ end
 %% combine images together for visual purposes
 function combine_images(save_dir)
 
-    clusters_through_time = imread(save_dir + "\positive_cluster.png");
-    topographic_maps = imread(save_dir + "\positive_topographic.png");
-    erps = imread(save_dir + "\positive_peak_erp_1.png");
-    highlighted_electrode = imread(save_dir + "\highlighted_electrode.png");
+    clusters_through_time = imread(save_dir + "/positive_cluster.png");
+    topographic_maps = imread(save_dir + "/positive_topographic.png");
+    erps = imread(save_dir + "/positive_peak_erp_1.png");
+    highlighted_electrode = imread(save_dir + "/highlighted_electrode.png");
 
     % remove whitespace from topographic maps
     top = topographic_maps(1:1200, :, :);
@@ -5769,9 +5819,132 @@ function combine_images(save_dir)
     x = imtile({erps, clusters_through_time, topographic_maps}, 'GridSize', [3, 1], ...
         'BackgroundColor', 'white');
 
-    path = save_dir + "\combined.png";
+    path = save_dir + "/combined.png";
     imwrite(x,path,'JPEG');
 
 
     disp('1')
 end
+
+%% load post-processed fildtrip data
+function [ft, particpant_order] = ...
+    load_one_postprocessed_data(participant_main_path, filename, ...
+    partition, i)
+    
+    disp(strcat('LOADING PARTICIPANT...', int2str(i)));
+    
+    if exist(participant_main_path, 'dir')
+        cd(participant_main_path);
+    
+        if isfile(filename)
+            load(filename);
+    
+            ft.label = data.label;
+            ft.time = data.time{1};
+            ft.trialinfo = [1];
+            ft.elec = data.elec;
+            ft.dimord = 'chan_time';
+        
+            % find the condition labels used to match up the data
+        
+            if partition.is_partition
+                if partition.partition_number == 1
+                    if isfield(data, 'p1_pgi')
+                        pgi = data.p1_pgi;
+                    end
+                    thin = data.p1_thin;
+                    med = data.p1_med;
+                    thick = data.p1_thick;
+                elseif partition.partition_number == 2
+                    if isfield(data, 'p2_pgi')
+                        pgi = data.p2_pgi;
+                    end
+                    thin = data.p2_thin;
+                    med = data.p2_med;
+                    thick = data.p2_thick;
+                elseif partition.partition_number == 3
+                    if isfield(data, 'p3_pgi')
+                        pgi = data.p3_pgi;
+                    end
+                    thin = data.p3_thin;
+                    med = data.p3_med;
+                    thick = data.p3_thick;
+                else
+                    thin = data.thin;
+                    med = data.med;
+                    thick = data.thick;
+                end
+            elseif ~partition.is_partition
+                try
+                    pgi = data.med - (data.thin + data.thick)/2;
+                    ft.avg = pgi;
+                catch
+                    disp('freq')
+                end
+                thin = data.thin;
+                med = data.med;
+                thick = data.thick;
+        
+            end
+        
+            if isfield(data, 'p1_pgi') || isfield(data, 'p2_pgi') || isfield(data, 'p3_pgi')
+                ft.avg = pgi;
+            end
+        
+            ft.thin = thin;
+            ft.med = med;
+            ft.thick = thick;
+        
+            if isfield(data, 'thick_order') || isfield(data, 'thin_order') ...
+                    || isfield(data, 'med_order')
+                ft.thick_order = data.thick_order;
+                ft.thin_order = data.thin_order;
+                ft.med_order = data.med_order;
+            end
+        
+            ft = rmfield(ft, "trialinfo");
+            particpant_order = i;
+        else
+            particpant_order = -9999;
+            ft = - 9999;
+        end
+    else
+            particpant_order = -9999;
+            ft = - 9999;
+    end
+end
+%% aggregated avg for selecting frequencies
+function create_agg_average(freq)
+
+    x = size(participant.thin.powspctrm, 1);
+    y = size(participant.thin.powspctrm, 2);
+    z = size(participant.thin.powspctrm, 3);
+
+    agg_avgs = zeros(1, x, y, z);
+
+    for i =1:size(freq, 2)
+        participant = freq{i};
+        
+        tf_hann = participant.thin;
+        thin = participant.thin.powspctrm;
+        thick = participant.thick.powspctrm;
+        med = participant.med.powspctrm;    
+
+        agg_avg = (thin + med + thick)/3;
+        agg_avgs(i, :, :, :) = agg_avg;
+    end
+
+    aggregated_average_across_participants = squeeze(mean(agg_avgs));
+
+    dummy_participant = freq{1}.thin;
+    dummy_participant.powspctrm = aggregated_average_across_participants;
+
+    cfg = [];
+    cfg.channel = 'A23';
+    cfg.baseline     = [-0.5 0];
+    cfg.baselinetype = 'absolute';
+    cfg.zlim = [-2, 2];
+    ft_singleplotTFR(cfg, dummy_participant);
+
+end
+%end

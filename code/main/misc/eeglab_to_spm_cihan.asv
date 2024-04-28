@@ -1,14 +1,14 @@
 n_participants = 40;
-addpath('/Users/cihandogan/Documents/Research/spm12')
-main_path = '/Users/cihandogan/Documents/Research/preprocessing/after_spm_script/participant_';
-addpath('/Users/cihandogan/Documents/Research/fieldtrip-20230118');
+addpath('C:\External_Software\spm12')
+main_path = 'D:\full_data-selected\preprocessed\after_spm_script\participant_';
+addpath('C:\External_Software\fieldtrip-20210807');
 ft_defaults;
 clear matlabbatch
 ft_defaults;
 
 spm eeg;
 
-for participant =  [27, 36,]%1:n_participants
+for participant = 1:n_participants
     %% get the correct file path
     clear matlabbatch
     disp(strcat('Procesisng participant..',int2str(participant)));
@@ -27,7 +27,7 @@ for participant =  [27, 36,]%1:n_participants
         cd(participant_main_path);
         
         p = strcat(p, '-Deci_ready_for_ft.set');
-        participant_file_path = strcat(participant_main_path, '/');
+        participant_file_path = strcat(participant_main_path, '\');
         participant_file_path = strcat(participant_file_path, p);
         
         %% convert to SPM ready file
@@ -79,7 +79,7 @@ for participant =  [27, 36,]%1:n_participants
         
         D = spm_eeg_prep(S);
         
-        D = timeonset(D, -0.5); % time onset flag is wrong
+        D = timexonset(D, -0.5); % time onset flag is wrong
         
         save(D);
         disp('COMPLETED PARTICIPANT');
