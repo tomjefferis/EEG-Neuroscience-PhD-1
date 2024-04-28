@@ -1,19 +1,26 @@
 %% preprocessing pipeline for FieldTrip *** Author; Cihan Dogan
+%% look at the grand
+
 clear all;
 restoredefaultpath;
-addpath('C:\External_Software\fieldtrip-20210807');
-addpath('C:\External_Software\spm12')
+addpath('/Users/cihandogan/Documents/Research/fieldtrip-20240214');
+addpath('/Users/cihandogan/Documents/Research/spm12')
 ft_defaults;
-cd("E:\PhD");
+cd("/Users/cihandogan/Documents/Research/preprocessing/after_spm_script");
     
+
 %% Change these variables depending on what you would like to do.
-main_path = 'E:\PhD\participant_';
-to_preprocess = {'partitions'};
-type_of_analysis = 'time_domain'; % or time_domain
+main_path = '/Users/cihandogan/Documents/Research/preprocessing/after_spm_script/participant_';
+
+%main_path = '/Users/cihandogan/Documents/Research/PhD/participant_';
+
+to_preprocess = {'mean_intercept'};
+type_of_analysis = 'frequency_domain'; % or time_domain
 
 onsets = [
     2,3,4,5,6,7,8
 ];
+
 number_of_onsets = size(onsets);
 number_of_onsets = number_of_onsets(1);
 
@@ -28,12 +35,12 @@ for k=1:numel(to_preprocess)
         n_participants = 39;
     end
     
-    % parfloor
+    % 12, 20, 22, 23 is fucked
 
     [n_onsets, ~] = size(onsets);
     for i=1:n_onsets
         subset_onsets = onsets(i,:);
-        for participant = 1:n_participants
+        for participant = 12:12  %36:n_participants
 
             %% gets the onsets of interest
             [thin, med, thick, description] = get_onsets(subset_onsets, analysis_type);
@@ -45,7 +52,7 @@ for k=1:numel(to_preprocess)
             participant_main_path = strcat(main_path, int2str(participant));    
 
             if exist(participant_main_path, 'dir')
-                participant_main_path = strcat(participant_main_path, '\');
+                participant_main_path = strcat(participant_main_path, '/');
                 data_structure = 'spmeeg_P';        
 
                 if participant < 10
@@ -57,12 +64,15 @@ for k=1:numel(to_preprocess)
                 data_structure = strcat(data_structure, p);
                 
                 if contains(type_of_analysis, 'frequency_domain')
-                    data_fname = strcat(data_structure, '_075_80Hz_rejected_tempesta.dat');
-                    data_structure = strcat(data_structure, '_075_80Hz_rejected_tempesta.mat');
+                    data_fname = strcat(data_structure, '-Deci_ready_for_ft.dat');
+                    data_structure = strcat(data_structure, '-Deci_ready_for_ft.mat');
                     filter_freq = [0.1, 80];
                 elseif strcmp(type_of_analysis, 'time_domain')
                     data_fname = strcat(data_structure, '_075_80Hz.dat');
                     data_structure = strcat(data_structure, '_075_80Hz.mat');  
+                    %data_fname = strcat(data_structure, '-Deci_ready_for_ft.dat');
+                    %data_structure = strcat(data_structure, '-Deci_ready_for_ft.mat');  
+
                     filter_freq = [0.3, 30];
                     baseline_window = [-0.2 0];
                 end
@@ -79,9 +89,10 @@ for k=1:numel(to_preprocess)
                 % analyse the conditions of interest
                 condition_names = label_data(thin, med, thick, participant_main_path,  data_structure, analysis_type);
 
-                %% load and convert from SPM > FieldTrip
+                %% load and convert from SPM > FieldTrip add the pathing information
                 load(file_main_path);
                 D.data.fname = strcat(participant_main_path, data_fname);
+                D.path = participant_main_path;
                 spm_eeg = meeg(D);
                 raw = spm_eeg.ftraw;
 
@@ -102,7 +113,7 @@ for k=1:numel(to_preprocess)
                 cfg.bpfreq = filter_freq;
                 data = ft_preprocessing(cfg, raw);
 
-                % Detect artefacts via thresholding -100:100 uV
+                % % Detect artefacts via thresholding -100:100 uV
                 cfg = [];
                 cfg.continious = 'no';
                 cfg.artfctdef.threshold.min = -100;
@@ -112,23 +123,24 @@ for k=1:numel(to_preprocess)
 
                 [~, artifact] = ft_artifact_threshold(cfg, data);
 
-                % reject the detected artefacts
+                %reject the detected artefacts
                 cfg = [];
                 cfg.artfctdef.reject = 'complete';
                 cfg.artfctdef.zvalue.artifact = artifact;
                 postprocessed = ft_rejectartifact(cfg, data);
+                %postprocessed = data;
 
                 % update with the proper trial names after artefact rejection
                 postprocessed = label_data_with_trials(raw, postprocessed);
-                % relabel the relevant conditions after postprocessing
+                % % relabel the relevant conditions after postprocessing
                 postprocessed = relabel_conditions(postprocessed, D);
-
-                % reject based on count of trials per condition
+                % 
+                % % reject based on count of trials per condition
                 reject_participant = reject_particiapnt_based_on_bad_trials(postprocessed, raw);
                 if reject_participant == 1
                     disp(strcat('REJECTED PARTICIPANT...',int2str(participant)));
-                    continue;
-                end
+                     continue;
+                 end
 
                 % get the data ready for FT analysis
                 [trial_level, grand_averages] = data_ready_for_analysis(postprocessed, analysis_type);
@@ -347,7 +359,7 @@ function postprocessed = remove_electrodes(postprocessed, type)
     'D27','D28','D29','D30','D31','D32', 'EXG5', 'EXG6'
     };
     else
-        to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+        to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG8', 'HEOG', 'VEOG'};
     end
 
 
@@ -453,6 +465,7 @@ function labels = get_eeg_channels(data, type)
     if contains(type, 'partitions') || strcmp(type, 'mean_intercept')
         to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
         to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
+        to_remove = {'EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
     elseif strcmp(type, 'eye_confound')
         to_remove = {'A11', 'A12', 'A13', 'A14', 'A24', 'A25', 'A26','A27', 'B8', 'B9','EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'HEOG', 'VEOG'};
     end
@@ -664,5 +677,7 @@ function new_trials = convert_to_fieldtrip_format(trials)
     end 
     
 end
+
+
 
 
