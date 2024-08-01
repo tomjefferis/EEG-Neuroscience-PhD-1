@@ -10,9 +10,9 @@ ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'erps-23-45-67'};
+experiment_types = {'partitions-2-8'};
 desired_design_mtxs = {"headache", "discomfort", "visual_stress"};
-type_of_interaction = 'sensitization';
+type_of_interaction = 'habituation';
 start_latency = 0.056;
 end_latency = 0.400;
 
