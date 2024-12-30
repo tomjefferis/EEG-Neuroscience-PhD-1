@@ -1,29 +1,31 @@
 %% PATHS AND SETTING UP FIELDTRIP AND PATHS
 clear classes;
 clear all;
-master_dir = 'C:\Users\CDoga\Documents\Research\PhD\fieldtrip';
-main_path = 'C:\Users\CDoga\Documents\Research\PhD\participant_';
-results_dir = 'C:\Users\CDoga\Documents\Research\PhD\results';
-addpath('C:\Users\CDoga\Documents\Research\fieldtrip-20240214');
+master_dir = 'C:\Users\Tom\Documents\GitHub\';
+main_path = 'W:\PhD\PatternGlareData\participants\participant_';
+results_dir = 'W:\PhD\PatternGlareData\Results\cihancode';
+addpath('W:\PhD\MatlabPlugins\fieldtrip-20210906');
 
 ft_defaults;
 cd(master_dir);
 
 %% WHAT TYPE OF EXPERIMENT(s) ARE WE RUNNING?
-experiment_types = {'three-way-interaction'};
-desired_design_mtxs = {"headache"};
+experiment_types = {'onsets-2-8-explicit'};
+%experiment_types = {'pure-factor-effect'};
+desired_design_mtxs = {"no-factor"};
 type_of_interaction = 'habituation';
-start_latency = 0.056;
-end_latency = 0.256;
+start_latency = 3.09;
+end_latency = 3.99;
+plotting_window = [2800, 4000];
 
 %% SHALL WE APPLY A ROI, IF SO HOW?
-region_of_interest = 1 ;
+region_of_interest = 0 ;
 roi_applied = 'two-tailed';
 weight_roi = 0;
 roi_to_apply = 0;
 
 %% GENERATE ERPS AND COMPUTE CONFIDENCE INTERVALS
-create_topographic_maps =1;
+create_topographic_maps =0;
 generate_erps = 1;
 weight_erps = 0; % weights based on quartiles
 weighting_factor = 0.75; % weights based on quartiles
@@ -44,9 +46,10 @@ if strcmp(type_of_analysis, 'frequency_domain') || strcmp(type_of_analysis, 'fre
 elseif strcmp(type_of_analysis, 'time_domain') || strcmp(type_of_analysis, 'time_domain_p1')
     disp('RUNNING A TIME-DOMAIN ANALYSIS');
     foi_of_interest = [[-999, -999]];
-    toi = [0.056, 0.256];
+    toi = [3, 3.99];
 end
 
+stats_window = [start_latency end_latency];
 
 %% OFF TO THE RACES WE GO
  for f = 1:numel(foi_of_interest)
@@ -115,8 +118,7 @@ end
                     type_of_effect = 'null';
                     regression_type = desired_design_mtx;
                     n_participants = 40;
-                    start_latency = 0.056;
-                    end_latency = 0.256;
+                    
 
                     partition.is_partition = 0;
                     partition.partition_number = 0;
@@ -141,8 +143,7 @@ end
                     type_of_effect = 'null';
                     regression_type = desired_design_mtx;
                     n_participants = 40;
-                    start_latency = 0.056;
-                    end_latency = 0.256;
+                    
 
                     partition.is_partition = 0;
                     partition.partition_number = 999;
@@ -155,17 +156,7 @@ end
                     [design_matrix, data] =  create_design_matrix_partitions(participant_order_1, data, ...
                         regression_type, 0, type_of_effect);
 
-                    if region_of_interest == 1
-                        if strcmp(experiment_type, 'partitions-2-8') || strcmp(experiment_type, 'pure-factor-effect')
-                            if strcmp(roi_applied, 'one-tailed')
-                                load('E:/PhD/fieldtrip/roi/one_tailed_roi_28.mat');
-                            elseif strcmp(roi_applied, 'two-tailed')
-                               load('C:\Users\CDoga\Documents\Research\PhD\fieldtrip\roi\two_tailed_roi_28.mat');
-                            end
-                        end
-                        data = create_hacked_roi(data, roi, weight_roi);
-                    end
-
+                    
                     plot(design_matrix(1:numel(design_matrix)), 'color', 'r', 'LineWidth', 3.5);
                     hold on;
                     xlabel('Participants', 'FontSize',11);
@@ -250,7 +241,11 @@ end
                             design_matrix = [design1, design2, design3];
                         end
 
-                        design_matrix = design_matrix - mean(design_matrix);
+                        if size(design_matrix,2) > 1 
+                            design_matrix = reshape(design_matrix,[size(design_matrix,1)*size(design_matrix,2),1]);
+                        end
+
+                        %design_matrix = design_matrix - mean(design_matrix);
                         save_desgin_matrix(design_matrix, n_part_per_desgin, save_path, type_of_interaction)
 
                         if region_of_interest == 1
@@ -1038,7 +1033,7 @@ end
                 cfg.correctm = 'cluster';
                 cfg.neighbours = neighbours;
                 cfg.clusteralpha = 0.025;
-                cfg.numrandomization = 100;
+                cfg.numrandomization = 1000;
                 cfg.tail = 0;
                 cfg.design = design_matrix;
                 cfg.computeprob = 'yes';
@@ -1056,7 +1051,7 @@ end
                         stat = ft_timelockstatistics(cfg, data{:}, null_data{:});
                         save(strcat(new_save_path, '/stat.mat'), 'stat')
                         desired_cluster =1;
-                        get_region_of_interest_electrodes(stat, desired_cluster, "roi");
+                        %get_region_of_interest_electrodes(stat, desired_cluster, "roi");
                     elseif contains(experiment_type, 'partitions') || contains(experiment_type, 'onsets-2-8-explicit') ...
                             || contains(experiment_type, 'onsets-1-factor') || contains(experiment_type, 'erps-23-45-67') ...
                             || contains(experiment_type, 'three-way-interaction') || contains(experiment_type, 'Partitions') ...
@@ -1152,21 +1147,21 @@ end
                                 generate_peak_erps(master_dir, main_path, experiment_type, ...
                                     stat, pos_cluster_peak_level_data{i}, 'positive', desired_design_mtx, i, ...
                                     new_save_path, weight_erps, weighting_factor, ...
-                                    type_of_analysis, foi, plot_thin_med_thick);
+                                    type_of_analysis, foi, plot_thin_med_thick, plotting_window, stats_window);
                             end
                         end
                     end
-                    %num_neg_clusters = numel(stat.negclusters);
-                    %if num_neg_clusters > 0
-                    %    for i = 1:1
-                    %        if i <= number_of_clusters_to_plot
-                    %            generate_peak_erps(master_dir, main_path, experiment_type, ...
-                    %                stat, neg_cluster_peak_level_data{i}, 'negative', desired_design_mtx, i, ...
-                    %                new_save_path, weight_erps, weighting_factor, ...
-                    %                type_of_analysis, foi);
-                    %        end
-                    %    end
-                    %end
+                    num_neg_clusters = numel(stat.negclusters);
+                    if num_neg_clusters > 0
+                        for i = 1:1
+                            if i <= number_of_clusters_to_plot
+                                generate_peak_erps(master_dir, main_path, experiment_type, ...
+                                    stat, neg_cluster_peak_level_data{i}, 'negative', desired_design_mtx, i, ...
+                                    new_save_path, weight_erps, weighting_factor, ...
+                                    type_of_analysis, foi, plot_thin_med_thick, plotting_window, stats_window);
+                            end
+                        end
+                    end
                 end
 
                 %% get cluster level percentage through time
@@ -1556,7 +1551,7 @@ end
 %% generate ERPs
     function generate_peak_erps(master_dir, main_path, experiment_type, ...
     stat, peak_information, effect_type, regression_type, desired_cluster, ...
-    save_dir, weight_erps, weighting_factor, type_of_analysis, foi, plot_thin_med_thick)
+    save_dir, weight_erps, weighting_factor, type_of_analysis, foi, plot_thin_med_thick,plotting_window, stats_window)
 
 df = stat.df;
 time = stat.time;
@@ -1598,7 +1593,7 @@ save_dir = strcat(save_dir, '/', plot_desc);
 generate_plots(master_dir, main_path, experiment_type, start_of_effect,...
     end_of_effect, peak_electrode, peak_time, peak_t_value, df, ...
     regression_type, pvalue, cluster_size, save_dir, effect_type, ...
-    weight_erps, weighting_factor, type_of_analysis, foi, desired_cluster, plot_thin_med_thick)
+    weight_erps, weighting_factor, type_of_analysis, foi, desired_cluster, plot_thin_med_thick, plotting_window,stats_window)
 
 close;
 end
@@ -2430,6 +2425,7 @@ for i=1:n_participants
         ft = cut_data_using_analysis_window(ft, analysis_window);
 
 
+
         ft_regression_data{idx_used_for_saving_data} = ft;
         participant_order{idx_used_for_saving_data} = i;
         idx_used_for_saving_data = idx_used_for_saving_data + 1;
@@ -2469,13 +2465,6 @@ for i=1:40
         if strcmp(domain, "time_domain_p1")
             domain = "time_domain";
         end
-
-        if exist(domain, 'dir')
-             cd(domain)
-        else
-            continue;
-        end
-
        
 
         if isfile(filename)
@@ -2549,13 +2538,31 @@ for i=1:40
 
         ft = rmfield(ft, "trialinfo");
 
+        cfg = [];
+        cfg.baseline = [2.8 3.0];
+        ft = ft_timelockbaseline(cfg,ft);
+
         ft_regression_data{idx_used_for_saving_data} = ft;
         participant_order{idx_used_for_saving_data} = i;
         idx_used_for_saving_data = idx_used_for_saving_data + 1;
     end
-    end
+end
+ft_regression_data = rebaseline_data(ft_regression_data, [2.8 3.0]);
 end
 %end
+function [data] = rebaseline_data(data, baseline_period)
+
+    cfg = [];
+    cfg.parameter = setdiff(fieldnames(data{1}),{'label','time','trialinfo','elec','dimord','cfg'});
+    cfg.baseline = baseline_period;
+
+
+    for index = 1:size(data,2)
+        data{index} = ft_timelockbaseline(cfg,data{index});
+    end
+    
+
+end
 
 %% spm loading fn
 %% load post-processed fildtrip data
@@ -2660,10 +2667,10 @@ end
 function generate_plots(master_dir, main_path, experiment_type, start_peak, ...
     end_peak, peak_electrode, peak_effect, t_value, df, regression_type, ...
     pvalue, cluster_size, save_dir, effect_type, weight_erps, weighting_factor, ...
-    type_of_analysis, foi, desired_cluster, plot_thin_med_thick)
+    type_of_analysis, foi, desired_cluster, plot_thin_med_thick,plotting_window, stats_window)
 
 
-plotting_window = [-200, 300];
+
 %rmpath C:/ProgramFiles/spm8;
 %addpath C:/ProgramFiles/spm12;
 cd(master_dir);
@@ -3213,7 +3220,7 @@ pos6 = [0.57, 0.1, 0.325, 0.25];   % Row 3, Col 3 (wider)
     % Shade the region after end_peak
     xregion([end_peak, inf], 'FaceColor', [0.9 0.9 0.9], 'FaceAlpha', 0.5, 'HandleVisibility', 'off');
 
-    line_plot_effect =140.00;
+    line_plot_effect =peak_effect;
 
     hold on;
     %plot(NaN(1), 'r');
@@ -3235,7 +3242,7 @@ pos6 = [0.57, 0.1, 0.325, 0.25];   % Row 3, Col 3 (wider)
     xlim(plotting_window);
 
     title("LOW",'FontSize', 18);
-    ylim([-2, 6])
+    ylim([-2, 3])
     grid on;
     hold off;
 
@@ -3243,7 +3250,7 @@ pos6 = [0.57, 0.1, 0.325, 0.25];   % Row 3, Col 3 (wider)
         xline(start_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
         xline(end_peak, '-','HandleVisibility','off', "LineWidth", 1.5);
         xline(peak_effect, '--r','HandleVisibility','off', "LineWidth", 1.5);
-         xline(line_plot_effect, '--','HandleVisibility','off', "LineWidth", 1.5);
+         %xline(line_plot_effect, '--','HandleVisibility','off', "LineWidth", 1.5);
         xline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
         yline(0, '--b','HandleVisibility','off', "LineWidth", 1.5)
     end
@@ -3320,7 +3327,7 @@ pos6 = [0.57, 0.1, 0.325, 0.25];   % Row 3, Col 3 (wider)
     xlim(plotting_window);
 
     title("HIGH",'FontSize', 18);
-    ylim([-2, 6])
+    ylim([-2, 3])
     grid on;
     hold off;
 
@@ -3415,7 +3422,7 @@ pos6 = [0.57, 0.1, 0.325, 0.25];   % Row 3, Col 3 (wider)
 
     xlim(plotting_window);
 
-    ylim([-2, 8.5])
+    ylim([-2.2, 3])
     grid on;
     hold off;
 
@@ -3506,7 +3513,7 @@ set(gca, 'Position', pos6); % Adjust the size and position
 
     xlim(plotting_window);
 
-    ylim([-2, 8.5])
+    ylim([-2.2, 3])
     grid on;
     hold off;
 
@@ -5898,10 +5905,10 @@ participants = size(data,2);
 
 cfg = [];
 cfg.baseline = 'yes';
-cfg.baseline     = [-0.5 0];
+cfg.baseline     = [2.8 3.0];
 cfg.baselinetype = 'db';
 cfg.maskstyle    = 'saturation';
-cfg.xlim = [-0.200,0.500];
+cfg.xlim = [2.8,4];
 cfg.ylim = [0, 15];
 %cfg.zlim = [-5, 5];
 cfg.channel = channel;
